@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zirvium | MOSIX Standard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, monospace; background: #0f172a; color: #f8fafc; line-height: 1.6; margin: 0; }
+        header { padding: 4rem 2rem; text-align: center; border-bottom: 1px solid #1e293b; }
+        .container { max-width: 900px; margin: auto; padding: 2rem; }
+        .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
+        .card { background: #1e293b; padding: 1.5rem; border-radius: 4px; border-left: 4px solid #38bdf8; }
+        h1 { font-size: 3rem; color: #38bdf8; letter-spacing: -1px; }
+        .mosix-tag { background: #38bdf8; color: #0f172a; padding: 0.2rem 0.5rem; font-weight: bold; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>ZIRVIUM</h1>
+        <p>A <span class="mosix-tag">MOSIX</span> Standard Operating System</p>
+    </header>
+    <div class="container">
+        <h2>The Architecture</h2>
+        <div class="component-grid">
+            <div class="card"><h3>Kernel</h3><p>Zirvium Microkernel core.</p></div>
+            <div class="card"><h3>Init</h3><p>Zirvinit service management.</p></div>
+            <div class="card"><h3>Libc</h3><p>Native Zirvlibc primitives.</p></div>
+            <div class="card"><h3>Shell</h3><p>The Zirvshell interface.</p></div>
+        </div>
+    </div>
+</body>
+</html>
