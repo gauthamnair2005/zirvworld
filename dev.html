@@ -478,7 +478,8 @@ Return: RAX = result or negative errno</pre>
 <li><b>uptime</b>: Returns seconds since boot from <tt>time_uptime_seconds()</tt></li>
 <li><b>getdatetime/setdatetime</b>: Read/write the CMOS RTC via the time subsystem</li>
 <li><b>gettz/settz</b>: Query/set the system timezone offset in minutes</li>
-<li><b>reboot/shutdown</b>: Trigger system reset or ACPI power-off (platform-dependent)</li>
+<li><b>reboot</b>: Writes ACPI reset register (0xCF9: 0x0E then 0x06), falls back to keyboard controller (0x64: 0xFE)</li>
+<li><b>shutdown</b>: Writes QEMU exit port (0x604: 0x2000) and Bochs exit port (0xB004: 0x2000)</li>
 <li><b>getdents</b>: Read directory entries from a VFS directory node</li>
 </ul>
 
@@ -611,8 +612,23 @@ Return: RAX = result or negative errno</pre>
 </ul>
 
 <h3>Linux Driver Compatibility Layer</h3>
-<p><b>File:</b> <tt>drivers/compat/linux_compat.h</tt></p>
-<p>This layer ports existing Linux drivers to MOSIX/Zirvium, giving users access to a wide range of hardware without writing drivers from scratch. It maps Linux kernel types (<tt>u8/u16/u32/u64</tt>), READ/WRITE barriers, bit operations, spinlock/mutex/completion stubs, MMIO accessors, and <tt>pr_*</tt> logging macros to Zirvium equivalents. This dramatically reduces the fear of driver availability &mdash; if hardware has a Linux driver, it can be adapted for Zirvium.</p>
+<p><b>File:</b> <tt>drivers/compat/linux_compat.h</tt> (610 lines)</p>
+<p>This layer ports existing Linux drivers to MOSIX/Zirvium with a comprehensive API bridge. It provides:</p>
+<ul>
+<li><b>Type mappings:</b> <tt>u8/u16/u32/u64</tt>, <tt>__le16/32/64</tt>, <tt>phys_addr_t</tt>, <tt>dma_addr_t</tt></li>
+<li><b>Bit operations:</b> <tt>set_bit</tt>, <tt>clear_bit</tt>, <tt>test_bit</tt>, <tt>BIT()</tt>, <tt>GENMASK()</tt></li>
+<li><b>Memory/MMIO:</b> <tt>readb/w/l/q</tt>, <tt>writeb/w/l/q</tt>, <tt>ioremap</tt>, <tt>iounmap</tt>, <tt>memcpy_from/toio</tt>, <tt>memset_io</tt></li>
+<li><b>Barriers:</b> <tt>mb()</tt>, <tt>rmb()</tt>, <tt>wmb()</tt>, <tt>READ_ONCE/WRITE_ONCE</tt></li>
+<li><b>Synchronisation:</b> <tt>spinlock_t</tt>, <tt>mutex_t</tt>, <tt>atomic_t</tt>, <tt>atomic64_t</tt>, <tt>completion</tt>, <tt>wait_queue_head_t</tt></li>
+<li><b>Memory management:</b> <tt>kzalloc</tt>, <tt>kfree</tt>, <tt>kmalloc</tt>, <tt>kcalloc</tt>, <tt>krealloc</tt>, <tt>devm_*</tt> stubs</li>
+<li><b>Linked lists:</b> <tt>list_head</tt>, <tt>list_add/del/for_each</tt>, <tt>hlist</tt></li>
+<li><b>PCI helpers:</b> <tt>pci_read/write_config_*</tt>, <tt>pci_resource_start/len</tt>, <tt>pci_enable_device</tt></li>
+<li><b>DMA API:</b> <tt>dma_alloc_coherent</tt>, <tt>dma_free_coherent</tt>, <tt>dma_map_single</tt></li>
+<li><b>IRQ/timers:</b> <tt>request_irq/free_irq</tt>, <tt>timer_list</tt>, <tt>del_timer</tt>, <tt>jiffies</tt></li>
+<li><b>Logging:</b> <tt>pr_debug/info/warn/err</tt>, <tt>dev_dbg/info/warn/err</tt></li>
+<li><b>Utility:</b> <tt>min/max/clamp</tt>, <tt>ERR_PTR/PTR_ERR/IS_ERR</tt>, <tt>container_of</tt>, <tt>kref</tt></li>
+</ul>
+<p>An <b>NVIDIA GPU stub</b> (<tt>drivers/zirv/nvidia.c</tt>) demonstrates the bridge by probing via <tt>pci_compat</tt> and conditionally initialising the device. This dramatically reduces the fear of driver availability &mdash; if hardware has a Linux driver, it can be adapted for Zirvium.</p>
 
 <hr>
 
@@ -694,20 +710,23 @@ Return: RAX = result or negative errno</pre>
 <h4>Architecture</h4>
 <pre>include/
   ctype.h
+  datetime.h      datetime struct, getdatetime/setdatetime/gettz/settz
+  dirent.h        dirent struct, getdents
   stdio.h
   stdlib.h
   string.h
   unistd.h
   zirv/syscall.h
 src/
-  ctype.c        Character classification
-  stdio.c        printf/snprintf/vsnprintf formatter
-  stdlib.c       exit, abort, atoi, atol (malloc is stub)
-  string.c       memcpy, memset, strlen, strcmp, etc.
-  syscall.c      _syscall0 through _syscall6 inline asm trampolines
-  unistd.c       read, write, open, close, execve, mmap, etc.
+  ctype.c         Character classification
+  datetime.c      getdatetime, setdatetime, gettz, settz wrappers
+  stdio.c         printf/snprintf/vsnprintf formatter
+  stdlib.c        exit, abort, atoi, atol (malloc is stub)
+  string.c        memcpy, memset, strlen, strcmp, etc.
+  syscall.c       _syscall0 through _syscall6 inline asm trampolines
+  unistd.c        read, write, open, close, execve, mmap, etc.
 tests/
-  test_libc.c    Unit tests for string, ctype, stdio</pre>
+  test_libc.c     Unit tests for string, ctype, stdio</pre>
 
 <h4>Syscall wrappers (src/syscall.c)</h4>
 <p>Each wrapper uses inline assembly to invoke the <tt>syscall</tt> instruction:</p>
@@ -1031,6 +1050,18 @@ clean:
 <tr><th colspan="2">Directory operations</th></tr>
 <tr><td><tt>int getcwd(char *buf, size_t size)</tt></td><td>Get current working directory</td></tr>
 <tr><td><tt>int chdir(const char *path)</tt></td><td>Change current working directory</td></tr>
+<tr><td><tt>int getdents(int fd, struct dirent *ents, int count)</tt></td><td>Read directory entries (see <tt>&lt;dirent.h&gt;</tt>)</td></tr>
+
+<tr><th colspan="2">Time</th></tr>
+<tr><td><tt>uint64_t uptime(void)</tt></td><td>Seconds since boot</td></tr>
+<tr><td><tt>int getdatetime(struct datetime *dt)</tt></td><td>Read system datetime (see <tt>&lt;datetime.h&gt;</tt>)</td></tr>
+<tr><td><tt>int setdatetime(const struct datetime *dt)</tt></td><td>Set system datetime</td></tr>
+<tr><td><tt>int gettz(void)</tt></td><td>Get timezone offset in minutes east of UTC</td></tr>
+<tr><td><tt>int settz(int minutes)</tt></td><td>Set timezone offset</td></tr>
+
+<tr><th colspan="2">System</th></tr>
+<tr><td><tt>int reboot(void)</tt></td><td>Reboot the system (ACPI reset via 0xCF9)</td></tr>
+<tr><td><tt>int shutdown(void)</tt></td><td>Shut down the system (QEMU/Bochs exit port)</td></tr>
 </table>
 
 <h3>21.5 Available <tt>&lt;stdio.h&gt;</tt> API</h3>
@@ -1044,7 +1075,7 @@ clean:
 <tr><td><tt>int vprintf(const char *fmt, va_list ap)</tt></td><td>Formatted print to stdout with va_list</td></tr>
 </table>
 
-<p>Format specifiers: <tt>%s</tt>, <tt>%d</tt>, <tt>%u</tt>, <tt>%x</tt>, <tt>%p</tt>, <tt>%c</tt>, <tt>%%</tt>.</p>
+<p>Format specifiers: <tt>%s</tt>, <tt>%d</tt>, <tt>%u</tt>, <tt>%lu</tt>, <tt>%llu</tt>, <tt>%x</tt>, <tt>%p</tt>, <tt>%c</tt>, <tt>%%</tt>. Zero-padded width (e.g. <tt>%02d</tt>, <tt>%02lu</tt>) is supported.</p>
 
 <h3>21.6 Step-by-Step: Hello World</h3>
 
