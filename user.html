@@ -87,7 +87,7 @@ li { margin: 2px 0; }
 
 <h3>System requirements</h3>
 <ul>
-<li>Linux or WSL (for building)</li>
+<li>A Linux or BSD system with build tools (for building)</li>
 <li>x86-64-elf cross-compiler (or system gcc)</li>
 <li>NASM &gt;= 2.14</li>
 <li>GNU Make</li>
@@ -386,7 +386,7 @@ make test     # runs unit tests</pre>
 <p>MOSIX (Modern OSIX) is a rethinking of the POSIX standard designed for modern hardware. It replaces legacy paths (<tt>/dev</tt>, <tt>/sys</tt>, <tt>/proc</tt>) with a unified <tt>/zirv</tt> namespace, simplifies the FHS hierarchy, and drops obsolete interfaces.</p>
 
 <h3>Is Zirvium compatible with Linux binaries?</h3>
-<p>No. Zirvium uses the Linux x86-64 syscall ABI (same numbers and calling convention), but does not implement all Linux syscalls. Programs must be compiled specifically for Zirvium using the freestanding toolchain.</p>
+<p>No. Zirvium implements its own MOSIX syscall ABI (x86-64). While the syscall numbers happen to overlap with Linux in some cases, the semantics, behaviour, and available calls are entirely MOSIX-specific. Programs must be compiled specifically for Zirvium using the provided toolchain and zirvlibc.</p>
 
 <h3>What hardware does Zirvium support?</h3>
 <p>Currently: x86-64 CPUs with long mode, PCI bus, SATA (ATA PIO), NVMe, USB storage (stub), PS/2 keyboard, Synaptics touchpad, serial UART (16550), VGA text mode, pixel framebuffer, Bochs VGA, VMware SVGA, Intel i915 graphics, HDA audio, Intel e1000 NIC, VirtIO net/block, Realtek RTL8139 NIC, Realtek RTL8723DE WiFi, Realtek Bluetooth, and TPM 2.0.</p>
