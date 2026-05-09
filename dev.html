@@ -210,7 +210,7 @@ make</pre>
       wifi/rtl8723de/   Realtek RTL8723DE WiFi
       bluetooth/btrtl.c Realtek Bluetooth
     compat/
-      linux_compat.h    Cross-kernel driver compatibility layer
+      linux_compat.h    Ports Linux drivers to MOSIX/Zirvium
 
   libs/zirvlibc/        Freestanding C library (vendored copy)
 
@@ -574,9 +574,9 @@ Return: RAX = result or negative errno</pre>
 <li>Realtek RTL8139</li>
 </ul>
 
-<h3>Driver Compatibility Layer</h3>
+<h3>Linux Driver Compatibility Layer</h3>
 <p><b>File:</b> <tt>drivers/compat/linux_compat.h</tt></p>
-<p>Provides types and macros that aid in porting drivers from other kernels to Zirvium. Includes <tt>u8/u16/u32/u64</tt>, READ/WRITE barriers, bit operations, spinlock/mutex/completion stubs, MMIO accessors, and <tt>pr_*</tt> logging macros.</p>
+<p>This layer ports existing Linux drivers to MOSIX/Zirvium, giving users access to a wide range of hardware without writing drivers from scratch. It maps Linux kernel types (<tt>u8/u16/u32/u64</tt>), READ/WRITE barriers, bit operations, spinlock/mutex/completion stubs, MMIO accessors, and <tt>pr_*</tt> logging macros to Zirvium equivalents. This dramatically reduces the fear of driver availability &mdash; if hardware has a Linux driver, it can be adapted for Zirvium.</p>
 
 <hr>
 
@@ -950,7 +950,7 @@ clean:
 
 <h3>21.4 Available Syscall API</h3>
 
-<p>All syscalls are accessible via the <tt>&lt;unistd.h&gt;</tt> wrappers. The prototypes are MOSIX-specific (similar in spirit to POSIX, but not compatible):</p>
+<p>All syscalls are accessible via the <tt>&lt;unistd.h&gt;</tt> wrappers. The prototypes are MOSIX-specific:</p>
 
 <table>
 <tr><th colspan="2">Process control</th></tr>
