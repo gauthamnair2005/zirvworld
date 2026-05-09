@@ -82,6 +82,24 @@ li { margin: 1px 0; }
 
 <hr>
 
+<h2>GDT and Segment Layout</h2>
+
+<p><b>File:</b> <tt>arch/x64/gdt.c</tt>, <tt>arch/x64/gdt.h</tt></p>
+
+<p>The GDT defines 6 entries for x86-64 long mode (segmentation is largely disabled but required for privilege-level transitions):</p>
+
+<table>
+<tr><th>Index</th><th>Segment</th><th>DPL</th><th>Purpose</th></tr>
+<tr><td>0</td><td>Null</td><td>&mdash;</td><td>Required null descriptor</td></tr>
+<tr><td>1</td><td>Kernel code</td><td>0</td><td>CS for ring-0 execution (L-bit set, 64-bit)</td></tr>
+<tr><td>2</td><td>Kernel data</td><td>0</td><td>DS/SS for ring-0 (writable)</td></tr>
+<tr><td>3</td><td>User code</td><td>3</td><td>CS for ring-3 execution (64-bit)</td></tr>
+<tr><td>4</td><td>User data</td><td>3</td><td>DS/SS for ring-3 (writable)</td></tr>
+<tr><td>5</td><td>TSS</td><td>0</td><td>Task State Segment (RSP0 on interrupt)</td></tr>
+</table>
+
+<p>The TSS is set with a 16 KiB IST stack and is updated per-process: <tt>TSS.RSP0</tt> is set to the process's kernel stack top before entering user mode, so that interrupts from ring 3 switch to the correct kernel stack.</p>
+
 <h2>Memory Management</h2>
 
 <h3>Physical Memory Manager</h3>
@@ -143,13 +161,21 @@ li { margin: 1px 0; }
 <tr><td><tt>SYS_MMAP</tt></td><td>9</td><td>Memory map</td></tr>
 <tr><td><tt>SYS_MUNMAP</tt></td><td>11</td><td>Unmap memory</td></tr>
 <tr><td><tt>SYS_BRK</tt></td><td>12</td><td>Change data segment size</td></tr>
+<tr><td><tt>SYS_UPTIME</tt></td><td>13</td><td>Seconds since boot</td></tr>
 <tr><td><tt>SYS_PIPE</tt></td><td>22</td><td>Create pipe</td></tr>
 <tr><td><tt>SYS_GETPID</tt></td><td>39</td><td>Get process ID</td></tr>
 <tr><td><tt>SYS_EXECVE</tt></td><td>59</td><td>Execute program</td></tr>
 <tr><td><tt>SYS_EXIT</tt></td><td>60</td><td>Exit process</td></tr>
 <tr><td><tt>SYS_WAIT4</tt></td><td>61</td><td>Wait for child</td></tr>
+<tr><td><tt>SYS_GETDENTS</tt></td><td>78</td><td>Read directory entries</td></tr>
 <tr><td><tt>SYS_GETCWD</tt></td><td>79</td><td>Get current working directory</td></tr>
 <tr><td><tt>SYS_CHDIR</tt></td><td>80</td><td>Change directory</td></tr>
+<tr><td><tt>SYS_GETDATETIME</tt></td><td>96</td><td>Read system datetime</td></tr>
+<tr><td><tt>SYS_SETDATETIME</tt></td><td>97</td><td>Set system datetime</td></tr>
+<tr><td><tt>SYS_GETTZ</tt></td><td>98</td><td>Get timezone offset</td></tr>
+<tr><td><tt>SYS_SETTZ</tt></td><td>99</td><td>Set timezone offset</td></tr>
+<tr><td><tt>SYS_REBOOT</tt></td><td>100</td><td>Reboot system</td></tr>
+<tr><td><tt>SYS_SHUTDOWN</tt></td><td>101</td><td>Shut down system</td></tr>
 </table>
 
 <p>Entry via <tt>SYSCALL/SYSRETQ</tt> instruction (<tt>arch/x64/syscall_entry.asm</tt>). The handler switches to a per-CPU kernel stack, saves callee-saved registers, reshuffles arguments (R10 &rarr; RCX), and dispatches to <tt>syscall_dispatch</tt>.</p>

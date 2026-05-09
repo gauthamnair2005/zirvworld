@@ -78,6 +78,7 @@ code.block { display: block; white-space: pre; background: #f4f4f4; border: 1px 
 <li><a href="#porting">19. Porting Guide</a></li>
 <li><a href="#debugging">20. Debugging</a></li>
 <li><a href="#userspace">21. Writing MOSIX Userspace Programs</a></li>
+<li><a href="#time">22. Time Subsystem</a></li>
 </ul>
 </div>
 
@@ -346,12 +347,25 @@ static size_t search_start;              // next allocation hint</pre>
 
 <p><b>File:</b> <tt>kernel/mm/heap.c</tt></p>
 
-<p>A simple bump allocator with a 4 MiB static arena. Uses a free-list to reuse freed blocks.</p>
+<p>A bump allocator over a 4 MiB static arena. Each allocation has a header with a magic marker for integrity checking:</p>
+
+<pre>#define HEAP_SIZE        (4 * 1024 * 1024)
+#define HEAP_MAGIC_ALLOC  0xA110CA7E
+#define HEAP_MAGIC_FREE   0xFEEDF00D
+
+typedef struct {
+    uint32_t magic;          // HEAP_MAGIC_ALLOC when in use
+    size_t   size;           // aligned payload size
+} heap_hdr_t;</pre>
+
+<p><b>Known limitation:</b> <tt>kfree</tt> marks the header with <tt>HEAP_MAGIC_FREE</tt> but does <b>not</b> coalesce adjacent free blocks or return pages to the PMM. Freed memory is not reused. This is acceptable for early-stage kernel drivers but will be replaced with a slab/page allocator in a future phase.</p>
 
 <table>
-<tr><td><tt>kmalloc(size, flags)</tt></td><td>Allocate kernel memory</td></tr>
-<tr><td><tt>kfree(ptr)</tt></td><td>Free kernel memory</td></tr>
+<tr><td><tt>kmalloc(size, flags)</tt></td><td>Allocate from the bump arena (16-byte aligned)</td></tr>
 <tr><td><tt>kzalloc(size, flags)</tt></td><td>Allocate zeroed memory</td></tr>
+<tr><td><tt>kcalloc(n, size, flags)</tt></td><td>Allocate zeroed array</td></tr>
+<tr><td><tt>kfree(ptr)</tt></td><td>Mark as freed (no reuse, no coalescing)</td></tr>
+<tr><td><tt>krealloc(ptr, new_size, flags)</tt></td><td>Allocate new block, copy, free old</td></tr>
 </table>
 
 <hr>
@@ -426,8 +440,16 @@ PROC_MMAP_START    0x0000200000000000   First mmap VA</pre>
 <tr><td>59</td><td><tt>SYS_EXECVE</tt></td><td><tt>execve(path, argv, envp)</tt></td></tr>
 <tr><td>60</td><td><tt>SYS_EXIT</tt></td><td><tt>exit(status)</tt></td></tr>
 <tr><td>61</td><td><tt>SYS_WAIT4</tt></td><td><tt>wait4(pid, status, options, rusage)</tt></td></tr>
+<tr><td>13</td><td><tt>SYS_UPTIME</tt></td><td><tt>uptime()</tt></td></tr>
+<tr><td>78</td><td><tt>SYS_GETDENTS</tt></td><td><tt>getdents(fd, ents, count)</tt></td></tr>
 <tr><td>79</td><td><tt>SYS_GETCWD</tt></td><td><tt>getcwd(buf, size)</tt></td></tr>
 <tr><td>80</td><td><tt>SYS_CHDIR</tt></td><td><tt>chdir(path)</tt></td></tr>
+<tr><td>96</td><td><tt>SYS_GETDATETIME</tt></td><td><tt>getdatetime(dt)</tt></td></tr>
+<tr><td>97</td><td><tt>SYS_SETDATETIME</tt></td><td><tt>setdatetime(dt)</tt></td></tr>
+<tr><td>98</td><td><tt>SYS_GETTZ</tt></td><td><tt>gettz()</tt></td></tr>
+<tr><td>99</td><td><tt>SYS_SETTZ</tt></td><td><tt>settz(minutes)</tt></td></tr>
+<tr><td>100</td><td><tt>SYS_REBOOT</tt></td><td><tt>reboot()</tt></td></tr>
+<tr><td>101</td><td><tt>SYS_SHUTDOWN</tt></td><td><tt>shutdown()</tt></td></tr>
 </table>
 
 <h4>Calling convention</h4>
@@ -451,9 +473,17 @@ Return: RAX = result or negative errno</pre>
 <li><b>open</b>: Looks up the path in VFS, allocates an open file descriptor</li>
 <li><b>mmap</b>: Supports anonymous mappings only (PROT_READ|WRITE, MAP_PRIVATE|ANONYMOUS)</li>
 <li><b>brk</b>: Grows or shrinks the program break, mapping/unmapping pages as needed</li>
-<li><b>execve</b>: Finds the binary via <tt>embedded_find</tt>, loads it into the current process, replaces address space</li>
+<li><b>execve</b>: Finds the binary via <tt>embedded_find</tt>, loads it into the current process, replaces address space (old pages are freed)</li>
 <li><b>exit</b>: Calls <tt>proc_exit</tt>, then halts</li>
+<li><b>uptime</b>: Returns seconds since boot from <tt>time_uptime_seconds()</tt></li>
+<li><b>getdatetime/setdatetime</b>: Read/write the CMOS RTC via the time subsystem</li>
+<li><b>gettz/settz</b>: Query/set the system timezone offset in minutes</li>
+<li><b>reboot/shutdown</b>: Trigger system reset or ACPI power-off (platform-dependent)</li>
+<li><b>getdents</b>: Read directory entries from a VFS directory node</li>
 </ul>
+
+<h4>Error convention</h4>
+<p>All syscalls return a negative errno value in RAX on failure (e.g. <tt>-ENOMEM</tt> = -12, <tt>-EBADF</tt> = -9, <tt>-EINVAL</tt> = -22). The libc wrappers negate the value for <tt>errno</tt>-style reporting.</p>
 
 <hr>
 
@@ -513,10 +543,15 @@ Return: RAX = result or negative errno</pre>
 
 <h4>Data structure</h4>
 <pre>typedef struct pipe {
-    uint8_t buffer[4096];
-    size_t head, tail;
-    bool   read_closed, write_closed;
+    uint8_t  buf[4096];       // ring buffer
+    uint32_t read_pos;        // consumer index
+    uint32_t write_pos;       // producer index
+    uint32_t count;           // bytes in buffer
+    bool     read_closed;
+    bool     write_closed;
 } pipe_t;</pre>
+
+<p><b>EOF semantics:</b> <tt>pipe_read</tt> returns 0 (EOF) when <tt>write_closed</tt> is <tt>true</tt> AND the buffer is empty. If data is still buffered, it returns remaining bytes first.</p>
 
 <h4>API</h4>
 <table>
@@ -605,13 +640,34 @@ Return: RAX = result or negative errno</pre>
 
 <h4>Embedded binaries</h4>
 <p><b>File:</b> <tt>kernel/loader/embedded.c</tt>, <tt>kernel/loader/init_bin.asm</tt></p>
-<p>Init (<tt>zirvinit.elf</tt>) and shell (<tt>zirvshell.elf</tt>) are embedded into the kernel using NASM <tt>incbin</tt>. The <tt>embedded_init</tt> function records their addresses and sizes; <tt>embedded_find(path)</tt> returns the binary data for <tt>/bin/init</tt> and <tt>/bin/shell</tt>.</p>
+<p>Multiple userspace ELF binaries are embedded into the kernel via NASM <tt>incbin</tt>. The <tt>embedded_init</tt> function records their addresses and sizes; <tt>embedded_find(path)</tt> returns the binary data by path.</p>
 
-<pre>init_bin.asm:
+<p>Currently embedded binaries (11 total):</p>
+<table>
+<tr><td><tt>/bin/init</tt></td><td><tt>zirvinit.elf</tt></td><td>PID 1 init system</td></tr>
+<tr><td><tt>/bin/shell</tt></td><td><tt>zirvshell.elf</tt></td><td>MOSIX English-language shell</td></tr>
+<tr><td><tt>/bin/hello</tt></td><td><tt>hello.elf</tt></td><td>Hello-world test program</td></tr>
+<tr><td><tt>/bin/cat</tt></td><td><tt>cat.elf</tt></td><td>File/device reader</td></tr>
+<tr><td><tt>/bin/sysinfo</tt></td><td><tt>sysinfo.elf</tt></td><td>System information display</td></tr>
+<tr><td><tt>/bin/clear</tt></td><td><tt>clear.elf</tt></td><td>Terminal clear utility</td></tr>
+<tr><td><tt>/bin/echo</tt></td><td><tt>echo.elf</tt></td><td>Echo arguments to stdout</td></tr>
+<tr><td><tt>/bin/reboot</tt></td><td><tt>reboot.elf</tt></td><td>System reboot</td></tr>
+<tr><td><tt>/bin/shutdown</tt></td><td><tt>shutdown.elf</tt></td><td>System shutdown</td></tr>
+<tr><td><tt>/bin/suspend</tt></td><td><tt>suspend.elf</tt></td><td>System suspend</td></tr>
+<tr><td><tt>/bin/poweroff</tt></td><td><tt>poweroff.elf</tt></td><td>System power-off</td></tr>
+</table>
+
+<pre>init_bin.asm excerpt:
   section .rodata
   global zirvinit_bin_start, zirvinit_bin_end
   zirvinit_bin_start: incbin "zirvinit/zirvinit.elf"
-  zirvinit_bin_end:</pre>
+  align 4096
+  zirvinit_bin_end:
+
+  global zirvutil_hello_bin_start, zirvutil_hello_bin_end
+  zirvutil_hello_bin_start: incbin "zirvutils/hello.elf"
+  align 4096
+  zirvutil_hello_bin_end:</pre>
 
 <hr>
 
@@ -1268,25 +1324,73 @@ int main(void)
 // R10 = arg4, R8 = arg5, R9 = arg6
 // Return: RAX = result (negative = error)
 //
-//  #   Name         C prototype
-// --   ----         -----------
-//  0   SYS_READ     int read(fd, buf, count)
-//  1   SYS_WRITE    int write(fd, buf, count)
-//  2   SYS_OPEN     int open(path, flags)
-//  3   SYS_CLOSE    int close(fd)
-//  9   SYS_MMAP     long mmap(addr, len, prot, flags, fd, off)
-// 11   SYS_MUNMAP   int munmap(addr, len)
-// 12   SYS_BRK      int brk(addr)
-// 22   SYS_PIPE     int pipe(fds[2])
-// 39   SYS_GETPID   int getpid()
-// 59   SYS_EXECVE   int execve(path, argv, envp)
-// 60   SYS_EXIT     void exit(status)
-// 61   SYS_WAIT4    int wait4(pid, status, opts, rusage)
-// 79   SYS_GETCWD   int getcwd(buf, size)
-// 80   SYS_CHDIR    int chdir(path)
+//  #   Name           C prototype
+// --   ----           -----------
+//  0   SYS_READ       int read(fd, buf, count)
+//  1   SYS_WRITE      int write(fd, buf, count)
+//  2   SYS_OPEN       int open(path, flags)
+//  3   SYS_CLOSE      int close(fd)
+//  9   SYS_MMAP       long mmap(addr, len, prot, flags, fd, off)
+// 11   SYS_MUNMAP     int munmap(addr, len)
+// 12   SYS_BRK        int brk(addr)
+// 13   SYS_UPTIME     uint64_t uptime()
+// 22   SYS_PIPE       int pipe(fds[2])
+// 39   SYS_GETPID     int getpid()
+// 59   SYS_EXECVE     int execve(path, argv, envp)
+// 60   SYS_EXIT       void exit(status)
+// 61   SYS_WAIT4      int wait4(pid, status, opts, rusage)
+// 78   SYS_GETDENTS   int getdents(fd, ents, count)
+// 79   SYS_GETCWD     int getcwd(buf, size)
+// 80   SYS_CHDIR      int chdir(path)
+// 96   SYS_GETDATETIME int getdatetime(struct datetime *dt)
+// 97   SYS_SETDATETIME int setdatetime(const struct datetime *dt)
+// 98   SYS_GETTZ      int gettz()
+// 99   SYS_SETTZ      int settz(int offset_minutes)
+//100   SYS_REBOOT     int reboot()
+//101   SYS_SHUTDOWN   int shutdown()
 //
 // Standard FDs: STDIN_FILENO=0, STDOUT_FILENO=1, STDERR_FILENO=2
 // ============================================================</pre>
+
+<hr>
+
+<h2 id="time">22. Time Subsystem</h2>
+
+<p><b>File:</b> <tt>kernel/time/time.h</tt></p>
+
+<p>The kernel provides a platform-independent time API backed by the CMOS RTC (on x86-64) with a software timezone offset.</p>
+
+<h4>Data structure</h4>
+<pre>struct datetime {
+    int year;
+    int month;
+    int day;
+    int hour;
+    int minute;
+    int second;
+};</pre>
+
+<h4>API reference</h4>
+<table>
+<tr><td><tt>time_init()</tt></td><td>Read initial datetime from CMOS RTC, start uptime counter</td></tr>
+<tr><td><tt>time_get(struct datetime *dt)</tt></td><td>Read current datetime (RTC + elapsed uptime)</td></tr>
+<tr><td><tt>time_set(const struct datetime *dt)</tt></td><td>Write datetime back to CMOS RTC</td></tr>
+<tr><td><tt>time_uptime_seconds()</tt></td><td>Return seconds since boot as <tt>uint64_t</tt></td></tr>
+<tr><td><tt>time_get_tz()</tt></td><td>Return current timezone offset in minutes east of UTC</td></tr>
+<tr><td><tt>time_set_tz(int offset_minutes)</tt></td><td>Set timezone offset (persisted in kernel state)</td></tr>
+</table>
+
+<h4>Userspace access</h4>
+<p>These functions are exposed to userspace via the corresponding syscalls:</p>
+<table>
+<tr><td><tt>SYS_UPTIME</tt> (13)</td><td><tt>uptime()</tt></td><td>Returns <tt>time_uptime_seconds()</tt></td></tr>
+<tr><td><tt>SYS_GETDATETIME</tt> (96)</td><td><tt>getdatetime(dt)</tt></td><td>Calls <tt>time_get()</tt></td></tr>
+<tr><td><tt>SYS_SETDATETIME</tt> (97)</td><td><tt>setdatetime(dt)</tt></td><td>Calls <tt>time_set()</tt></td></tr>
+<tr><td><tt>SYS_GETTZ</tt> (98)</td><td><tt>gettz()</tt></td><td>Returns <tt>time_get_tz()</tt></td></tr>
+<tr><td><tt>SYS_SETTZ</tt> (99)</td><td><tt>settz(minutes)</tt></td><td>Calls <tt>time_set_tz()</tt></td></tr>
+</table>
+
+<p>The zirvlibc wrappers for these syscalls are declared in <tt>&lt;unistd.h&gt;</tt> and <tt>&lt;time.h&gt;</tt>.</p>
 
 <hr>
 

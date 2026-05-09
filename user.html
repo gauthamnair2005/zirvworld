@@ -261,12 +261,30 @@ Type 'help' for MOSIX English syntax commands.
 <tr><td><tt>exec &lt;binary&gt;</tt></td><td>Execute a binary (replaces the shell process)</td></tr>
 </table>
 
-<h3>Stubs (not yet implemented)</h3>
+<h3>Stubs (shell built-in not yet implemented)</h3>
+
+<p>The shell's built-in <tt>date</tt>, <tt>uptime</tt>, and <tt>reboot</tt> commands are stub implementations. However, the kernel exposes the corresponding syscalls, and separate <b>embedded utilities</b> are available via the <tt>run</tt> command:</p>
 
 <table>
-<tr><td><tt>date</tt></td><td>Prints "date: not available"</td></tr>
-<tr><td><tt>uptime</tt></td><td>Prints "uptime: not available"</td></tr>
-<tr><td><tt>reboot</tt></td><td>Prints "reboot: not available"</td></tr>
+<tr><td><tt>date</tt></td><td>Shell stub — prints "date: not available"</td></tr>
+<tr><td><tt>uptime</tt></td><td>Shell stub — prints "uptime: not available"</td></tr>
+<tr><td><tt>reboot</tt></td><td>Shell stub — prints "reboot: not available"</td></tr>
+</table>
+
+<h3>Embedded Utilities</h3>
+
+<p>The kernel embeds several standalone utilities accessible via <tt>run /bin/&lt;name&gt;</tt>:</p>
+
+<table>
+<tr><td><tt>run /bin/hello</tt></td><td>Print a hello-world test message and PID</td></tr>
+<tr><td><tt>run /bin/cat</tt></td><td>Read and display file/device contents</td></tr>
+<tr><td><tt>run /bin/sysinfo</tt></td><td>Display system information (PID, CWD, kernel name)</td></tr>
+<tr><td><tt>run /bin/clear</tt></td><td>Clear the terminal screen (ANSI escape sequence)</td></tr>
+<tr><td><tt>run /bin/echo</tt></td><td>Echo arguments to stdout</td></tr>
+<tr><td><tt>run /bin/reboot</tt></td><td>Reboot the system via <tt>SYS_REBOOT</tt></td></tr>
+<tr><td><tt>run /bin/shutdown</tt></td><td>Shut down the system via <tt>SYS_SHUTDOWN</tt></td></tr>
+<tr><td><tt>run /bin/poweroff</tt></td><td>Power off the system</td></tr>
+<tr><td><tt>run /bin/suspend</tt></td><td>Suspend the system</td></tr>
 </table>
 
 <h3>Shell features</h3>

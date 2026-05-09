@@ -170,9 +170,24 @@ li { margin: 1px 0; }
 <hr>
 
 <h2>zirvutils</h2>
-<p><tt>placeholder</tt></p>
+<p><tt>C11 / ASM &mdash; MOSIX embedded utilities</tt></p>
 
-<p>The intended home for MOSIX-standard command-line utilities (<tt>ls</tt>, <tt>cat</tt>, <tt>cp</tt>, <tt>mv</tt>, etc.). The project skeleton is in place and awaiting implementation.</p>
+<p>A suite of standard command-line utilities for the MOSIX environment. Each utility is compiled as a standalone static ELF64 binary, embedded into the kernel via <tt>init_bin.asm</tt>, and accessible from ZirvShell via <tt>run /bin/&lt;name&gt;</tt>.</p>
+
+<h4>Implemented utilities</h4>
+<table>
+<tr><td><tt>hello.elf</tt></td><td><tt>/bin/hello</tt></td><td>Test program that prints a greeting and the current PID</td></tr>
+<tr><td><tt>cat.elf</tt></td><td><tt>/bin/cat</tt></td><td>Read and display file or device contents</td></tr>
+<tr><td><tt>sysinfo.elf</tt></td><td><tt>/bin/sysinfo</tt></td><td>Display system information (PID, CWD, kernel name)</td></tr>
+<tr><td><tt>clear.elf</tt></td><td><tt>/bin/clear</tt></td><td>Clear the terminal using ANSI escape sequences</td></tr>
+<tr><td><tt>echo.elf</tt></td><td><tt>/bin/echo</tt></td><td>Echo command-line arguments to stdout</td></tr>
+<tr><td><tt>reboot.elf</tt></td><td><tt>/bin/reboot</tt></td><td>System reboot via <tt>SYS_REBOOT</tt></td></tr>
+<tr><td><tt>shutdown.elf</tt></td><td><tt>/bin/shutdown</tt></td><td>System shutdown via <tt>SYS_SHUTDOWN</tt></td></tr>
+<tr><td><tt>suspend.elf</tt></td><td><tt>/bin/suspend</tt></td><td>System suspend</td></tr>
+<tr><td><tt>poweroff.elf</tt></td><td><tt>/bin/poweroff</tt></td><td>System power-off</td></tr>
+</table>
+
+<p>All utilities are statically linked against <tt>zirvlibc</tt> and compiled with the same freestanding flags as the kernel. Binaries are embedded at build time via NASM <tt>incbin</tt> directives in <tt>kernel/loader/init_bin.asm</tt>.</p>
 
 <p><a href="https://github.com/gauthamnair2005/zirvutils">source on github &raquo;</a></p>
 
