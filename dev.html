@@ -76,6 +76,7 @@ code.block { display: block; white-space: pre; background: #f4f4f4; border: 1px 
 <li><a href="#shell">18. zirvshell</a></li>
 <li><a href="#porting">19. Porting Guide</a></li>
 <li><a href="#debugging">20. Debugging</a></li>
+<li><a href="#userspace">21. Writing MOSIX Userspace Programs</a></li>
 </ul>
 </div>
 
@@ -809,6 +810,482 @@ make test     # builds and runs unit tests</pre>
 <tr><td><tt>-s -S</tt></td><td>Wait for GDB on port 1234</td></tr>
 <tr><td><tt>-m 512M</tt></td><td>Set RAM size</td></tr>
 </table>
+
+<hr>
+
+<h2 id="userspace">21. Writing MOSIX Userspace Programs</h2>
+
+<p>This section is a complete guide to creating your own programs that run on Zirvium. MOSIX userspace programs are static ELF64 binaries that use the Linux x86-64 syscall ABI and link against <tt>zirvlibc</tt>.</p>
+
+<h3>21.1 Program Lifecycle</h3>
+<ol>
+<li>The kernel ELF loader maps your binary into a process address space</li>
+<li>The kernel sets up a stack and jumps to <tt>_start</tt> (the ELF entry point)</li>
+<li>Your <tt>crt0.asm</tt> calls <tt>main()</tt></li>
+<li>Your program runs, makes syscalls via zirvlibc wrappers</li>
+<li>Your program calls <tt>exit()</tt> or <tt>_exit()</tt>, which invokes <tt>SYS_EXIT</tt></li>
+<li>The kernel reclaims all memory and marks the process as a zombie</li>
+</ol>
+
+<h3>21.2 Required Files</h3>
+
+<p>Every MOSIX userspace program needs three files:</p>
+
+<h4>1. crt0.asm — C runtime entry point</h4>
+<pre>; crt0.asm — MOSIX userspace entry point
+; Assembles with: nasm -f elf64 crt0.asm -o crt0.o
+[bits 64]
+section .text
+global _start
+extern main
+
+_start:
+    ; The kernel passes:
+    ;   RDI = argc
+    ;   RSI = argv (pointer to array on stack, if any)
+    ; For now we call main with no arguments.
+    xor rbp, rbp        ; mark stack frame boundary
+    mov rdi, 0          ; argc = 0
+    mov rsi, 0          ; argv = NULL
+    call main
+
+    ; If main returns, exit with its return value
+    mov rdi, rax        ; status = main return value
+    mov rax, 60         ; SYS_EXIT
+    syscall
+
+.halt:
+    hlt
+    jmp .halt</pre>
+
+<h4>2. main.c — Your program</h4>
+<pre>#include &lt;stdio.h&gt;      // printf, puts, putchar
+#include &lt;string.h&gt;     // strlen, strcmp, memset, memcpy
+#include &lt;unistd.h&gt;     // read, write, open, close, getpid, brk, execve
+#include &lt;stdlib.h&gt;     // exit, atoi
+
+int main(void)
+{
+    printf("Hello from MOSIX!\n");
+    printf("My PID is %d\n", getpid());
+    return 0;
+}</pre>
+
+<h4>3. Makefile — Build system</h4>
+<pre># Makefile — MOSIX userspace program
+CC      := x86_64-elf-gcc
+LD      := x86_64-elf-ld
+AS      := nasm
+
+# Path to zirvlibc (adjust to your setup)
+LIBC_DIR := ../zirvlibc
+
+CFLAGS := \
+    -std=c11 \
+    -ffreestanding \
+    -fno-stack-protector \
+    -fno-pic \
+    -mno-red-zone \
+    -mno-mmx -mno-sse -mno-sse2 \
+    -Wall -Wextra -O2 \
+    -I$(LIBC_DIR)/include
+
+LDFLAGS := \
+    -nostdlib \
+    -static \
+    -no-pie \
+    -z max-page-size=0x1000
+
+# zirvlibc source files to compile and link
+LIBC_SRCS := \
+    $(LIBC_DIR)/src/string.c \
+    $(LIBC_DIR)/src/ctype.c \
+    $(LIBC_DIR)/src/stdio.c \
+    $(LIBC_DIR)/src/unistd.c \
+    $(LIBC_DIR)/src/syscall.c \
+    $(LIBC_DIR)/src/stdlib.c
+
+LIBC_BUILD := build/libc
+LIBC_OBJS := $(patsubst $(LIBC_DIR)/src/%.c,$(LIBC_BUILD)/%.o,$(LIBC_SRCS))
+
+SRCS := main.c crt0.asm
+OBJS := main.o crt0.o
+
+TARGET := myprogram.elf
+
+.PHONY: all clean
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS) $(LIBC_OBJS)
+	$(LD) $(LDFLAGS) -o $@ $^
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $&lt;
+
+%.o: %.asm
+	$(AS) -f elf64 -o $@ $&lt;
+
+$(LIBC_BUILD)/%.o: $(LIBC_DIR)/src/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $&lt;
+
+clean:
+	rm -f $(TARGET) $(OBJS)
+	rm -rf $(LIBC_BUILD)</pre>
+
+<h3>21.3 Compiler and Linker Flags Explained</h3>
+
+<table>
+<tr><td><tt>-ffreestanding</tt></td><td>No standard library startup; the compiler does not assume a hosted environment</td></tr>
+<tr><td><tt>-fno-stack-protector</tt></td><td>No canary code (there is no thread-local storage for the canary)</td></tr>
+<tr><td><tt>-fno-pic</tt></td><td>Position-dependent code (no GOT/PLT needed)</td></tr>
+<tr><td><tt>-mno-red-zone</tt></td><td>No 128-byte red zone below RSP (important because kernel/IRQ stacks may clobber it)</td></tr>
+<tr><td><tt>-mno-mmx -mno-sse -mno-sse2</tt></td><td>No SIMD instructions (the kernel does not save/restore FPU state on context switch)</td></tr>
+<tr><td><tt>-nostdlib</tt></td><td>Do not link against the host's standard library</td></tr>
+<tr><td><tt>-static</tt></td><td>Produce a fully static binary (no dynamic linking support)</td></tr>
+<tr><td><tt>-no-pie</tt></td><td>No position-independent executable (the loader expects fixed load addresses)</td></tr>
+<tr><td><tt>-z max-page-size=0x1000</tt></td><td>Use 4 KiB page alignment for segments</td></tr>
+</table>
+
+<h3>21.4 Available Syscall API</h3>
+
+<p>All syscalls are accessible via the <tt>&lt;unistd.h&gt;</tt> wrappers. The prototypes match the POSIX/Linux equivalents:</p>
+
+<table>
+<tr><th colspan="2">Process control</th></tr>
+<tr><td><tt>int getpid(void)</tt></td><td>Return the process ID</td></tr>
+<tr><td><tt>void exit(int status)</tt></td><td>Terminate the process with exit status</td></tr>
+<tr><td><tt>void _exit(int status)</tt></td><td>Same as exit (immediate, no cleanup)</td></tr>
+<tr><td><tt>int execve(const char *path, char *const argv[], char *const envp[])</tt></td><td>Replace process with a new program</td></tr>
+
+<tr><th colspan="2">File I/O</th></tr>
+<tr><td><tt>int read(int fd, void *buf, size_t count)</tt></td><td>Read from file descriptor</td></tr>
+<tr><td><tt>int write(int fd, const void *buf, size_t count)</tt></td><td>Write to file descriptor</td></tr>
+<tr><td><tt>int open(const char *path, int flags)</tt></td><td>Open a file or device</td></tr>
+<tr><td><tt>int close(int fd)</tt></td><td>Close a file descriptor</td></tr>
+
+<tr><th colspan="2">Memory management</th></tr>
+<tr><td><tt>void *sbrk(intptr_t increment)</tt></td><td>Increment the program break (heap); pass 0 to query current break</td></tr>
+<tr><td><tt>int brk(void *addr)</tt></td><td>Set the program break to an absolute address</td></tr>
+<tr><td><tt>long mmap(void *addr, size_t length, int prot, int flags, int fd, long offset)</tt></td><td>Map anonymous memory; <tt>prot</tt> = PROT_READ|PROT_WRITE, <tt>flags</tt> = MAP_PRIVATE|MAP_ANONYMOUS</td></tr>
+<tr><td><tt>int munmap(void *addr, size_t length)</tt></td><td>Unmap previously mapped memory</td></tr>
+
+<tr><th colspan="2">Directory operations</th></tr>
+<tr><td><tt>int getcwd(char *buf, size_t size)</tt></td><td>Get current working directory</td></tr>
+<tr><td><tt>int chdir(const char *path)</tt></td><td>Change current working directory</td></tr>
+</table>
+
+<h3>21.5 Available <tt>&lt;stdio.h&gt;</tt> API</h3>
+
+<table>
+<tr><td><tt>int printf(const char *fmt, ...)</tt></td><td>Formatted print to stdout</td></tr>
+<tr><td><tt>int puts(const char *s)</tt></td><td>Print string with newline</td></tr>
+<tr><td><tt>int putchar(int c)</tt></td><td>Print single character</td></tr>
+<tr><td><tt>int snprintf(char *str, size_t size, const char *fmt, ...)</tt></td><td>Formatted print to buffer</td></tr>
+<tr><td><tt>int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)</tt></td><td>Formatted print with va_list</td></tr>
+<tr><td><tt>int vprintf(const char *fmt, va_list ap)</tt></td><td>Formatted print to stdout with va_list</td></tr>
+</table>
+
+<p>Format specifiers: <tt>%s</tt>, <tt>%d</tt>, <tt>%u</tt>, <tt>%x</tt>, <tt>%p</tt>, <tt>%c</tt>, <tt>%%</tt>.</p>
+
+<h3>21.6 Step-by-Step: Hello World</h3>
+
+<h4>Step 1: Create your project directory</h4>
+<pre>mkdir myprogram
+cd myprogram</pre>
+
+<h4>Step 2: Write crt0.asm</h4>
+<p>Copy the crt0.asm shown above into <tt>crt0.asm</tt>.</p>
+
+<h4>Step 3: Write main.c</h4>
+<pre>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void)
+{
+    printf("Hello from MOSIX!\n");
+    printf("My process ID is %d.\n", getpid());
+    printf("My current directory is: ");
+
+    char cwd[256];
+    if (getcwd(cwd, sizeof(cwd)) &gt; 0) {
+        printf("%s", cwd);
+    } else {
+        printf("(unknown)");
+    }
+    printf("\n");
+
+    return 42;  // exit with status 42
+}</pre>
+
+<h4>Step 4: Write the Makefile</h4>
+<p>Copy the Makefile shown above. Adjust <tt>LIBC_DIR</tt> to point to your local <tt>zirvlibc</tt> checkout.</p>
+
+<h4>Step 5: Build</h4>
+<pre>make</pre>
+<p>This produces <tt>myprogram.elf</tt>, a static ELF64 binary ready to run on Zirvium.</p>
+
+<h4>Step 6: Verify the binary</h4>
+<pre>file myprogram.elf
+# Expected output:
+# myprogram.elf: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, not stripped
+
+readelf -l myprogram.elf
+# Expected: one or more LOAD segments loading at a user-space virtual address</pre>
+
+<h3>21.7 Step-by-Step: Using mmap for Memory</h3>
+
+<pre>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;string.h&gt;
+
+int main(void)
+{
+    // Allocate 64 KiB of anonymous memory
+    long addr = mmap(NULL, 65536,
+                     PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS,
+                     0, 0);
+    if (addr == (long)MAP_FAILED) {
+        printf("mmap failed!\n");
+        return 1;
+    }
+
+    printf("Allocated 64 KiB at 0x%x\n", (unsigned int)addr);
+
+    // Use the memory
+    char *buf = (char *)addr;
+    memcpy(buf, "MOSIX mmap works!", 18);
+    printf("%s\n", buf);
+
+    // Free it
+    munmap((void *)addr, 65536);
+    printf("Memory freed.\n");
+
+    return 0;
+}</pre>
+
+<h3>21.8 Step-by-Step: Reading from the Console Device</h3>
+
+<pre>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void)
+{
+    printf("Type something and press Enter:\n");
+
+    char buf[128];
+    int n = read(STDIN_FILENO, buf, sizeof(buf) - 1);
+    if (n &gt; 0) {
+        buf[n] = '\0';
+        printf("You typed: %s", buf);
+    }
+
+    printf("Goodbye!\n");
+    return 0;
+}</pre>
+
+<h3>21.9 Using the Program Break (brk/sbrk)</h3>
+
+<pre>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;string.h&gt;
+
+int main(void)
+{
+    // Query current break
+    void *cur = sbrk(0);
+    printf("Current program break: 0x%x\n", (unsigned int)(unsigned long)cur);
+
+    // Allocate 4096 bytes by moving the break forward
+    void *new_break = sbrk(4096);
+    printf("Old break: 0x%x\n", (unsigned int)(unsigned long)new_break);
+
+    // Use the memory
+    char *data = (char *)new_break;
+    memcpy(data, "Heap data!", 11);
+    printf("%s\n", data);
+
+    // Check new break
+    void *after = sbrk(0);
+    printf("New program break: 0x%x\n", (unsigned int)(unsigned long)after);
+
+    return 0;
+}</pre>
+
+<h3>21.10 Using Pipes for IPC</h3>
+
+<pre>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;string.h&gt;
+
+int main(void)
+{
+    int fds[2];
+
+    // SYS_PIPE is syscall 22; the C library wrapper is pipe().
+    // For now, use the raw syscall since the pipe wrapper
+    // may not be exposed in unistd.h.
+    long result;
+    __asm__ volatile("syscall"
+        : "=a"(result)
+        : "a"(22), "D"(fds)
+        : "rcx", "r11", "memory");
+
+    if (result &lt; 0) {
+        printf("pipe() failed\n");
+        return 1;
+    }
+
+    printf("Pipe created: read_fd=%d write_fd=%d\n", fds[0], fds[1]);
+
+    // Write to the write end
+    char *msg = "Hello through pipe!";
+    write(fds[1], msg, strlen(msg));
+
+    // Read from the read end
+    char buf[64];
+    int n = read(fds[0], buf, sizeof(buf) - 1);
+    buf[n] = '\0';
+    printf("Read from pipe: %s\n", buf);
+
+    // Close both ends
+    close(fds[0]);
+    close(fds[1]);
+
+    return 0;
+}</pre>
+
+<h3>21.11 Embedding Your Program into the Kernel</h3>
+
+<p>To make your program available at boot time (accessible via <tt>execve("/bin/myprogram", ...)</tt>), you embed it into the kernel binary. This is how <tt>zirvinit</tt> and <tt>zirvshell</tt> are included.</p>
+
+<h4>Step 1: Add an incbin section</h4>
+<p>Edit <tt>kernel/loader/init_bin.asm</tt>:</p>
+<pre>section .rodata
+
+global zirvinit_bin_start, zirvinit_bin_end
+zirvinit_bin_start: incbin "zirvinit/zirvinit.elf"
+zirvinit_bin_end:
+
+global zirvshell_bin_start, zirvshell_bin_end
+zirvshell_bin_start: incbin "zirvshell/zirvshell.elf"
+zirvshell_bin_end:
+
+; Add your program here:
+global myprogram_bin_start, myprogram_bin_end
+myprogram_bin_start: incbin "myprogram/myprogram.elf"
+myprogram_bin_end:</pre>
+
+<h4>Step 2: Register the binary</h4>
+<p>Edit <tt>kernel/loader/embedded.c</tt>. Add the extern declarations and register in <tt>embedded_init()</tt>:</p>
+<pre>extern char myprogram_bin_start[];
+extern char myprogram_bin_end[];
+
+// In embedded_init():
+embedded_add("/bin/myprogram",
+             (uintptr_t)myprogram_bin_start,
+             (uintptr_t)myprogram_bin_end - (uintptr_t)myprogram_bin_start);</pre>
+
+<h4>Step 3: Add your program to the Makefile</h4>
+<p>In the top-level <tt>Makefile</tt>, add your program's ELF as a dependency of <tt>init_bin.asm.o</tt>:</p>
+<pre>MYPROGRAM_ELF := myprogram/myprogram.elf
+
+# Add to the dependency line:
+$(BUILD_DIR)/kernel/loader/init_bin.asm.o: \
+    kernel/loader/init_bin.asm \
+    $(ZIRVINIT_ELF) $(ZIRVSHELL_ELF) $(ZIRVUTILS_ELFS) \
+    $(MYPROGRAM_ELF)
+
+# Add a build rule:
+$(MYPROGRAM_ELF):
+	$(MAKE) -C myprogram</pre>
+
+<h4>Step 4: Rebuild</h4>
+<pre>make clean &amp;&amp; make iso</pre>
+
+<p>Your program is now embedded in the kernel and can be executed from ZirvShell with <tt>run /bin/myprogram</tt> or <tt>exec /bin/myprogram</tt>.</p>
+
+<h3>21.12 Complete Working Example: sysinfo</h3>
+
+<p>Here's a complete program that displays system information, similar to what the shell's <tt>show system status</tt> command outputs:</p>
+
+<pre>/* sysinfo.c — MOSIX system information utility */
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(void)
+{
+    char cwd[256];
+
+    printf("=== MOSIX System Information ===\n");
+    printf("PID:      %d\n", getpid());
+    printf("Uname:    Zirvium\n");
+    printf("User:     root\n");
+
+    if (getcwd(cwd, sizeof(cwd)) &gt; 0)
+        printf("CWD:      %s\n", cwd);
+
+    // Try to read the console device to show it works
+    printf("Console:  /zirv/tty/virtual0\n");
+    printf("================================\n");
+
+    return 0;
+}</pre>
+
+<h3>21.13 Project Template</h3>
+
+<p>Use this directory structure as a template for new MOSIX userspace projects:</p>
+
+<pre>myproject/
+  Makefile       # Build system (see template above)
+  crt0.asm       # C runtime entry point
+  main.c         # Your program
+  build/         # Build artefacts (created by make)
+    libc/        # Compiled zirvlibc objects
+  ../zirvlibc/   # Link to zirvlibc (or copy it)</pre>
+
+<h3>21.14 Known Limitations</h3>
+
+<ul>
+<li><b>malloc/free</b>: These are stubs returning NULL. Use <tt>sbrk()</tt> or <tt>mmap()</tt> directly for dynamic memory.</li>
+<li><b>No stdlib.h functions</b>: Only <tt>exit</tt>, <tt>abort</tt>, <tt>atoi</tt>, and <tt>atol</tt> are implemented. No <tt>qsort</tt>, <tt>rand</tt>, etc.</li>
+<li><b>No floating point</b>: The kernel does not save/restore the FPU, MMX, or SSE state. Avoid <tt>float</tt>/<tt>double</tt> types.</li>
+<li><b>No thread support</b>: The kernel has no multi-threading (only processes).</li>
+<li><b>No signals</b>: Signal syscalls are not implemented.</li>
+<li><b>No filesystem persistence</b>: The VFS is in-memory only; file data is lost on reboot.</li>
+<li><b>Single process at a time</b>: While the kernel supports multiple processes, there is no scheduler yet &mdash; only PID 1 runs.</li>
+</ul>
+
+<h3>21.15 Quick Reference Card</h3>
+
+<pre>// ============================================================
+// MOSIX syscall quick reference (Linux x86-64 ABI)
+// ============================================================
+// RAX = number, RDI = arg1, RSI = arg2, RDX = arg3,
+// R10 = arg4, R8 = arg5, R9 = arg6
+// Return: RAX = result (negative = error)
+//
+//  #   Name         C prototype
+// --   ----         -----------
+//  0   SYS_READ     int read(fd, buf, count)
+//  1   SYS_WRITE    int write(fd, buf, count)
+//  2   SYS_OPEN     int open(path, flags)
+//  3   SYS_CLOSE    int close(fd)
+//  9   SYS_MMAP     long mmap(addr, len, prot, flags, fd, off)
+// 11   SYS_MUNMAP   int munmap(addr, len)
+// 12   SYS_BRK      int brk(addr)
+// 22   SYS_PIPE     int pipe(fds[2])
+// 39   SYS_GETPID   int getpid()
+// 59   SYS_EXECVE   int execve(path, argv, envp)
+// 60   SYS_EXIT     void exit(status)
+// 61   SYS_WAIT4    int wait4(pid, status, opts, rusage)
+// 79   SYS_GETCWD   int getcwd(buf, size)
+// 80   SYS_CHDIR    int chdir(path)
+//
+// Standard FDs: STDIN_FILENO=0, STDOUT_FILENO=1, STDERR_FILENO=2
+// ============================================================</pre>
 
 <hr>
 
