@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zirvium — Ecosystem</title>
+<style>
+body { background: #fff; color: #000; font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
+a { color: #00f; } a:visited { color: #609; } a:active { color: #f00; }
+.container { margin: 0; padding: 8px 24px; }
+.logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
+.logo-row img { width: 48px; height: 48px; }
+h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: #000; margin: 0; }
+h1 span { color: #00f; }
+h2 { font-family: Times, "Times New Roman", serif; font-size: 20px; font-weight: normal; color: #000; margin: 20px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+h3 { font-family: Times, "Times New Roman", serif; font-size: 16px; font-weight: bold; margin: 12px 0 2px; }
+h4 { font-family: Times, "Times New Roman", serif; font-size: 14px; font-weight: bold; margin: 8px 0 2px; }
+p { margin: 6px 0; color: #000; }
+tt, code, pre { font-family: "Courier New", Courier, monospace; font-size: 13px; }
+pre { background: #f4f4f4; border: 1px solid #ccc; padding: 8px; overflow-x: auto; line-height: 1.3; }
+hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+.header-links { margin: 4px 0 8px; }
+.header-links a { color: #00f; text-decoration: underline; margin-right: 16px; font-size: 14px; }
+td { vertical-align: top; padding: 6px 12px 6px 0; width: 50%; }
+ul { margin: 4px 0; padding-left: 20px; }
+li { margin: 1px 0; }
+.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
+.footer a { color: #666; } .footer a:visited { color: #666; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1>The <span>Zirvium</span> Operating System &mdash; Ecosystem</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="download.html">Download</a>
+<a href="docs/user.html">User Docs</a>
+<a href="docs/dev.html">Developer Docs</a>
+</div>
+
+<hr>
+
+<h2>zirvium</h2>
+<p><tt>C11 / ASM &mdash; GPLv3</tt></p>
+
+<p>The core x86-64 kernel. Zirvium implements 4-level paging, a bitmap-based physical memory manager, a higher-half virtual memory manager, ELF64 binary loading, a MOSIX-compliant virtual filesystem, full PCI bus enumeration, and a driver framework with support for serial, VGA text mode, pixel framebuffer, SATA (ATA PIO), NVMe, USB storage, PS/2 keyboard and Synaptics touchpad, Intel e1000, VirtIO net and block, Realtek RTL8139, Bochs VGA, VMware SVGA, Intel i915 graphics, and HDA audio.</p>
+
+<p>Key source tree:</p>
+<ul>
+<li><tt>kernel/main.c</tt> &mdash; entry point, subsystem init, launch PID 1</li>
+<li><tt>kernel/mm/pmm.c</tt> &mdash; physical memory bitmap allocator</li>
+<li><tt>kernel/mm/vmm.c</tt> &mdash; 4-level page table management</li>
+<li><tt>kernel/mm/heap.c</tt> &mdash; kernel heap (kmalloc/kfree)</li>
+<li><tt>kernel/proc/process.c</tt> &mdash; process creation, user mode entry, exit</li>
+<li><tt>kernel/syscall/syscall.c</tt> &mdash; syscall dispatch and handlers</li>
+<li><tt>kernel/ipc/pipe.c</tt> &mdash; ring-buffer pipes</li>
+<li><tt>kernel/irq/irq.c</tt> &mdash; PIC IRQ management</li>
+<li><tt>kernel/loader/elf.c</tt> &mdash; static ELF64 loader</li>
+<li><tt>kernel/loader/embedded.c</tt> &mdash; embedded binary table</li>
+<li><tt>fs/vfs.c</tt> &mdash; MOSIX virtual filesystem</li>
+<li><tt>arch/x64/boot.asm</tt> &mdash; Multiboot2 boot stub (32-bit to 64-bit)</li>
+<li><tt>arch/x64/syscall_entry.asm</tt> &mdash; SYSCALL/SYSRETQ handler</li>
+<li><tt>drivers/</tt> &mdash; PCI, serial, VGA, fb, SATA, NVMe, USB, PS/2, e1000, virtio, RTL8139, Bochs, VMware, i915, HDA, TPM</li>
+</ul>
+
+<p>Boots via GRUB2 (Multiboot2) or Limine. Produces a bootable ISO with <tt>make iso</tt>.</p>
+
+<p><a href="https://github.com/gauthamnair2005/zirvium">source on github &raquo;</a></p>
+
+<hr>
+
+<h2>zirvlibc</h2>
+<p><tt>C11 &mdash; libzirvlibc.a</tt></p>
+
+<p>A minimal freestanding C library extracted from the Zirvium kernel userspace. Provides the standard C functions needed by MOSIX userspace programs. Syscall numbers match the Linux x86-64 ABI for compatibility.</p>
+
+<h4>Implemented headers</h4>
+<table>
+<tr>
+<td><b>string.h</b></td>
+<td><tt>memcpy, memmove, memset, memcmp, strlen, strnlen, strcpy, strncpy, strcmp, strncmp, strchr, strrchr, strstr</tt></td>
+</tr>
+<tr>
+<td><b>ctype.h</b></td>
+<td><tt>isspace, isdigit, isalpha, isalnum, toupper, tolower</tt></td>
+</tr>
+<tr>
+<td><b>stdio.h</b></td>
+<td><tt>vsnprintf, snprintf, vprintf, printf, puts, putchar</tt> &mdash; supports <tt>%s %d %u %x %p %c %%</tt></td>
+</tr>
+<tr>
+<td><b>stdlib.h</b></td>
+<td><tt>exit, abort, atoi, atol</tt> &mdash; <tt>malloc/free/calloc/realloc</tt> are stubs returning NULL</td>
+</tr>
+<tr>
+<td><b>unistd.h</b></td>
+<td><tt>read, write, open, close, _exit, getpid, brk, sbrk, execve, getcwd, chdir, mmap, munmap</tt></td>
+</tr>
+<tr>
+<td><b>zirv/syscall.h</b></td>
+<td>Syscall number definitions (<tt>SYS_READ=0</tt> through <tt>SYS_CHDIR=80</tt>), standard FD constants, error codes</td>
+</tr>
+</table>
+
+<h4>Syscall wrappers</h4>
+<p>Inline assembly trampolines in <tt>src/syscall.c</tt> provide <tt>_syscall0</tt> through <tt>_syscall6</tt>. Follows the x86-64 SYSCALL ABI: RAX = number, RDI = arg1, RSI = arg2, RDX = arg3, R10 = arg4, R8 = arg5, R9 = arg6.</p>
+
+<p>Build produces <tt>libzirvlibc.a</tt>. Unit tests in <tt>tests/test_libc.c</tt> cover string, ctype, and stdio functions.</p>
+
+<p><a href="https://github.com/gauthamnair2005/zirvlibc">source on github &raquo;</a></p>
+
+<hr>
+
+<h2>zirvinit</h2>
+<p><tt>C11 / ASM &mdash; MOSIX init system (PID 1)</tt></p>
+
+<p>The first userspace process launched by the kernel. A minimal, standalone static ELF binary embedded as <tt>/bin/init</tt>. Its sole job:</p>
+<pre>  Z I R V I N I T
+  ---------------
+  MOSIX Compliant PID 1
+  Lead Developer: Gautham Nair
+
+[ INIT ] Starting MOSIX lifecycle...
+[ INIT ] Verifying /zirv namespace...
+[ INIT ] Launching ZirvShell...</pre>
+
+<p>After printing the banner, it calls <tt>execve("/bin/shell", ...)</tt>. If execve fails, it halts forever. The <tt>crt0.asm</tt> entry calls <tt>main</tt>, then falls back to <tt>SYS_EXIT</tt>.</p>
+
+<p><a href="https://github.com/gauthamnair2005/zirvium">part of zirvium tree &raquo;</a></p>
+
+<hr>
+
+<h2>zirvshell</h2>
+<p><tt>C11 / ASM &mdash; MOSIX natural-language shell</tt></p>
+
+<p>The primary user interface for Zirvium OS. Designed with an English-like natural language command syntax. Embedded as <tt>/bin/shell</tt>.</p>
+
+<h4>Commands</h4>
+<table>
+<tr><td><tt>help</tt> / <tt>help me please</tt></td><td>Display help</td></tr>
+<tr><td><tt>echo &lt;text&gt;</tt> / <tt>say &lt;text&gt;</tt></td><td>Print text</td></tr>
+<tr><td><tt>pwd</tt> / <tt>where</tt></td><td>Print working directory</td></tr>
+<tr><td><tt>uname</tt></td><td>Print system name ("Zirvium")</td></tr>
+<tr><td><tt>whoami</tt></td><td>Show current user ("root")</td></tr>
+<tr><td><tt>clear</tt> / <tt>clear the screen</tt></td><td>Clear terminal</td></tr>
+<tr><td><tt>ls</tt> / <tt>list</tt></td><td>Directory listing</td></tr>
+<tr><td><tt>cat &lt;file&gt;</tt> / <tt>display &lt;file&gt;</tt></td><td>Display file</td></tr>
+<tr><td><tt>run &lt;binary&gt;</tt> / <tt>exec &lt;binary&gt;</tt></td><td>Execute program</td></tr>
+<tr><td><tt>show files</tt></td><td>List directory</td></tr>
+<tr><td><tt>show system status</tt></td><td>Display PID and system info</td></tr>
+<tr><td><tt>go to &lt;path&gt;</tt> / <tt>cd &lt;path&gt;</tt></td><td>Change directory</td></tr>
+<tr><td><tt>date</tt></td><td>Print date (stub)</td></tr>
+<tr><td><tt>uptime</tt></td><td>Print uptime (stub)</td></tr>
+<tr><td><tt>reboot</tt></td><td>Reboot (stub)</td></tr>
+<tr><td><tt>exit</tt></td><td>Exit shell</td></tr>
+</table>
+
+<p>Features a line editor with backspace support, a CWD-aware prompt (<tt>/ $</tt>), and argument parsing with double-quote support.</p>
+
+<p><a href="https://github.com/gauthamnair2005/zirvium">part of zirvium tree &raquo;</a></p>
+
+<hr>
+
+<h2>zirvutils</h2>
+<p><tt>placeholder</tt></p>
+
+<p>The intended home for MOSIX-standard command-line utilities (<tt>ls</tt>, <tt>cat</tt>, <tt>cp</tt>, <tt>mv</tt>, etc.). The project skeleton is in place and awaiting implementation.</p>
+
+<p><a href="https://github.com/gauthamnair2005/zirvutils">source on github &raquo;</a></p>
+
+<hr>
+
+<div class="footer">
+Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zirvium — Architecture</title>
+<style>
+body { background: #fff; color: #000; font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
+a { color: #00f; } a:visited { color: #609; } a:active { color: #f00; }
+.container { margin: 0; padding: 8px 24px; }
+.logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
+.logo-row img { width: 48px; height: 48px; }
+h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: #000; margin: 0; }
+h1 span { color: #00f; }
+h2 { font-family: Times, "Times New Roman", serif; font-size: 20px; font-weight: normal; color: #000; margin: 20px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+h3 { font-family: Times, "Times New Roman", serif; font-size: 16px; font-weight: bold; margin: 12px 0 2px; }
+h4 { font-family: Times, "Times New Roman", serif; font-size: 14px; font-weight: bold; margin: 8px 0 2px; }
+p { margin: 6px 0; color: #000; }
+tt, code, pre { font-family: "Courier New", Courier, monospace; font-size: 13px; }
+pre { background: #f4f4f4; border: 1px solid #ccc; padding: 8px; overflow-x: auto; line-height: 1.3; }
+hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+.header-links { margin: 4px 0 8px; }
+.header-links a { color: #00f; text-decoration: underline; margin-right: 16px; font-size: 14px; }
+td { vertical-align: top; padding: 6px 12px 6px 0; width: 50%; }
+ul { margin: 4px 0; padding-left: 20px; }
+li { margin: 1px 0; }
+.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
+.footer a { color: #666; } .footer a:visited { color: #666; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1>The <span>Zirvium</span> Operating System &mdash; Architecture</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="download.html">Download</a>
+<a href="docs/user.html">User Docs</a>
+<a href="docs/dev.html">Developer Docs</a>
+</div>
+
+<hr>
+
+<h2>System Overview</h2>
+
+<pre>+----------------------------------+
+| User Programs                    |
+| (zirvinit, zirvshell, ...)       |
++----------------------------------+
+          | syscall interface
++----------------------------------+
+| zirvlibc                         |
+| (printf, read, write, malloc)    |
++----------------------------------+
+          | SYSCALL / SYSRETQ
++----------------------------------+
+| Zirvium Kernel                   |
+| (VFS, procs, drivers, IPC, ELF) |
++----------------------------------+
+          | hardware
++----------------------------------+
+| x86-64                           |
+| (CPU, PCI, SATA, NVMe, USB, ...) |
++----------------------------------+</pre>
+
+<hr>
+
+<h2>Boot Sequence</h2>
+
+<ol>
+<li><b>GRUB2</b> loads the kernel ELF via Multiboot2 protocol and jumps to the 32-bit entry point.</li>
+<li><b><tt>arch/x64/boot.asm</tt></b>: 32-bit stub checks for CPUID and long mode support, builds identity-mapped page tables (4 GiB via 2 MiB huge pages), creates a higher-half kernel map at <tt>0xFFFFFFFF80000000</tt>, loads a 64-bit GDT, far-jumps into long mode, and calls <tt>kernel_main</tt>.</li>
+<li><b><tt>kernel/main.c</tt></b>: Initialises serial, GDT, IDT, PIC IRQs, parses the Multiboot2 memory map, initialises the PMM and VMM, initialises the VGA text console, initialises the VFS tree, process table, embedded binary table, syscall entry, PCI bus, dynamic drivers, and PS/2 keyboard. Finally creates PID 1 and enters userspace.</li>
+</ol>
+
+<hr>
+
+<h2>Memory Management</h2>
+
+<h3>Physical Memory Manager</h3>
+<p>The PMM uses a bitmap allocator (<tt>kernel/mm/pmm.c</tt>). One bit per 4 KiB page frame. Bit = 1 means used, bit = 0 means free. The bitmap is statically allocated in BSS (supports up to 1 TiB physical memory). The Multiboot2 memory map is parsed during boot to discover usable RAM regions; all other regions (firmware reserved, ACPI, MMIO) are marked unavailable.</p>
+
+<p>API: <tt>pmm_alloc_page</tt>, <tt>pmm_free_page</tt>, <tt>pmm_alloc_pages</tt>, <tt>pmm_free_pages</tt>.</p>
+
+<h3>Virtual Memory Manager</h3>
+<p>The VMM (<tt>kernel/mm/vmm.c</tt>) manages x86-64 4-level paging (PML4 &rarr; PDP &rarr; PD &rarr; PT).</p>
+
+<p>Memory layout:</p>
+<pre>0x0000000000000000 - 0x00007FFFFFFFFFFF   User space (per-process)
+0xFFFF800000000000                        PHYS_MAP_BASE (direct physical map)
+0xFFFFFFFF80000000                        KERNEL_VIRT_BASE (higher-half kernel)</pre>
+
+<p>During <tt>vmm_init</tt>: the first 4 GiB is identity-mapped (for early boot), the full physical memory is mapped at <tt>PHYS_MAP_BASE</tt>, and the kernel image is mapped at <tt>KERNEL_VIRT_BASE</tt>. Per-process address spaces clone the upper half (kernel) entries from the kernel PML4 and zero out the lower half.</p>
+
+<h3>Kernel Heap</h3>
+<p>A simple bump allocator over a 4 MiB static arena with a minimal free-list (<tt>kmalloc</tt>, <tt>kfree</tt>, <tt>kzalloc</tt>).</p>
+
+<hr>
+
+<h2>Process Management</h2>
+
+<p>Defined in <tt>kernel/proc/process.h</tt> and <tt>kernel/proc/process.c</tt>.</p>
+
+<h4>Process descriptor (<tt>process_t</tt>)</h4>
+<ul>
+<li>PID, state (UNUSED / RUNNING / BLOCKED / ZOMBIE)</li>
+<li>Per-process address space (<tt>address_space_t *as</tt>)</li>
+<li>User RIP/RSP, kernel stack top (used by TSS for ring-&rarr;ring 0 switches)</li>
+<li>Heap state: <tt>brk</tt>, <tt>mmap_cursor</tt></li>
+<li>Open file descriptor table (64 entries, supports VFS nodes and pipe endpoints)</li>
+<li>Parent/child/sibling pointers for process tree tracking</li>
+<li>Current working directory (<tt>cwd[256]</tt>)</li>
+</ul>
+
+<h4>User virtual memory layout per process</h4>
+<pre>0x0000000000001000                     user code / data (loaded by ELF loader)
+0x0000100000000000                     heap base (PROC_HEAP_START)
+0x0000200000000000                     anonymous mmap region start
+0x0000700000000000                     user stack top (grows downward, 64 KiB)</pre>
+
+<p>Process creation: <tt>proc_create</tt> allocates the descriptor, creates a fresh address space, pre-maps 16 user stack pages, links into the process list, and sets default CWD to <tt>/</tt>.</p>
+
+<p>User mode entry: <tt>proc_enter_usermode</tt> switches to the per-process kernel stack, switches address space via CR3, and constructs an IRETQ frame to jump to ring 3.</p>
+
+<hr>
+
+<h2>System Calls</h2>
+
+<p>Syscall numbers match the <b>Linux x86-64 ABI</b> for compatibility. Defined in <tt>kernel/syscall/syscall.h</tt>:</p>
+
+<table>
+<tr><td><tt>SYS_READ</tt></td><td>0</td><td>Read from file descriptor</td></tr>
+<tr><td><tt>SYS_WRITE</tt></td><td>1</td><td>Write to file descriptor</td></tr>
+<tr><td><tt>SYS_OPEN</tt></td><td>2</td><td>Open file</td></tr>
+<tr><td><tt>SYS_CLOSE</tt></td><td>3</td><td>Close file descriptor</td></tr>
+<tr><td><tt>SYS_MMAP</tt></td><td>9</td><td>Memory map</td></tr>
+<tr><td><tt>SYS_MUNMAP</tt></td><td>11</td><td>Unmap memory</td></tr>
+<tr><td><tt>SYS_BRK</tt></td><td>12</td><td>Change data segment size</td></tr>
+<tr><td><tt>SYS_PIPE</tt></td><td>22</td><td>Create pipe</td></tr>
+<tr><td><tt>SYS_GETPID</tt></td><td>39</td><td>Get process ID</td></tr>
+<tr><td><tt>SYS_EXECVE</tt></td><td>59</td><td>Execute program</td></tr>
+<tr><td><tt>SYS_EXIT</tt></td><td>60</td><td>Exit process</td></tr>
+<tr><td><tt>SYS_WAIT4</tt></td><td>61</td><td>Wait for child</td></tr>
+<tr><td><tt>SYS_GETCWD</tt></td><td>79</td><td>Get current working directory</td></tr>
+<tr><td><tt>SYS_CHDIR</tt></td><td>80</td><td>Change directory</td></tr>
+</table>
+
+<p>Entry via <tt>SYSCALL/SYSRETQ</tt> instruction (<tt>arch/x64/syscall_entry.asm</tt>). The handler switches to a per-CPU kernel stack, saves callee-saved registers, reshuffles arguments (R10 &rarr; RCX), and dispatches to <tt>syscall_dispatch</tt>.</p>
+
+<hr>
+
+<h2>Inter-Process Communication</h2>
+
+<p>Ring-buffer pipes (<tt>kernel/ipc/pipe.c</tt>):</p>
+<ul>
+<li><tt>pipe_create</tt> allocates a 4 KiB circular buffer and read/write endpoints</li>
+<li><tt>pipe_read</tt> blocks until data is available (spin-loop, no scheduler yet)</li>
+<li><tt>pipe_write</tt> writes into the buffer, returns bytes written</li>
+<li><tt>pipe_destroy</tt> frees the buffer and marks endpoints closed</li>
+<li>Pipe endpoints can be attached to process file descriptor tables</li>
+</ul>
+
+<hr>
+
+<h2>Virtual Filesystem</h2>
+
+<p>The MOSIX VFS (<tt>fs/vfs.c</tt>) builds an in-memory directory tree with the following standard paths:</p>
+
+<pre>/             root
+/bin          system binaries (init, shell)
+/lib          system libraries
+/user         user home area
+/boot         boot configuration
+/config       system configuration
+/zirv         device namespace
+  /sata       SATA devices
+  /pata       PATA devices
+  /nvme       NVMe devices
+  /usb        USB storage
+  /net        network interfaces
+  /input      input devices
+  /display    display devices
+  /tty        terminal devices
+    /virtual0 console device (keyboard + serial input, VGA+serial+fb output)
+  /audio      audio devices
+/mounts       mount points
+/tmp          temporary files</pre>
+
+<p>The console device at <tt>/zirv/tty/virtual0</tt> provides read/write operations that aggregate input from both the PS/2 keyboard and serial port, and output simultaneously to VGA text mode, pixel framebuffer, and serial UART.</p>
+
+<hr>
+
+<h2>Interrupts and IRQs</h2>
+
+<ul>
+<li>8259A PIC initialisation, IRQs 0&ndash;15 mapped to IDT vectors 32&ndash;47</li>
+<li><tt>request_irq</tt> / <tt>free_irq</tt> / <tt>irq_dispatch</tt> / <tt>irq_eoi</tt> / <tt>irq_mask</tt> / <tt>irq_unmask</tt></li>
+<li>Supports shared IRQs and edge triggering</li>
+<li>256 ISR stubs generated in <tt>arch/x64/isr_stubs.asm</tt></li>
+</ul>
+
+<hr>
+
+<h2>Drivers</h2>
+
+<h3>PCI</h3>
+<p>Full PCI bus enumeration (<tt>drivers/pci/pci.c</tt>) with configuration-space access, BAR reading, and driver-vendor matching.</p>
+
+<h3>Storage</h3>
+<ul>
+<li><b>SATA/ATA PIO</b> (<tt>drivers/zirv/sata.c</tt>): Full ATA PIO driver with IDENTIFY, sector read/write (LBA28), device type detection</li>
+<li><b>NVMe</b> (<tt>drivers/zirv/nvme.c</tt>): Polling-mode NVMe PCIe SSD driver</li>
+<li><b>USB storage</b> (<tt>drivers/zirv/usb_storage.c</tt>): USB mass storage stub</li>
+</ul>
+
+<h3>Input</h3>
+<ul>
+<li><b>PS/2</b>: i8042 controller init, keyboard (with ASCII translation), Synaptics touchpad</li>
+</ul>
+
+<h3>Display</h3>
+<ul>
+<li><b>VGA text mode</b> (<tt>drivers/vga/vga.c</tt>): 80x25 text console at 0xB8000</li>
+<li><b>Framebuffer console</b> (<tt>drivers/vga/fb_console.c</tt>): Pixel framebuffer text renderer</li>
+<li><b>Bochs VGA</b>, <b>VMware SVGA</b>, <b>Intel i915</b> graphics drivers</li>
+</ul>
+
+<h3>Networking</h3>
+<ul>
+<li><b>Intel e1000</b>, <b>VirtIO net</b>, <b>Realtek RTL8139</b></li>
+</ul>
+
+<h3>Other</h3>
+<ul>
+<li><b>Serial</b>: 16550 UART on COM1 at 115200 baud</li>
+<li><b>HDA Audio</b>: High-Definition Audio controller</li>
+<li><b>TPM 2.0</b>: Trusted Platform Module</li>
+<li><b>Realtek Bluetooth</b></li>
+<li><b>WiFi</b>: Realtek RTL8723DE</li>
+</ul>
+
+<h3>Dynamic Driver Framework</h3>
+<p>Drivers register via <tt>driver_register</tt> with a vendor/device ID table. <tt>driver_probe_all</tt> iterates PCI devices and matches against registered drivers, calling each driver's <tt>init</tt> function on match. Each device gets a <tt>/zirv</tt> namespace entry via <tt>zirv_register_device</tt>.</p>
+
+<hr>
+
+<h2>ELF Binary Loader</h2>
+
+<p>Static ELF64 loader (<tt>kernel/loader/elf.c</tt>) that:</p>
+<ul>
+<li>Validates ELF header (magic, 64-bit, little-endian, version)</li>
+<li>Iterates PT_LOAD program headers</li>
+<li>Allocates physical pages and maps them into the process address space at the virtual addresses specified in the ELF</li>
+<li>Zero-fills the BSS segment</li>
+<li>Sets the process entry point from the ELF header's <tt>e_entry</tt></li>
+</ul>
+
+<p>Init and shell binaries are embedded into the kernel via NASM <tt>incbin</tt> (<tt>kernel/loader/init_bin.asm</tt>). The <tt>embedded_init</tt> function records their addresses, and <tt>embedded_find</tt> looks up by path (<tt>/bin/init</tt>, <tt>/bin/shell</tt>).</p>
+
+<hr>
+
+<div class="footer">
+Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

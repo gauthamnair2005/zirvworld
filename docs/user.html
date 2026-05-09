@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zirvium — User Documentation</title>
+<style>
+body { background: #fff; color: #000; font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
+a { color: #00f; } a:visited { color: #609; } a:active { color: #f00; }
+.container { margin: 0; padding: 8px 24px; max-width: 960px; }
+.logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
+.logo-row img { width: 48px; height: 48px; }
+h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: #000; margin: 0; }
+h1 span { color: #00f; }
+h2 { font-family: Times, "Times New Roman", serif; font-size: 22px; font-weight: normal; color: #000; margin: 24px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+h3 { font-family: Times, "Times New Roman", serif; font-size: 17px; font-weight: bold; margin: 16px 0 4px; }
+h4 { font-family: Times, "Times New Roman", serif; font-size: 15px; font-weight: bold; margin: 10px 0 2px; }
+p { margin: 6px 0; color: #000; }
+tt, code, pre { font-family: "Courier New", Courier, monospace; font-size: 13px; }
+pre { background: #f4f4f4; border: 1px solid #ccc; padding: 8px; overflow-x: auto; line-height: 1.3; }
+hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+.header-links { margin: 4px 0 8px; }
+.header-links a { color: #00f; text-decoration: underline; margin-right: 16px; font-size: 14px; }
+td { vertical-align: top; padding: 4px 12px 4px 0; }
+ul, ol { margin: 4px 0; padding-left: 20px; }
+li { margin: 2px 0; }
+.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
+.footer a { color: #666; } .footer a:visited { color: #666; }
+.toc ul { list-style: none; padding-left: 0; }
+.toc li { margin: 3px 0; }
+.toc a { text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1>The <span>Zirvium</span> Operating System &mdash; User Documentation</h1>
+</div>
+
+<div class="header-links">
+<a href="../index.html">Home</a>
+<a href="../projects.html">Projects</a>
+<a href="../architecture.html">Architecture</a>
+<a href="../download.html">Download</a>
+<a href="user.html">User Docs</a>
+<a href="dev.html">Developer Docs</a>
+</div>
+
+<hr>
+
+<h2>Table of Contents</h2>
+
+<div class="toc">
+<ul>
+<li><a href="#overview">1. Overview</a></li>
+<li><a href="#building">2. Building the OS</a></li>
+<li><a href="#running">3. Running in QEMU</a></li>
+<li><a href="#boot-process">4. Boot Process</a></li>
+<li><a href="#shell">5. Using ZirvShell</a></li>
+<li><a href="#filesystem">6. MOSIX Filesystem</a></li>
+<li><a href="#device-namespace">7. The /zirv Device Namespace</a></li>
+<li><a href="#building-libc">8. Building zirvlibc</a></li>
+<li><a href="#faq">9. Frequently Asked Questions</a></li>
+<li><a href="#troubleshooting">10. Troubleshooting</a></li>
+</ul>
+</div>
+
+<hr>
+
+<h2 id="overview">1. Overview</h2>
+
+<p>Zirvium is an x86-64 operating system that implements the MOSIX (Modern OSIX) standard. It boots on bare metal hardware and in emulators like QEMU.</p>
+
+<p>The user-facing system consists of three layers:</p>
+<ul>
+<li><b>Kernel</b> (zirvium) &mdash; Handles hardware, memory, processes, and drivers</li>
+<li><b>Init</b> (zirvinit) &mdash; PID 1, displays boot banner and launches the shell</li>
+<li><b>Shell</b> (zirvshell) &mdash; The command-line interface with English-like syntax</li>
+</ul>
+
+<hr>
+
+<h2 id="building">2. Building the OS</h2>
+
+<h3>System requirements</h3>
+<ul>
+<li>Linux or WSL (for building)</li>
+<li>x86-64-elf cross-compiler (or system gcc)</li>
+<li>NASM &gt;= 2.14</li>
+<li>GNU Make</li>
+<li>grub-mkrescue + xorriso (to create bootable ISO)</li>
+<li>mtools (to create bootable ISO)</li>
+</ul>
+
+<h3>Step-by-step build</h3>
+
+<pre># 1. Install dependencies (Ubuntu/Debian)
+sudo apt install build-essential nasm grub-pc-bin grub-common \
+                 xorriso mtools qemu-system-x86
+
+# 2. Clone the repository
+git clone https://github.com/gauthamnair2005/zirvium.git
+cd zirvium
+
+# 3. Fetch submodules (zirvinit, zirvshell, zirvutils)
+git submodule update --init
+
+# 4. Build the kernel ELF
+make
+
+# 5. Build a bootable ISO image
+make iso
+
+# 6. (Optional) Build individual components
+make -C zirvinit       # just the init binary
+make -C zirvshell      # just the shell binary
+make -C zirvlibc       # just the C library</pre>
+
+<h3>Build outputs</h3>
+<table>
+<tr><td><tt>build/zirvium.elf</tt></td><td>Kernel ELF binary (Multiboot2-compatible)</td></tr>
+<tr><td><tt>build/zirvium.iso</tt></td><td>Bootable CD-ROM image (GRUB2)</td></tr>
+<tr><td><tt>zirvinit/zirvinit.elf</tt></td><td>Init binary</td></tr>
+<tr><td><tt>zirvshell/zirvshell.elf</tt></td><td>Shell binary</td></tr>
+<tr><td><tt>zirvlibc/libzirvlibc.a</tt></td><td>C library archive</td></tr>
+</table>
+
+<hr>
+
+<h2 id="running">3. Running in QEMU</h2>
+
+<h3>Quick start</h3>
+
+<pre>make run</pre>
+
+<p>This single command builds the ISO and launches QEMU with the following configuration:</p>
+<ul>
+<li>Serial console redirected to your terminal</li>
+<li>512 MiB RAM</li>
+<li>Standard VGA display in an SDL window</li>
+<li>IDE disk (blank 10 MiB image)</li>
+<li>VirtIO block device</li>
+<li>Three NICs: Intel e1000, VirtIO net, and Realtek RTL8139</li>
+<li>Boot from CD-ROM (<tt>-boot d</tt>)</li>
+</ul>
+
+<h3>Manual QEMU invocation</h3>
+
+<pre>qemu-system-x86_64 \
+    -cdrom build/zirvium.iso \
+    -serial stdio \
+    -m 256M \
+    -vga std \
+    -display sdl</pre>
+
+<h3>What to expect</h3>
+
+<p>When the system boots, you will see:</p>
+<pre>  Z I R V I U M    K E R N E L
+  -----------------------------
+  Developer: Gautham Nair
+  Status:    Loading Zirvium Kernel...
+
+  [ OK ] VMM   Virtual memory active (Higher-Half)
+  [ OK ] INIT  zirvinit loaded at entry 0x0000000000001000
+
+  Z I R V I N I T
+  ---------------
+  MOSIX Compliant PID 1
+
+[ INIT ] Starting MOSIX lifecycle...
+[ INIT ] Verifying /zirv namespace...
+[ INIT ] Launching ZirvShell...
+
+ZirvShell v1.0 (MOSIX Compliant)
+Lead Developer: Gautham Nair
+Type 'help' for MOSIX English syntax commands.
+/ $</pre>
+
+<p>The <tt>/ $</tt> prompt indicates the shell is ready for input.</p>
+
+<hr>
+
+<h2 id="boot-process">4. Boot Process</h2>
+
+<p>When Zirvium boots, the following happens in sequence:</p>
+
+<ol>
+<li><b>GRUB2</b> loads the kernel from ISO and transfers control</li>
+<li><b>Boot stub</b> (assembly) sets up long mode page tables, loads GDT, and enters 64-bit mode</li>
+<li><b>kernel_main</b> initialises subsystems in order:
+  <ol>
+  <li>Serial port (COM1)</li>
+  <li>CPU: GDT, IDT, PIC interrupts</li>
+  <li>Memory: physical and virtual memory managers</li>
+  <li>Console: VGA text mode</li>
+  <li>Filesystem: MOSIX VFS tree</li>
+  <li>Process table</li>
+  <li>System calls (SYSCALL MSRs)</li>
+  <li>PCI bus enumeration</li>
+  <li>Device drivers (dynamic probing)</li>
+  <li>PS/2 keyboard</li>
+  </ol>
+</li>
+<li><b>PID 1</b> (zirvinit) is created, loaded from the embedded ELF, and started in user mode</li>
+<li><b>zirvinit</b> prints its banner and executes <tt>/bin/shell</tt> (zirvshell)</li>
+<li><b>zirvshell</b> displays its banner and presents the prompt</li>
+</ol>
+
+<hr>
+
+<h2 id="shell">5. Using ZirvShell</h2>
+
+<p>ZirvShell uses an English-like command syntax. Commands, their aliases, and descriptions:</p>
+
+<h3>Basic commands</h3>
+
+<table>
+<tr><td><tt>help</tt></td><td>Display the full command list</td></tr>
+<tr><td><tt>echo &lt;text&gt;</tt></td><td>Print text to the console</td></tr>
+<tr><td><tt>say &lt;text&gt;</tt></td><td>Same as echo</td></tr>
+<tr><td><tt>clear</tt></td><td>Clear the terminal screen</td></tr>
+<tr><td><tt>clear the screen</tt></td><td>Same as clear (natural language alias)</td></tr>
+</table>
+
+<h3>Navigation</h3>
+
+<table>
+<tr><td><tt>pwd</tt></td><td>Print current working directory</td></tr>
+<tr><td><tt>where</tt></td><td>Same as pwd</td></tr>
+<tr><td><tt>go to &lt;path&gt;</tt></td><td>Change directory</td></tr>
+<tr><td><tt>cd &lt;path&gt;</tt></td><td>Same as go to</td></tr>
+</table>
+
+<h3>System information</h3>
+
+<table>
+<tr><td><tt>uname</tt></td><td>Print the operating system name ("Zirvium")</td></tr>
+<tr><td><tt>whoami</tt></td><td>Print current user ("root")</td></tr>
+<tr><td><tt>show system status</tt></td><td>Print PID, kernel name, and userspace version</td></tr>
+</table>
+
+<h3>Files and directories</h3>
+
+<table>
+<tr><td><tt>ls</tt></td><td>List directory contents (currently shows /bin and /zirv)</td></tr>
+<tr><td><tt>list</tt></td><td>Same as ls</td></tr>
+<tr><td><tt>show files</tt></td><td>List directory contents</td></tr>
+<tr><td><tt>cat &lt;file&gt;</tt></td><td>Display file contents (currently a stub)</td></tr>
+<tr><td><tt>display &lt;file&gt;</tt></td><td>Same as cat</td></tr>
+</table>
+
+<h3>Program execution</h3>
+
+<table>
+<tr><td><tt>run &lt;binary&gt;</tt></td><td>Execute a binary from /bin</td></tr>
+<tr><td><tt>exec &lt;binary&gt;</tt></td><td>Execute a binary (replaces the shell process)</td></tr>
+</table>
+
+<h3>Stubs (not yet implemented)</h3>
+
+<table>
+<tr><td><tt>date</tt></td><td>Prints "date: not available"</td></tr>
+<tr><td><tt>uptime</tt></td><td>Prints "uptime: not available"</td></tr>
+<tr><td><tt>reboot</tt></td><td>Prints "reboot: not available"</td></tr>
+</table>
+
+<h3>Shell features</h3>
+<ul>
+<li><b>Line editing</b>: Backspace works for correcting input</li>
+<li><b>Quoted arguments</b>: Use double quotes for arguments containing spaces</li>
+<li><b>Natural language</b>: Multi-word commands like <tt>help me please</tt> and <tt>clear the screen</tt> work</li>
+<li><b>CWD-aware prompt</b>: The prompt always shows the current directory path</li>
+</ul>
+
+<h3>Example session</h3>
+<pre>/ $ help
+ZirvShell MOSIX Commands:
+  help                  Show this help
+  echo &lt;text&gt;           Print text
+  pwd                   Print working directory
+  uname                 Print system information
+  whoami                Show current user
+  clear                 Clear the screen
+  ls                    List directory contents
+  cat &lt;file&gt;            Display file contents
+  run &lt;binary&gt;          Execute a program
+  exec &lt;binary&gt;         Execute a program (replaces shell)
+  show files            List directory
+  show system status    Show system info
+  go to &lt;path&gt;          Change directory
+  date                  Print the system date/time
+  uptime                Print system uptime
+  reboot                Reboot the system
+  exit                  Exit the shell
+
+/ $ uname
+Zirvium
+
+/ $ whoami
+root
+
+/ $ show system status
+Zirvium System Status:
+  PID:        1
+  Kernel:     Zirvium
+  Userspace:  ZirvShell
+
+/ $ go to /bin
+/bin $ pwd
+/bin
+/ $ exit
+ZirvShell: exiting...</pre>
+
+<hr>
+
+<h2 id="filesystem">6. MOSIX Filesystem</h2>
+
+<p>The MOSIX standard replaces the traditional FHS (Filesystem Hierarchy Standard) with a simplified, modern layout:</p>
+
+<table>
+<tr><td><tt>/</tt></td><td>Root directory</td></tr>
+<tr><td><tt>/bin</tt></td><td>System binaries (init, shell, utilities)</td></tr>
+<tr><td><tt>/lib</tt></td><td>System libraries</td></tr>
+<tr><td><tt>/user</tt></td><td>User home area</td></tr>
+<tr><td><tt>/boot</tt></td><td>Boot configuration</td></tr>
+<tr><td><tt>/config</tt></td><td>System configuration</td></tr>
+<tr><td><tt>/zirv</tt></td><td>Device namespace (replaces /dev, /sys, /run)</td></tr>
+<tr><td><tt>/mounts</tt></td><td>Mount points</td></tr>
+<tr><td><tt>/tmp</tt></td><td>Temporary files</td></tr>
+</table>
+
+<p>The current VFS implementation is in-memory only (no persistent storage driver yet). Directory entries exist as defined above; file operations for device nodes are handled by their respective drivers.</p>
+
+<hr>
+
+<h2 id="device-namespace">7. The /zirv Device Namespace</h2>
+
+<p>The <tt>/zirv</tt> directory unifies device management under a single hierarchy, replacing the traditional <tt>/dev</tt>, <tt>/sys</tt>, and <tt>/run</tt> split:</p>
+
+<table>
+<tr><td><tt>/zirv/sata/</tt></td><td>SATA (AHCI) storage devices</td></tr>
+<tr><td><tt>/zirv/pata/</tt></td><td>PATA (IDE) storage devices</td></tr>
+<tr><td><tt>/zirv/nvme/</tt></td><td>NVMe SSD devices</td></tr>
+<tr><td><tt>/zirv/usb/</tt></td><td>USB mass storage devices</td></tr>
+<tr><td><tt>/zirv/net/</tt></td><td>Network interfaces</td></tr>
+<tr><td><tt>/zirv/input/</tt></td><td>Input devices (keyboard, touchpad)</td></tr>
+<tr><td><tt>/zirv/display/</tt></td><td>Display/graphics devices</td></tr>
+<tr><td><tt>/zirv/tty/</tt></td><td>Terminal/console devices</td></tr>
+<tr><td><tt>/zirv/audio/</tt></td><td>Audio devices</td></tr>
+</table>
+
+<h3>Console device</h3>
+<p>The primary console device is at <tt>/zirv/tty/virtual0</tt>:</p>
+<ul>
+<li><b>Read</b>: Accepts input from both PS/2 keyboard and serial port</li>
+<li><b>Write</b>: Outputs simultaneously to VGA text mode, pixel framebuffer, and serial port</li>
+<li><b>Colour support</b>: ANSI escape sequences render with VGA attributes and framebuffer pixel colours</li>
+</ul>
+
+<hr>
+
+<h2 id="building-libc">8. Building zirvlibc</h2>
+
+<p>The C library can be built standalone:</p>
+
+<pre>cd zirvlibc
+make          # produces libzirvlibc.a
+make test     # runs unit tests</pre>
+
+<p>The test suite verifies:</p>
+<ul>
+<li>String operations: memcpy, memmove, memset, strcpy, strcmp, strstr, etc.</li>
+<li>Character classification: isspace, isdigit, isalpha, toupper, etc.</li>
+<li>printf formatting: %s, %d, %u, %x, %p, %c, %% with snprintf truncation</li>
+</ul>
+
+<hr>
+
+<h2 id="faq">9. Frequently Asked Questions</h2>
+
+<h3>What is MOSIX?</h3>
+<p>MOSIX (Modern OSIX) is a rethinking of the POSIX standard designed for modern hardware. It replaces legacy paths (<tt>/dev</tt>, <tt>/sys</tt>, <tt>/proc</tt>) with a unified <tt>/zirv</tt> namespace, simplifies the FHS hierarchy, and drops obsolete interfaces.</p>
+
+<h3>Is Zirvium compatible with Linux binaries?</h3>
+<p>No. Zirvium uses the Linux x86-64 syscall ABI (same numbers and calling convention), but does not implement all Linux syscalls. Programs must be compiled specifically for Zirvium using the freestanding toolchain.</p>
+
+<h3>What hardware does Zirvium support?</h3>
+<p>Currently: x86-64 CPUs with long mode, PCI bus, SATA (ATA PIO), NVMe, USB storage (stub), PS/2 keyboard, Synaptics touchpad, serial UART (16550), VGA text mode, pixel framebuffer, Bochs VGA, VMware SVGA, Intel i915 graphics, HDA audio, Intel e1000 NIC, VirtIO net/block, Realtek RTL8139 NIC, Realtek RTL8723DE WiFi, Realtek Bluetooth, and TPM 2.0.</p>
+
+<h3>Can I boot Zirvium on real hardware?</h3>
+<p>Yes. Write <tt>build/zirvium.iso</tt> to a USB/CD and boot via UEFI/BIOS with GRUB2. However, real hardware support is experimental and hardware-specific drivers (AHCI, XHCI, etc.) may need additional work.</p>
+
+<h3>Why is malloc not implemented?</h3>
+<p><tt>malloc</tt> in zirvlibc is a stub returning NULL because the OS does not yet have a fully-featured heap for userspace. The <tt>brk</tt> and <tt>mmap</tt> syscalls are implemented and can be used directly. A proper <tt>malloc</tt> implementation is planned.</p>
+
+<h3>How do I exit the shell?</h3>
+<p>Type <tt>exit</tt>. This will cause the shell to return, and since there is no scheduler to start another process, the system will effectively stop.</p>
+
+<h3>What is the licence?</h3>
+<p>Zirvium is licensed under the GNU General Public License v3.</p>
+
+<hr>
+
+<h2 id="troubleshooting">10. Troubleshooting</h2>
+
+<h3>"Failed to load zirvinit.elf"</h3>
+<p>The ELF binary may be corrupted or missing. Rebuild with <tt>make -C zirvinit clean && make -C zirvinit</tt> then rebuild the kernel with <tt>make</tt>.</p>
+
+<h3>QEMU shows a black screen</h3>
+<p>Ensure you're using <tt>-serial stdio</tt> to see the serial output. The VGA display may not render if the framebuffer mode fails. Try <tt>-vga std</tt>.</p>
+
+<h3>"mformat not found" when running make iso</h3>
+<p>Install mtools: <tt>sudo apt install mtools</tt> (Debian/Ubuntu) or <tt>sudo pacman -S mtools</tt> (Arch).</p>
+
+<h3>"grub-mkrescue: not found"</h3>
+<p>Install GRUB utilities: <tt>sudo apt install grub-pc-bin grub-common xorriso</tt>.</p>
+
+<h3>Cross-compiler not found</h3>
+<p>The build system falls back to the system gcc, which may produce incompatible code. Install or build an <tt>x86_64-elf-gcc</tt> cross-compiler (see the developer docs for instructions).</p>
+
+<h3>No response to keyboard input in QEMU</h3>
+<p>Make sure the QEMU window has focus. The PS/2 keyboard driver requires the emulated PS/2 controller which is enabled by default in QEMU.</p>
+
+<h3>The shell command "cat" says "not yet implemented"</h3>
+<p>The <tt>cat</tt> command is a stub awaiting the VFS read implementation for regular files. Device node reads (e.g., <tt>/zirv/tty/virtual0</tt>) work through the console device.</p>
+
+<hr>
+
+<div class="footer">
+Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zirvium — Download</title>
+<style>
+body { background: #fff; color: #000; font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
+a { color: #00f; } a:visited { color: #609; } a:active { color: #f00; }
+.container { margin: 0; padding: 8px 24px; }
+.logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
+.logo-row img { width: 48px; height: 48px; }
+h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: #000; margin: 0; }
+h1 span { color: #00f; }
+h2 { font-family: Times, "Times New Roman", serif; font-size: 20px; font-weight: normal; color: #000; margin: 20px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+h3 { font-family: Times, "Times New Roman", serif; font-size: 16px; font-weight: bold; margin: 12px 0 2px; }
+p { margin: 6px 0; color: #000; }
+tt, code, pre { font-family: "Courier New", Courier, monospace; font-size: 13px; }
+pre { background: #f4f4f4; border: 1px solid #ccc; padding: 8px; overflow-x: auto; line-height: 1.3; }
+hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+.header-links { margin: 4px 0 8px; }
+.header-links a { color: #00f; text-decoration: underline; margin-right: 16px; font-size: 14px; }
+td { vertical-align: top; padding: 6px 12px 6px 0; }
+.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
+.footer a { color: #666; } .footer a:visited { color: #666; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1>The <span>Zirvium</span> Operating System &mdash; Download</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="download.html">Download</a>
+<a href="docs/user.html">User Docs</a>
+<a href="docs/dev.html">Developer Docs</a>
+</div>
+
+<hr>
+
+<h2>Source Code</h2>
+
+<p>All Zirvium projects are available on GitHub. Clone the main repository to get everything:</p>
+
+<table>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td><td>Kernel and OS (includes zirvinit, zirvshell as submodules)</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></td><td>Freestanding C library</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a></td><td>Command-line utilities (placeholder)</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a></td><td>Website source</td></tr>
+</table>
+
+<hr>
+
+<h2>Quick Start</h2>
+
+<h3>Requirements</h3>
+<ul>
+<li>x86-64-elf cross-compiler (or gcc with freestanding support)</li>
+<li>NASM (&gt;= 2.14)</li>
+<li>GNU Make</li>
+<li>grub-mkrescue and xorriso (for ISO creation)</li>
+<li>mtools (for ISO creation)</li>
+<li>QEMU (for testing)</li>
+</ul>
+
+<h3>Build and Run</h3>
+
+<pre>git clone https://github.com/gauthamnair2005/zirvium.git
+cd zirvium
+git submodule update --init
+make iso
+qemu-system-x86_64 -cdrom build/zirvium.iso -serial stdio -m 512M</pre>
+
+<p>This will boot the kernel in QEMU with serial console output visible in your terminal.</p>
+
+<h3>Build Targets</h3>
+
+<table>
+<tr><td><tt>make</tt></td><td>Build kernel ELF</td></tr>
+<tr><td><tt>make iso</tt></td><td>Build bootable GRUB2 ISO</td></tr>
+<tr><td><tt>make run</tt></td><td>Build ISO and launch in QEMU</td></tr>
+<tr><td><tt>make debug</tt></td><td>Build ISO and launch QEMU with GDB stub on port 1234</td></tr>
+<tr><td><tt>make clean</tt></td><td>Remove build artefacts</td></tr>
+</table>
+
+<hr>
+
+<h2>QEMU Run Options</h2>
+
+<p>The default <tt>make run</tt> target launches QEMU with:</p>
+<ul>
+<li>Serial output redirected to stdio</li>
+<li>512 MiB RAM</li>
+<li>Standard VGA display</li>
+<li>IDE disk (blank 10 MiB image)</li>
+<li>VirtIO block device</li>
+<li>e1000, VirtIO net, and RTL8139 NICs (user-mode networking)</li>
+</ul>
+
+<p>You can adjust the command-line in the Makefile or invoke QEMU directly:</p>
+
+<pre>qemu-system-x86_64 -cdrom build/zirvium.iso -serial stdio -m 256M -vga std -display sdl</pre>
+
+<hr>
+
+<h2>Directory Structure</h2>
+
+<pre>zirvium/
+  arch/x64/          Architecture-specific code (boot, GDT, IDT, syscall)
+  kernel/            Core kernel
+    mm/              Memory management (PMM, VMM, heap)
+    proc/            Process management
+    syscall/         System call handlers
+    ipc/             Inter-process communication (pipes)
+    irq/             Interrupt handling (PIC)
+    loader/          ELF loader, embedded binaries
+  fs/                MOSIX Virtual Filesystem
+  drivers/           Device drivers
+    pci/             PCI bus enumeration
+    serial/          16550 UART
+    vga/             VGA text mode, framebuffer console
+    zirv/            Device namespace drivers
+      sata/          ATA PIO
+      nvme/          NVMe
+      usb_storage/   USB mass storage
+      input/ps2/     PS/2 keyboard and Synaptics touchpad
+      display/       Bochs VGA, VMware SVGA, Intel i915
+      audio/hda/     High-Definition Audio
+      wifi/          Realtek RTL8723DE
+      bluetooth/     Realtek Bluetooth
+      driver.c       Dynamic driver framework
+      device.c       Device registry
+  libs/zirvlibc/     Freestanding C library
+  zirvinit/          Init system (submodule)
+  zirvshell/         Shell (submodule)
+  zirvutils/         Utilities (submodule, placeholder)</pre>
+
+<hr>
+
+<div class="footer">
+Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>
