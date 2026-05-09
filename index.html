@@ -1,32 +1,293 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zirvium | MOSIX Standard</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, monospace; background: #0f172a; color: #f8fafc; line-height: 1.6; margin: 0; }
-        header { padding: 4rem 2rem; text-align: center; border-bottom: 1px solid #1e293b; }
-        .container { max-width: 900px; margin: auto; padding: 2rem; }
-        .component-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
-        .card { background: #1e293b; padding: 1.5rem; border-radius: 4px; border-left: 4px solid #38bdf8; }
-        h1 { font-size: 3rem; color: #38bdf8; letter-spacing: -1px; }
-        .mosix-tag { background: #38bdf8; color: #0f172a; padding: 0.2rem 0.5rem; font-weight: bold; border-radius: 3px; }
-    </style>
+<meta charset="UTF-8">
+<title>The Zirvium Operating System</title>
+<style>
+body {
+    background: #fff;
+    color: #000;
+    font-family: Times, "Times New Roman", serif;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.4;
+}
+a { color: #00f; }
+a:visited { color: #609; }
+a:active { color: #f00; }
+
+.container { margin: 0; padding: 8px 24px; }
+
+.logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
+.logo-row img { width: 48px; height: 48px; }
+h1 {
+    font-family: Times, "Times New Roman", serif;
+    font-size: 28px;
+    font-weight: normal;
+    color: #000;
+    margin: 0;
+}
+h1 span { color: #00f; }
+
+h2 {
+    font-family: Times, "Times New Roman", serif;
+    font-size: 20px;
+    font-weight: normal;
+    color: #000;
+    margin: 20px 0 8px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 2px;
+}
+
+h3 {
+    font-family: Times, "Times New Roman", serif;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 2px;
+}
+
+p { margin: 6px 0; color: #000; }
+tt, code, pre {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 13px;
+}
+pre {
+    background: #f4f4f4;
+    border: 1px solid #ccc;
+    padding: 8px;
+    overflow-x: auto;
+    line-height: 1.3;
+}
+hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+
+.header-links {
+    margin: 4px 0 8px;
+}
+.header-links a {
+    color: #00f;
+    text-decoration: underline;
+    margin-right: 16px;
+    font-size: 14px;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0;
+}
+td {
+    vertical-align: top;
+    padding: 6px 12px 6px 0;
+    width: 50%;
+}
+
+.dl-table td {
+    width: auto;
+    padding: 2px 16px 2px 0;
+}
+
+ul { margin: 4px 0; padding-left: 20px; }
+li { margin: 1px 0; }
+
+.footer {
+    margin-top: 20px;
+    padding: 8px 0;
+    border-top: 1px solid #ccc;
+    font-size: 12px;
+    color: #666;
+}
+.footer a { color: #666; }
+.footer a:visited { color: #666; }
+</style>
 </head>
 <body>
-    <header>
-        <h1>ZIRVIUM</h1>
-        <p>A <span class="mosix-tag">MOSIX</span> Standard Operating System</p>
-    </header>
-    <div class="container">
-        <h2>The Architecture</h2>
-        <div class="component-grid">
-            <div class="card"><h3>Kernel</h3><p>Zirvium Microkernel core.</p></div>
-            <div class="card"><h3>Init</h3><p>Zirvinit service management.</p></div>
-            <div class="card"><h3>Libc</h3><p>Native Zirvlibc primitives.</p></div>
-            <div class="card"><h3>Shell</h3><p>The Zirvshell interface.</p></div>
-        </div>
-    </div>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1>The <span>Zirvium</span> Operating System</h1>
+</div>
+
+<div class="header-links">
+<a href="#about">About</a>
+<a href="#projects">Projects</a>
+<a href="#arch">Architecture</a>
+<a href="#features">Features</a>
+<a href="#download">Download</a>
+</div>
+
+<hr>
+
+<h2 id="about">About</h2>
+
+<p><b>Zirvium</b> is a from-scratch x86-64 kernel and operating system that implements the <b>MOSIX</b> (Modern OSIX) standard &mdash; a rethinking of POSIX conventions for modern hardware. It replaces legacy paths with a simplified filesystem hierarchy, unifies device management under a single <tt>/zirv</tt> namespace, and is written entirely in C11 and x86-64 assembly.</p>
+
+<p>The ecosystem spans five projects: the kernel itself, a freestanding C library, an init system, an English-like shell, and a utilities collection. Together they form a complete, functional operating system capable of booting on bare metal and under QEMU.</p>
+
+<hr>
+
+<h2 id="projects">Ecosystem</h2>
+
+<p><i>five interconnected projects that make up the Zirvium OS</i></p>
+
+<table>
+<tr>
+<td>
+<h3>zirvium</h3>
+<p><tt>C11 / ASM &mdash; GPLv3</tt></p>
+<p>Core x86-64 kernel with 4-level paging, bitmap PMM, ELF64 loader, MOSIX VFS, PCI enumeration, and drivers for serial, VGA, framebuffer, SATA, NVMe, USB storage, PS/2 input, e1000, virtio, and HDA audio.</p>
+<ul>
+<li>Multiboot2 + Limine boot</li>
+<li>SYSCALL/SYSRETQ system calls</li>
+<li>Process management with address spaces</li>
+<li>Embedded init and shell binaries</li>
+<li>Linux-compatible driver API layer</li>
+</ul>
+<p><a href="https://github.com/gauthamnair2005/zirvium">source on github &raquo;</a></p>
+</td>
+<td>
+<h3>zirvlibc</h3>
+<p><tt>C11 &mdash; libzirvlibc.a</tt></p>
+<p>Minimal freestanding C library providing <tt>string.h</tt>, <tt>ctype.h</tt>, <tt>stdio.h</tt> (full printf), <tt>stdlib.h</tt>, <tt>unistd.h</tt> with Linux-compatible syscall wrappers.</p>
+<ul>
+<li>Syscall ABI matches Linux x86-64</li>
+<li>Inline assembly trampolines (0&ndash;6 args)</li>
+<li>Unit-tested string and formatting routines</li>
+</ul>
+<p><a href="https://github.com/gauthamnair2005/zirvlibc">source on github &raquo;</a></p>
+</td>
+</tr>
+<tr>
+<td>
+<h3>zirvinit</h3>
+<p><tt>C11 / ASM &mdash; MOSIX init system</tt></p>
+<p>First userspace process (PID 1). Prints the MOSIX banner, verifies <tt>/zirv</tt> namespace, and hands control to ZirvShell via <tt>execve</tt>.</p>
+<ul>
+<li>Standalone static ELF binary</li>
+<li>Embedded as <tt>/bin/init</tt> in kernel</li>
+<li>Minimal freestanding footprint</li>
+</ul>
+<p><a href="https://github.com/gauthamnair2005/zirvium">part of zirvium tree &raquo;</a></p>
+</td>
+<td>
+<h3>zirvshell</h3>
+<p><tt>C11 / ASM &mdash; MOSIX shell</tt></p>
+<p>English-like command shell supporting <tt>show system status</tt>, <tt>go to /bin</tt>, <tt>help me please</tt>. Implements echo, ls, pwd, cd, cat, exec, and more.</p>
+<ul>
+<li>Line editor with backspace</li>
+<li>CWD-aware prompt</li>
+<li>Embedded as <tt>/bin/shell</tt> in kernel</li>
+</ul>
+<p><a href="https://github.com/gauthamnair2005/zirvium">part of zirvium tree &raquo;</a></p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<h3>zirvutils</h3>
+<p><tt>placeholder</tt></p>
+<p>Intended home for MOSIX-standard command-line utilities (<tt>ls</tt>, <tt>cat</tt>, <tt>cp</tt>, <tt>mv</tt>, etc.). Project skeleton is in place and awaiting implementation.</p>
+<p><a href="https://github.com/gauthamnair2005/zirvutils">source on github &raquo;</a></p>
+</td>
+</tr>
+</table>
+
+<hr>
+
+<h2 id="arch">Architecture</h2>
+
+<p><i>system layering from boot to userspace</i></p>
+
+<pre>+----------------------------------+
+| User Programs                    |
+| (zirvinit, zirvshell, ...)       |
++----------------------------------+
+          | syscall interface
++----------------------------------+
+| zirvlibc                         |
+| (printf, read, write, malloc)    |
++----------------------------------+
+          | SYSCALL / SYSRETQ
++----------------------------------+
+| Zirvium Kernel                   |
+| (VFS, procs, drivers, IPC, ELF) |
++----------------------------------+
+          | hardware
++----------------------------------+
+| x86-64                           |
+| (CPU, PCI, SATA, NVMe, USB, ...) |
++----------------------------------+</pre>
+
+<hr>
+
+<h2 id="features">Key Features</h2>
+
+<p><i>notable capabilities of the Zirvium kernel</i></p>
+
+<table>
+<tr>
+<td><b>Microkernel Architecture</b><br>Modular kernel with clean separation between memory management, process control, IPC, and drivers.</td>
+<td><b>MOSIX VFS</b><br>Modern filesystem hierarchy with <tt>/bin</tt>, <tt>/lib</tt>, <tt>/user</tt>, <tt>/zirv</tt> replacing legacy FHS paths.</td>
+</tr>
+<tr>
+<td><b>Ring-Buffer IPC</b><br>Efficient 4&nbsp;KiB ring-buffer pipes for inter-process communication.</td>
+<td><b>PCI Enumeration</b><br>Full PCI bus scanning with BAR reading and automatic driver-vendor matching.</td>
+</tr>
+<tr>
+<td><b>Triple Console</b><br>Simultaneous output to VGA text mode, pixel framebuffer, and serial UART with colour support.</td>
+<td><b>Embedded Binaries</b><br>Init and shell ELF files embedded directly into the kernel binary via <tt>incbin</tt>.</td>
+</tr>
+</table>
+
+<hr>
+
+<h2 id="download">Download</h2>
+
+<p><i>get the source and build it yourself</i></p>
+
+<h3>Quick Start</h3>
+
+<pre>git clone https://github.com/gauthamnair2005/zirvium.git
+cd zirvium
+git submodule update --init
+make iso
+qemu-system-x86_64 -cdrom zirvium.iso</pre>
+
+<p><tt>Requires x86-64-elf cross-compiler, nasm, mtools.</tt></p>
+
+<h3>Source Code</h3>
+
+<table class="dl-table">
+<tr>
+<td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td>
+<td>kernel source</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></td>
+<td>C library source</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a></td>
+<td>utilities source</td>
+</tr>
+<tr>
+<td><a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a></td>
+<td>website source</td>
+</tr>
+</table>
+
+<hr>
+
+<div class="footer">
+Zirvium &mdash; a MOSIX operating system &bull; built with C11 and x86-64 assembly &bull; GPLv3 licensed<br>
+<a href="https://github.com/gauthamnair2005/zirvium">zirvium</a> &middot;
+<a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a> &middot;
+<a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a> &middot;
+<a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a>
+</div>
+
+</div>
+
 </body>
 </html>
