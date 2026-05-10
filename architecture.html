@@ -50,25 +50,31 @@ li { margin: 1px 0; }
 
 <h2>System Overview</h2>
 
-<pre>+----------------------------------+
-| User Programs                    |
-| (zirvinit, zirvshell, ...)       |
-+----------------------------------+
-          | syscall interface
-+----------------------------------+
-| zirvlibc                         |
-| (printf, read, write, malloc)    |
-+----------------------------------+
-          | SYSCALL / SYSRETQ
-+----------------------------------+
-| Zirvium Kernel                   |
-| (VFS, procs, drivers, IPC, ELF) |
-+----------------------------------+
-          | hardware
-+----------------------------------+
-| x86-64                           |
-| (CPU, PCI, SATA, NVMe, USB, ...) |
-+----------------------------------+</pre>
+<pre>  +----------------------------------+
+  | Desktop Compositor               |
+  | (zirvui)                         |
+  +----------------------------------+
+  | Display Driver                   |
+  | (zirvdisplayjet &mdash; MAEM-encrypted)|
+  +----------------------------------+
+  | User Programs                    |
+  | (zirvinit, zirvshell, ...)       |
+  +----------------------------------+
+            | syscall interface
+  +----------------------------------+
+  | zirvlibc                         |
+  | (printf, read, write, malloc)    |
+  +----------------------------------+
+            | SYSCALL / SYSRETQ
+  +----------------------------------+
+  | Zirvium Kernel                   |
+  | (VFS, procs, drivers, IPC, ELF) |
+  +----------------------------------+
+            | hardware
+  +----------------------------------+
+  | x86-64                           |
+  | (CPU, PCI, SATA, NVMe, USB, ...) |
+  +----------------------------------+</pre>
 
 <hr>
 
@@ -256,6 +262,7 @@ li { margin: 1px 0; }
 <li><b>VGA text mode</b> (<tt>drivers/vga/vga.c</tt>): 80x25 text console at 0xB8000</li>
 <li><b>Framebuffer console</b> (<tt>drivers/vga/fb_console.c</tt>): Pixel framebuffer text renderer</li>
 <li><b>Bochs VGA</b>, <b>VMware SVGA</b>, <b>Intel i915</b> graphics drivers</li>
+<li><b>DisplayJet</b> (<tt>drivers/zirv/displayjet/</tt>): MAEM-encrypted display driver with surface management, ChaCha20 per-surface encryption, and DMA fencing</li>
 </ul>
 
 <h3>Networking</h3>

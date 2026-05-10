@@ -193,6 +193,50 @@ li { margin: 1px 0; }
 
 <hr>
 
+<h2>zirvdisplayjet</h2>
+<p><tt>C11 &mdash; MAEM-encrypted display driver</tt></p>
+
+<p>A display driver for the Zirvium kernel featuring <b>MAEM</b> (Memory-Attested Encryption of Surfaces). It drives Bochs VBE-compatible display hardware (Bochs VGA / QEMU stdvga), exposing a userspace API via custom syscalls.</p>
+
+<h4>Key features</h4>
+<ul>
+<li>Connect / disconnect from the display server</li>
+<li>Create and destroy GPU surfaces</li>
+<li>Present surfaces to the display</li>
+<li>Query display modes</li>
+<li>Surface read/write with ChaCha20 encryption</li>
+<li>Per-surface keys derived via HKDF from a hardware-entropy master key</li>
+<li>DMA fencing via access counters</li>
+<li>List active surfaces, request/grant access between processes</li>
+</ul>
+
+<p>All framebuffer surfaces are encrypted in memory using ChaCha20, ensuring that physical memory inspection cannot recover pixel data. Compiled as part of the Zirvium kernel build. The <tt>drivers/zirv/displayjet/</tt> directory contains the kernel driver; <tt>include/displayjet.h</tt> provides the userspace API header.</p>
+
+<p><a href="https://github.com/gauthamnair2005/zirvdisplayjet">source on github &raquo;</a></p>
+
+<hr>
+
+<h2>zirvui</h2>
+<p><tt>C11 &mdash; MOSIX graphical desktop compositor</tt></p>
+
+<p>The ZirvUI desktop compositor / graphical shell for Zirvium. Connects to the DisplayJet driver to render a complete desktop environment with a modern panel and system status indicators.</p>
+
+<h4>Features</h4>
+<ul>
+<li><b>Top panel</b> with hamburger menu, &ldquo;ZirvUI&rdquo; branding</li>
+<li><b>Status icons</b>: WiFi, Bluetooth, speaker, battery, user, power</li>
+<li><b>Live clock</b> displaying system uptime formatted as MM:SS</li>
+<li><b>Background gradient</b> with pixel-level compositing</li>
+<li><b>5x7 bitmap font</b> rendering for all text elements</li>
+<li>Custom icon renderers for every panel element</li>
+</ul>
+
+<p>Compiled as a freestanding ELF binary embedding zirvlibc and linking against the DisplayJet API (<tt>displayjet.h</tt>). Produces <tt>zirvui.elf</tt>, embedded into the kernel at <tt>/bin/zirvui</tt>.</p>
+
+<p><a href="https://github.com/gauthamnair2005/zirvui">source on github &raquo;</a></p>
+
+<hr>
+
 <div class="footer">
 Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
 </div>

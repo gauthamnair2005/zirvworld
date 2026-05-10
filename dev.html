@@ -79,6 +79,8 @@ code.block { display: block; white-space: pre; background: #f4f4f4; border: 1px 
 <li><a href="#debugging">20. Debugging</a></li>
 <li><a href="#userspace">21. Writing MOSIX Userspace Programs</a></li>
 <li><a href="#time">22. Time Subsystem</a></li>
+<li><a href="#displayjet">23. DisplayJet Driver API</a></li>
+<li><a href="#zirvui">24. ZirvUI Compositor</a></li>
 </ul>
 </div>
 
@@ -1422,6 +1424,94 @@ int main(void)
 </table>
 
 <p>The zirvlibc wrappers for these syscalls are declared in <tt>&lt;unistd.h&gt;</tt> and <tt>&lt;time.h&gt;</tt>.</p>
+
+<hr>
+
+<h2 id="displayjet">23. DisplayJet Driver API</h2>
+
+<p><b>Directory:</b> <tt>drivers/zirv/displayjet/</tt> in the kernel tree; standalone at <tt>~/projects/zirvdisplayjet/</tt></p>
+
+<p>DisplayJet is the MAEM-encrypted display driver for Zirvium. It drives Bochs VBE-compatible display hardware (Bochs VGA / QEMU stdvga) and exposes a userspace compositor API via custom syscalls. All framebuffer surfaces are encrypted in memory using ChaCha20 with per-surface keys derived via HKDF from a hardware-entropy master key.</p>
+
+<h4>Userspace API (displayjet.h)</h4>
+
+<table>
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td><tt>dj_connect()</tt></td><td>Connect to the DisplayJet display server</td></tr>
+<tr><td><tt>dj_disconnect()</tt></td><td>Disconnect from the display server</td></tr>
+<tr><td><tt>dj_surface_create(width, height)</tt></td><td>Create a GPU surface, returns surface ID</td></tr>
+<tr><td><tt>dj_surface_destroy(surface_id)</tt></td><td>Destroy a surface and free its encrypted memory</td></tr>
+<tr><td><tt>dj_surface_present(surface_id)</tt></td><td>Present a surface to the display</td></tr>
+<tr><td><tt>dj_get_mode(mode)</tt></td><td>Query the current display mode (width, height, bpp)</td></tr>
+<tr><td><tt>dj_surface_read(surface_id, buf, x, y, w, h)</tt></td><td>Read encrypted pixels from a surface</td></tr>
+<tr><td><tt>dj_surface_write(surface_id, buf, x, y, w, h)</tt></td><td>Write encrypted pixels to a surface</td></tr>
+<tr><td><tt>dj_list_surfaces()</tt></td><td>List all active surfaces and their metadata</td></tr>
+<tr><td><tt>dj_request_access(target_pid, surface_id)</tt></td><td>Request access to another process's surface</td></tr>
+<tr><td><tt>dj_grant_access(target_pid, surface_id)</tt></td><td>Grant access to a surface</td></tr>
+</table>
+
+<h4>MAEM (Memory-Attested Encryption of Surfaces)</h4>
+
+<p>Each surface's framebuffer data is encrypted in-place in physical memory:</p>
+<ul>
+<li><b>Key derivation:</b> A hardware-entropy master key is collected at boot. Per-surface keys are derived via HKDF(extract=HMAC-SHA256, expand=ChaCha20).</li>
+<li><b>Cipher:</b> ChaCha20 with a 256-bit key and 96-bit nonce. Each surface row uses a unique nonce derived from the row index.</li>
+<li><b>DMA fencing:</b> Access counters ensure that encrypted surfaces are never swapped or read by an untrusted DMA engine while in use.</li>
+<li><b>Attack model:</b> Cold-boot attacks, physical memory inspection, and DMA snooping cannot recover pixel data without the master key (which never leaves the CPU).</li>
+</ul>
+
+<h4>Building</h4>
+<pre># DisplayJet is compiled as part of the kernel build
+make -C drivers/zirv/displayjet</pre>
+
+<p><a href="https://github.com/gauthamnair2005/zirvdisplayjet">source on github &raquo;</a></p>
+
+<hr>
+
+<h2 id="zirvui">24. ZirvUI Compositor</h2>
+
+<p><b>Directory:</b> <tt>~/projects/zirvui/</tt></p>
+
+<p>ZirvUI is the graphical desktop compositor / shell for Zirvium. It connects to the DisplayJet driver and renders a complete desktop environment on the encrypted framebuffer.</p>
+
+<h4>Architecture</h4>
+
+<pre>ZirvUI (zirvui.elf)
+  |
+  |-- DisplayJet client (displayjet.h)
+  |     Connects to driver, creates surfaces, presents frames
+  |
+  |-- Bitmap font renderer (5x7)
+  |     Renders all text and labels
+  |
+  |-- Panel renderer
+  |     Top bar with menu, branding, status icons, clock
+  |
+  |-- Icon renderers
+  |     Custom pixel renderers for WiFi, BT, speaker, battery,
+  |     user, and power icons
+  |
+  |-- Background renderer
+  |     Gradient fill with compositing</pre>
+
+<h4>Panel layout</h4>
+
+<pre>+------------------------------------------------------------------+
+| [=]  ZirvUI    [WiFi][BT][Spkr][Batt][User][Power]    MM:SS      |
++------------------------------------------------------------------+
+|                                                                    |
+|                    (desktop background gradient)                    |
+|                                                                    |
++------------------------------------------------------------------+</pre>
+
+<h4>Building</h4>
+<pre>git clone https://github.com/gauthamnair2005/zirvui.git
+cd zirvui
+make</pre>
+
+<p>Produces <tt>zirvui.elf</tt>, a freestanding ELF binary that can be embedded into the kernel at <tt>/bin/zirvui</tt> or launched from ZirvShell via <tt>run /bin/zirvui</tt>.</p>
+
+<p><a href="https://github.com/gauthamnair2005/zirvui">source on github &raquo;</a></p>
 
 <hr>
 
