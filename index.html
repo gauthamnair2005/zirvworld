@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <link rel="stylesheet" href="style.css">
-<title>The Zirvium Operating System</title>
+<title>Zirvium &mdash; The MOSIX Operating System Family</title>
 </head>
 <body>
 
@@ -12,43 +12,51 @@
 
 <div class="logo-row">
 <img src="logo.svg" alt="">
-<h1>The <span>Zirvium</span> Operating System</h1>
+<h1><span>Zirvium</span> &mdash; A MOSIX Operating System</h1>
 </div>
 
 <div class="header-links">
 <a href="index.html">Home</a>
 <a href="projects.html">Projects</a>
 <a href="architecture.html">Architecture</a>
-<a href="standard.html">MOSIX</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
+<a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
-<a href="user.html">User Docs</a>
-<a href="dev.html">Dev Docs</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
 </div>
 
 <hr>
 
-<h2>About</h2>
+<h2>What is Zirvium?</h2>
 
-<p><b>Zirvium</b> is a from-scratch x86-64 kernel and operating system that implements the <b>MOSIX</b> (Modern OSIX) standard. It replaces legacy paths with a simplified filesystem hierarchy, unifies device management under a single <tt>/zirv</tt> namespace, encrypts display surfaces in memory via <b>MAEM</b> (Memory-Attested Encryption of Surfaces), and provides a full desktop compositor called <b>ZirvUI</b>. The entire system is written in C11 and x86-64 assembly, with no external dependencies.</p>
+<p><b>Zirvium</b> is the reference implementation of the <b><a href="standard.html">MOSIX</a></b> (Modern OSIX) operating system standard. Just as GNU/Linux implements POSIX, Zirvium implements the MOSIX specification. It is a from-scratch x86-64 kernel written in C11 and assembly, and serves as both a functional OS and a proving ground for the MOSIX design.</p>
 
-<p>The ecosystem spans twelve projects: the kernel, a freestanding C library, an init system, an English-like shell, a utilities collection (17 binaries), an encrypted display driver, a graphical desktop compositor, a display manager, and several hardware driver modules. Together they form a complete operating system capable of booting on bare metal and under QEMU, with support for SATA, NVMe, USB storage, Intel e1000, VirtIO, Realtek RTL8139 and RTL8723DE WiFi, Intel i915 graphics, Bochs VGA, VMware SVGA, NVIDIA GPUs, HDA audio, Bluetooth, and TPM 2.0.</p>
+<p>The ecosystem spans twelve projects: the kernel, a freestanding C library, an init system, an English-like shell, 17 utilities, an encrypted display driver, a graphical desktop compositor, and several hardware driver modules. Together they form a complete operating system capable of booting on bare metal and under QEMU.</p>
+
+<p>But <b>Zirvium is just one MOSIX OS</b>. The MOSIX standard is designed to be implemented by anyone. You can build your own kernel, your own libc, your own shell &mdash; and as long as they follow the <a href="standard.html">MOSIX specification</a>, they are part of the MOSIX family. This website is the canonical reference for that specification.</p>
 
 <h2>Quick Links</h2>
 
 <table>
 <tr>
+<td><a href="standard.html">MOSIX Standard</a></td>
+<td>The operating system specification &mdash; filesystem, ABI, syscalls</td>
+</tr>
+<tr>
 <td><a href="projects.html">Ecosystem &amp; Projects</a></td>
-<td>Detailed overview of all Zirvium components</td>
+<td>All Zirvium components and their source code</td>
+</tr>
+<tr>
+<td><a href="distributions.html">Distributions</a></td>
+<td>How to create your own MOSIX distribution</td>
 </tr>
 <tr>
 <td><a href="architecture.html">System Architecture</a></td>
-<td>Kernel design, memory management, syscalls, drivers, IPC</td>
-</tr>
-<tr>
-<td><a href="standard.html">MOSIX Standard</a></td>
-<td>The MOSIX operating system specification and ABI</td>
+<td>Kernel design, memory management, syscalls, drivers</td>
 </tr>
 <tr>
 <td><a href="displayjet.html">DisplayJet &amp; MAEM</a></td>
@@ -56,7 +64,7 @@
 </tr>
 <tr>
 <td><a href="zirvui.html">ZirvUI Desktop</a></td>
-<td>Graphical desktop compositor with 5x7 bitmap font rendering</td>
+<td>Graphical desktop compositor</td>
 </tr>
 <tr>
 <td><a href="download.html">Download &amp; Build</a></td>
@@ -70,12 +78,20 @@
 <td><a href="dev.html">Developer Documentation</a></td>
 <td>Kernel internals, driver dev, porting guide, userspace programs</td>
 </tr>
+<tr>
+<td><a href="contributing.html">Contributing</a></td>
+<td>How to contribute to the MOSIX ecosystem</td>
+</tr>
 </table>
+
+<h2>Supported Hardware</h2>
+
+<p>Storage: SATA (ATA PIO), NVMe, USB mass storage, VirtIO block. Networking: Intel e1000, VirtIO net, Realtek RTL8139, Realtek RTL8723DE WiFi. Display: Bochs VGA, VMware SVGA II, Intel i915 UHD (Gen 9.5-14), NVIDIA GPU (Linux compat). Input: PS/2 keyboard, Synaptics touchpad. Other: HDA audio, Realtek Bluetooth, TPM 2.0, serial 16550 UART.</p>
 
 <hr>
 
 <div class="footer">
-Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
 </div>
 
 </div>

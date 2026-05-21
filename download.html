@@ -19,27 +19,29 @@
 <a href="index.html">Home</a>
 <a href="projects.html">Projects</a>
 <a href="architecture.html">Architecture</a>
-<a href="standard.html">MOSIX</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
+<a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
-<a href="user.html">User Docs</a>
-<a href="dev.html">Dev Docs</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
 </div>
 
 <hr>
 
+<p>All MOSIX projects are open source under GPLv3. The <b>Zirvium kernel</b> is the reference implementation &mdash; you can build it, run it, fork it, or use it as a starting point for your own <a href="distributions.html">MOSIX distribution</a>.</p>
+
 <h2>Source Code</h2>
 
-<p>All Zirvium projects are available on GitHub under GPLv3:</p>
-
 <table>
-<tr><td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td><td>Kernel and OS (includes zirvinit, zirvshell, zirvutils as submodules)</td></tr>
-<tr><td><a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></td><td>Freestanding C library</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td><td>Reference MOSIX kernel and full OS (includes init, shell, utils as submodules)</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></td><td>Reference MOSIX C library</td></tr>
 <tr><td><a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a></td><td>17 command-line utilities</td></tr>
 <tr><td><a href="https://github.com/gauthamnair2005/zirvdisplayjet">zirvdisplayjet</a></td><td>MAEM-encrypted display driver</td></tr>
 <tr><td><a href="https://github.com/gauthamnair2005/zirvui">zirvui</a></td><td>Graphical desktop compositor</td></tr>
-<tr><td><a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a></td><td>Website source</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a></td><td>Website and MOSIX specification</td></tr>
 </table>
 
 <hr>
@@ -51,8 +53,7 @@
 <li>x86-64-elf cross-compiler (<tt>x86_64-elf-gcc</tt>) or system gcc</li>
 <li>NASM (&gt;= 2.14)</li>
 <li>GNU Make</li>
-<li>grub-mkrescue and xorriso (for ISO creation)</li>
-<li>mtools (for ISO creation)</li>
+<li>grub-mkrescue, xorriso, mtools (for ISO creation)</li>
 <li>QEMU (&gt;= 6.0, for testing)</li>
 </ul>
 
@@ -63,49 +64,15 @@ cd zirvium
 git submodule update --init --recursive
 make run</pre>
 
-<p>This single command builds the kernel with all embedded userspace binaries, creates a bootable ISO, and launches QEMU with serial console output visible in your terminal.</p>
-
 <h3>Build Targets</h3>
-
 <table>
-<tr><td><tt>make</tt></td><td>Build kernel ELF with embedded userspace binaries</td></tr>
-<tr><td><tt>make iso</tt></td><td>Build bootable GRUB2/Multiboot2 ISO image</td></tr>
+<tr><td><tt>make</tt></td><td>Build kernel with embedded userspace</td></tr>
+<tr><td><tt>make iso</tt></td><td>Build GRUB2 bootable ISO</td></tr>
 <tr><td><tt>make run</tt></td><td>Build ISO and launch in QEMU</td></tr>
-<tr><td><tt>make vmzirv</tt></td><td>Build kernel-only ELF (no embedded binaries)</td></tr>
-<tr><td><tt>make debug</tt></td><td>Build ISO and launch QEMU with GDB stub on port 1234</td></tr>
-<tr><td><tt>make bin</tt></td><td>Strip the ELF to a flat binary</td></tr>
+<tr><td><tt>make vmzirv</tt></td><td>Kernel-only ELF (no embedded binaries, <tt>-DVMZIRV</tt>)</td></tr>
+<tr><td><tt>make debug</tt></td><td>Launch QEMU with GDB stub on port 1234</td></tr>
 <tr><td><tt>make clean</tt></td><td>Remove all build artefacts</td></tr>
 </table>
-
-<h3>Build Individual Components</h3>
-
-<pre>make -C zirvinit       # just the init binary (zirvinit.elf)
-make -C zirvshell      # just the shell binary (zirvshell.elf)
-make -C zirvlibc       # just the C library (libzirvlibc.a)
-make -C zirvutils      # all 17 utility binaries</pre>
-
-<hr>
-
-<h2>QEMU Run Options</h2>
-
-<p>The default <tt>make run</tt> target launches QEMU with:</p>
-<ul>
-<li>Serial output redirected to stdio (<tt>-serial stdio</tt>)</li>
-<li>512 MiB RAM (<tt>-m 512M</tt>)</li>
-<li>Standard VGA display (<tt>-vga std</tt>) with SDL window</li>
-<li>IDE disk (blank 10 MiB image) + VirtIO block device</li>
-<li>Three NICs: Intel e1000, VirtIO net, Realtek RTL8139 (user-mode networking)</li>
-<li><tt>-no-reboot</tt> to stop on triple fault</li>
-</ul>
-
-<p>Manual invocation:</p>
-
-<pre>qemu-system-x86_64 \
-    -cdrom build/zirvium.iso \
-    -serial stdio \
-    -m 256M \
-    -vga std \
-    -display sdl</pre>
 
 <hr>
 
@@ -113,28 +80,10 @@ make -C zirvutils      # all 17 utility binaries</pre>
 
 <pre>zirvium/
   arch/x64/          Architecture-specific (boot, GDT, IDT, syscall)
-  kernel/            Core kernel
-    mm/              PMM, VMM, heap
-    proc/            Process management
-    syscall/         24 syscall handlers
-    ipc/             Ring-buffer pipes
-    irq/             8259A PIC management
-    loader/          ELF loader, embedded binary table
-    time/            CMOS RTC, TSC uptime, timezone
+  kernel/            Core kernel (mm, proc, syscall, ipc, irq, loader, time)
   fs/                MOSIX Virtual Filesystem
-  drivers/           Device drivers
-    pci/             PCI bus + compat layer
-    serial/          16550 UART
-    vga/             VGA text mode, framebuffer console
-    zirv/            Native device drivers
-      display/       Bochs VGA, VMware SVGA, Intel i915
-      input/ps2/     PS/2 keyboard and Synaptics touchpad
-      audio/hda/     High-Definition Audio
-      wifi/          Realtek RTL8723DE
-      bluetooth/     Realtek Bluetooth
-    gpu/             NVIDIA GPU (Linux compat layer)
-    compat/          linux_compat.h API bridge
-  libs/zirvlibc/     Freestanding C library
+  drivers/           Device drivers (PCI, serial, VGA, native, compat)
+  libs/zirvlibc/     Freestanding C library (submodule)
   zirvinit/          Init system (submodule)
   zirvshell/         Shell (submodule)
   zirvutils/         17 utilities (submodule)</pre>
@@ -142,7 +91,7 @@ make -C zirvutils      # all 17 utility binaries</pre>
 <hr>
 
 <div class="footer">
-Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
 </div>
 
 </div>

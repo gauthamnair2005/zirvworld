@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>MOSIX — Contributing</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1>Contributing to <span>MOSIX</span></h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="distributions.html">Distributions</a>
+<a href="download.html">Download</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
+</div>
+
+<hr>
+
+<p>The MOSIX ecosystem is open to contributions at every level. Whether you want to improve the reference implementation (Zirvium) or build your own MOSIX distribution, there are many ways to get involved.</p>
+
+<h2>Ways to Contribute</h2>
+
+<h3>1. Improve Zirvium (Reference Kernel)</h3>
+<p>The <a href="https://github.com/gauthamnair2005/zirvium">Zirvium kernel</a> is the reference MOSIX implementation. Key areas needing work:</p>
+<ul>
+<li><b>Scheduler</b>: Implement preemptive multitasking (timer IRQ, context switching)</li>
+<li><b>SMP</b>: Multi-CPU support (per-CPU stacks, TSS, syscall entry)</li>
+<li><b>Storage</b>: AHCI driver, filesystem driver (FAT, ext2, or custom MOSIX FS)</li>
+<li><b>Networking</b>: TCP/IP stack, socket syscalls</li>
+<li><b>Drivers</b>: More hardware support via the <tt>linux_compat.h</tt> bridge</li>
+<li><b>Userspace heap</b>: Proper <tt>malloc</tt>/<tt>free</tt> using <tt>brk</tt> and <tt>mmap</tt></li>
+<li><b>Shell pipes</b>: Implement <tt>|</tt> and <tt>&gt;</tt> redirection in zirvshell</li>
+</ul>
+
+<h3>2. Improve the Website &amp; Specification</h3>
+<p>The <a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a> repository contains both the website and the MOSIX specification. Improvements welcome: better documentation, diagrams, tutorials, or clarifications of the standard.</p>
+
+<h3>3. Build a MOSIX Distribution</h3>
+<p>Follow the <a href="distributions.html">distribution guide</a> to create your own MOSIX OS. This could be:</p>
+<ul>
+<li>A <b>minimal embedded MOSIX</b> for IoT or single-purpose devices</li>
+<li>A <b>desktop MOSIX</b> with a custom compositor, window manager, and applications</li>
+<li>A <b>research MOSIX</b> experimenting with new kernel designs while maintaining MOSIX ABI compatibility</li>
+<li>A <b>port</b> of MOSIX to a new architecture (ARM, RISC-V, etc.)</li>
+</ul>
+
+<h3>4. Write Userspace Programs</h3>
+<p>MOSIX needs applications. The <a href="dev.html#userspace">userspace guide</a> explains how to write programs using zirvlibc. Ideas: text editor, file manager, games, developer tools.</p>
+
+<h3>5. Port Linux Drivers</h3>
+<p>The <tt>linux_compat.h</tt> bridge makes it possible to port existing Linux drivers to Zirvium with minimal changes. The WiFi and NVIDIA GPU drivers demonstrate this approach.</p>
+
+<hr>
+
+<h2>How to Submit</h2>
+
+<p>All MOSIX projects use GitHub:</p>
+<ul>
+<li><b>Bug reports and feature requests</b>: Open an issue on the relevant repository</li>
+<li><b>Code contributions</b>: Fork, make changes, submit a pull request</li>
+<li><b>Documentation</b>: PRs against <a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a></li>
+<li><b>New distributions</b>: We'd love to feature your MOSIX distribution on this site &mdash; open an issue or PR on zirvworld</li>
+</ul>
+
+<p>All code is GPLv3. By contributing, you agree to license your contributions under GPLv3.</p>
+
+<hr>
+
+<h2>Project Repositories</h2>
+
+<table>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td><td>Reference kernel and OS</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></td><td>Reference C library</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a></td><td>Utilities</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvdisplayjet">zirvdisplayjet</a></td><td>Display driver</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvui">zirvui</a></td><td>Desktop compositor</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a></td><td>Website and specification</td></tr>
+</table>
+
+<hr>
+
+<div class="footer">
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -19,12 +19,14 @@
 <a href="index.html">Home</a>
 <a href="projects.html">Projects</a>
 <a href="architecture.html">Architecture</a>
-<a href="standard.html">MOSIX</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
+<a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
-<a href="user.html">User Docs</a>
-<a href="dev.html">Dev Docs</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
 </div>
 
 <hr>
@@ -33,7 +35,7 @@
 
 <pre>  +----------------------------------+
   | Desktop Compositor               |
-  | (zirvui)                         |
+  | (zirvui &mdash; MOSIX reference GUI)  |
   +----------------------------------+
   | Display Driver                   |
   | (zirvdisplayjet &mdash; MAEM-encrypted)|
@@ -44,273 +46,49 @@
             | syscall interface
   +----------------------------------+
   | zirvlibc                         |
-  | (printf, read, write, mmap, ...) |
+  | (MOSIX reference C library)      |
   +----------------------------------+
             | SYSCALL / SYSRETQ
   +----------------------------------+
   | Zirvium Kernel                   |
-  | (VFS, procs, drivers, IPC, ELF) |
+  | (MOSIX reference kernel)         |
   +----------------------------------+
             | hardware
   +----------------------------------+
   | x86-64                           |
-  | (CPU, PCI, SATA, NVMe, USB, ...) |
   +----------------------------------+</pre>
+
+<p><b>This is the Zirvium reference architecture.</b> A MOSIX-compliant system may use a different kernel, different libc, or different userspace &mdash; as long as it follows the <a href="standard.html">MOSIX specification</a> for the filesystem hierarchy, /zirv device namespace, and syscall ABI.</p>
 
 <hr>
 
 <h2>Boot Sequence</h2>
 
 <ol>
-<li><b>GRUB2</b> loads the kernel ELF via Multiboot2 protocol and jumps to the 32-bit entry point at 0x100000.</li>
-<li><b><tt>arch/x64/boot.asm</tt></b>: 32-bit stub checks for CPUID and long mode support, builds identity-mapped page tables (4 GiB via 2 MiB huge pages), creates a higher-half kernel map at <tt>0xFFFFFFFF80000000</tt>, loads a 64-bit GDT, far-jumps into long mode, and calls <tt>kernel_main</tt>.</li>
-<li><b><tt>kernel/main.c</tt></b> (14-step init sequence):
-  <ol>
-  <li><tt>serial_init</tt> &mdash; COM1 at 115200 baud</li>
-  <li><tt>gdt_init</tt> &mdash; GDT with null, kernel code/data, user code/data, TSS</li>
-  <li><tt>idt_init</tt> &mdash; IDT with 256 ISR entries</li>
-  <li><tt>irq_init</tt> &mdash; 8259A PIC remap (IRQ 0-15 &rarr; INT 32-47)</li>
-  <li>Parse Multiboot2 memory map</li>
-  <li><tt>pmm_init</tt> &mdash; Physical memory bitmap allocator</li>
-  <li><tt>vmm_init</tt> &mdash; 4-level paging with PHYS_MAP_BASE and KERNEL_VIRT_BASE</li>
-  <li><tt>vga_init</tt> &mdash; VGA text mode buffer at 0xB8000</li>
-  <li><tt>console_init</tt> &mdash; Triple console multiplexer</li>
-  <li><tt>vfs_init</tt> &mdash; MOSIX directory tree with /zirv namespace</li>
-  <li><tt>proc_init</tt> &mdash; Process table</li>
-  <li><tt>embedded_init</tt> &mdash; 17 embedded binary records</li>
-  <li><tt>syscall_init</tt> &mdash; LSTAR MSR &rarr; syscall_entry</li>
-  <li><tt>time_init</tt> &mdash; CMOS RTC + TSC-based uptime</li>
-  <li><tt>pci_init</tt> &mdash; Full PCI bus enumeration</li>
-  <li><tt>driver_probe_all</tt> &mdash; Dynamic driver probing</li>
-  <li><tt>i8042_init</tt> / <tt>keyboard_init</tt> &mdash; PS/2 keyboard</li>
-  <li><tt>proc_create(0)</tt> &mdash; Create PID 1</li>
-  <li><tt>elf_load_process(PID 1, init)</tt> &mdash; Load zirvinit.elf</li>
-  <li><tt>proc_enter_usermode(PID 1)</tt> &mdash; IRETQ to ring 3</li>
-  </ol>
-</li>
+<li><b>GRUB2</b> loads kernel via Multiboot2 protocol</li>
+<li><b><tt>arch/x64/boot.asm</tt></b>: 32-bit stub checks CPUID/long mode, builds identity-mapped page tables (4 GiB via 2 MiB huge pages), creates higher-half kernel map at <tt>0xFFFFFFFF80000000</tt>, loads 64-bit GDT, far-jumps into long mode</li>
+<li><b><tt>kernel_main</tt></b>: 20-step init sequence &mdash; serial, GDT, IDT, PIC, PMM, VMM, VGA, console, VFS, processes, embedded binaries, syscalls, time, PCI, drivers, keyboard, then creates PID 1 and enters user mode</li>
 </ol>
 
 <hr>
 
-<h2>GDT and Segment Layout</h2>
-
-<p><b>File:</b> <tt>arch/x64/gdt.c</tt></p>
-
-<table>
-<tr><th>Index</th><th>Segment</th><th>DPL</th><th>Purpose</th></tr>
-<tr><td>0</td><td>Null</td><td>&mdash;</td><td>Required null descriptor</td></tr>
-<tr><td>1</td><td>Kernel code</td><td>0</td><td>CS for ring-0 (L-bit set, 64-bit)</td></tr>
-<tr><td>2</td><td>Kernel data</td><td>0</td><td>DS/SS for ring-0</td></tr>
-<tr><td>3</td><td>User code</td><td>3</td><td>CS for ring-3 (64-bit)</td></tr>
-<tr><td>4</td><td>User data</td><td>3</td><td>DS/SS for ring-3</td></tr>
-<tr><td>5</td><td>TSS</td><td>0</td><td>Task State Segment (RSP0 on interrupt)</td></tr>
-</table>
-
-<p>TSS.RSP0 is updated per-process before entering user mode, so interrupts from ring 3 switch to the correct kernel stack.</p>
-
-<hr>
-
 <h2>Memory Management</h2>
-
-<h3>Physical Memory Manager (PMM)</h3>
-<p><b>File:</b> <tt>kernel/mm/pmm.c</tt> &mdash; Bitmap allocator, 1 bit per 4 KiB page frame, supports up to 1 TiB physical memory (32 MiB bitmap in BSS). The Multiboot2 memory map marks available RAM regions as free; all reserved/ACPI/MMIO regions are marked unavailable. API: <tt>pmm_alloc_page</tt>, <tt>pmm_free_page</tt>, <tt>pmm_alloc_pages</tt> (contiguous), <tt>pmm_free_pages</tt>.</p>
-
-<h3>Virtual Memory Manager (VMM)</h3>
-<p><b>File:</b> <tt>kernel/mm/vmm.c</tt> &mdash; x86-64 4-level paging (PML4 &rarr; PDP &rarr; PD &rarr; PT).</p>
-
-<pre>0x0000000000000000 - 0x00007FFFFFFFFFFF   User space (per-process)
-0xFFFF800000000000                        PHYS_MAP_BASE (direct physical map)
-0xFFFFFFFF80000000                        KERNEL_VIRT_BASE (higher-half kernel)</pre>
-
-<p>Per-process address spaces clone the upper half (kernel) entries from the kernel PML4 and zero out the lower half. Supports 4 KiB and 2 MiB (huge) pages. The <tt>PHYS_TO_VIRT(p)</tt> macro converts physical addresses to the direct map.</p>
-
-<h3>Kernel Heap</h3>
-<p>A bump allocator over a 4 MiB static arena (<tt>kmalloc</tt>, <tt>kfree</tt>, <tt>kzalloc</tt>). <tt>kfree</tt> marks with <tt>HEAP_MAGIC_FREE</tt> but does not coalesce or reuse. Will be replaced with a slab allocator.</p>
-
-<hr>
-
-<h2>Process Management</h2>
-
-<p><b>Files:</b> <tt>kernel/proc/process.c</tt>, <tt>kernel/proc/process.h</tt></p>
-
-<h4>Process descriptor (<tt>process_t</tt>)</h4>
-<ul>
-<li>PID, state (UNUSED / RUNNING / BLOCKED / ZOMBIE)</li>
-<li>Per-process address space (<tt>address_space_t *as</tt>)</li>
-<li>User RIP/RSP, kernel stack top (16 KiB, PMM-allocated)</li>
-<li>Heap state: <tt>brk</tt> at <tt>0x100000000000</tt>, <tt>mmap_cursor</tt> at <tt>0x200000000000</tt></li>
-<li>Open file descriptor table (64 entries)</li>
-<li>Parent/child/sibling pointers for process tree tracking</li>
-<li>Current working directory (<tt>cwd[256]</tt>)</li>
-</ul>
-
-<h4>User virtual memory layout</h4>
-<pre>0x0000000000001000                     user code / data (by ELF loader)
-0x0000100000000000                     heap base (PROC_HEAP_START)
-0x0000200000000000                     anonymous mmap region start
-0x0000700000000000                     user stack top (grows downward, 64 KiB)</pre>
-
-<p>User mode entry via <tt>proc_enter_usermode</tt>: sets TSS.RSP0, switches to per-process kernel stack, loads CR3, pushes IRETQ frame (SS, RSP, RFLAGS, CS, RIP), executes IRETQ to ring 3.</p>
+<p><b>PMM</b> (kernel/mm/pmm.c): Bitmap allocator, 1 bit per 4 KiB frame, supports 1 TiB max. <b>VMM</b> (kernel/mm/vmm.c): 4-level paging. Layout: user space <tt>0x0-0x7FFFFFFFFFFF</tt>, PHYS_MAP_BASE <tt>0xFFFF800000000000</tt>, KERNEL_VIRT_BASE <tt>0xFFFFFFFF80000000</tt>. Per-process address spaces clone kernel upper half. <b>Heap</b>: Bump allocator over 4 MiB arena.</p>
 
 <hr>
 
 <h2>System Calls</h2>
-
-<p>24 syscalls implemented. Entry via SYSCALL/SYSRETQ instruction (<tt>arch/x64/syscall_entry.asm</tt>).</p>
-
-<table>
-<tr><th>#</th><th>Name</th><th>Description</th></tr>
-<tr><td>0</td><td>SYS_READ</td><td>Read from file descriptor</td></tr>
-<tr><td>1</td><td>SYS_WRITE</td><td>Write to file descriptor</td></tr>
-<tr><td>2</td><td>SYS_OPEN</td><td>Open file/device</td></tr>
-<tr><td>3</td><td>SYS_CLOSE</td><td>Close file descriptor</td></tr>
-<tr><td>9</td><td>SYS_MMAP</td><td>Anonymous memory map</td></tr>
-<tr><td>11</td><td>SYS_MUNMAP</td><td>Unmap memory</td></tr>
-<tr><td>12</td><td>SYS_BRK</td><td>Change data segment size</td></tr>
-<tr><td>13</td><td>SYS_UPTIME</td><td>Seconds since boot</td></tr>
-<tr><td>22</td><td>SYS_PIPE</td><td>Create pipe</td></tr>
-<tr><td>39</td><td>SYS_GETPID</td><td>Get process ID</td></tr>
-<tr><td>59</td><td>SYS_EXECVE</td><td>Execute program</td></tr>
-<tr><td>60</td><td>SYS_EXIT</td><td>Exit process</td></tr>
-<tr><td>61</td><td>SYS_WAIT4</td><td>Wait for child</td></tr>
-<tr><td>78</td><td>SYS_GETDENTS</td><td>Read directory entries</td></tr>
-<tr><td>79</td><td>SYS_GETCWD</td><td>Get current working directory</td></tr>
-<tr><td>80</td><td>SYS_CHDIR</td><td>Change directory</td></tr>
-<tr><td>89</td><td>SYS_GETHOSTNAME</td><td>Get hostname</td></tr>
-<tr><td>90</td><td>SYS_SETHOSTNAME</td><td>Set hostname</td></tr>
-<tr><td>96</td><td>SYS_GETDATETIME</td><td>Read system datetime</td></tr>
-<tr><td>97</td><td>SYS_SETDATETIME</td><td>Set system datetime</td></tr>
-<tr><td>98</td><td>SYS_GETTZ</td><td>Get timezone offset</td></tr>
-<tr><td>99</td><td>SYS_SETTZ</td><td>Set timezone offset</td></tr>
-<tr><td>100</td><td>SYS_REBOOT</td><td>Reboot (ACPI reset via 0xCF9)</td></tr>
-<tr><td>101</td><td>SYS_SHUTDOWN</td><td>Shutdown (QEMU 0x604 / Bochs 0xB004)</td></tr>
-</table>
-
-<p>Calling convention: RAX = number, RDI/R10/RDX/R10/R8/R9 = args. Returns RAX = result or negative errno.</p>
-
-<hr>
-
-<h2>Inter-Process Communication</h2>
-
-<p><b>File:</b> <tt>kernel/ipc/pipe.c</tt> &mdash; Ring-buffer pipes with a 4 KiB circular buffer. <tt>pipe_read</tt> blocks until data is available. <tt>pipe_read</tt> returns 0 (EOF) when <tt>write_closed</tt> is true and buffer is empty. Pipe endpoints attach to process file descriptor tables.</p>
-
-<hr>
-
-<h2>Time Subsystem</h2>
-
-<p><b>File:</b> <tt>kernel/time/time.c</tt></p>
-<ul>
-<li><b>CMOS RTC</b>: BCD/binary, 12h/24h auto-detection</li>
-<li><b>TSC-based uptime</b>: CPUID leaf 0x15 for frequency detection (falls back to 2 GHz)</li>
-<li><tt>time_get</tt> / <tt>time_set</tt> with timezone offset arithmetic</li>
-<li><tt>time_uptime_seconds</tt> returns elapsed wall time since boot</li>
-<li><tt>time_get_tz</tt> / <tt>time_set_tz</tt> for timezone offset in minutes</li>
-<li><tt>normalize_datetime</tt> handles carry/borrow across all fields</li>
-<li>Default fallback date: 2005-11-22 15:36 UTC</li>
-</ul>
-
-<hr>
-
-<h2>Virtual Filesystem</h2>
-
-<p><b>Files:</b> <tt>fs/vfs.c</tt>, <tt>fs/mosix.h</tt> &mdash; In-memory directory tree with 256 KiB static arena allocator.</p>
-
-<pre>/             root
-/bin          system binaries (init, shell, 17 utilities)
-/lib          system libraries
-/user         user home area
-/boot         boot configuration
-/config       system configuration
-/zirv         device namespace
-  /sata       SATA devices
-  /pata       PATA devices
-  /nvme       NVMe devices
-  /usb        USB storage
-  /net        network interfaces
-  /input      input devices
-  /display    display devices (Bochs, VMware, i915, NVIDIA)
-  /tty        terminal devices
-    /virtual0 console device
-  /audio      audio devices
-/mounts       mount points
-/tmp          temporary files</pre>
-
-<p>The console device at <tt>/zirv/tty/virtual0</tt> aggregates input from PS/2 keyboard and serial port, and outputs simultaneously to VGA text mode, pixel framebuffer, and serial UART.</p>
-
-<hr>
-
-<h2>Interrupts and IRQs</h2>
-
-<ul>
-<li>8259A PIC remapped: IRQ 0-15 &rarr; IDT vectors 32-47</li>
-<li><tt>request_irq</tt> / <tt>free_irq</tt> / <tt>irq_dispatch</tt> / <tt>irq_eoi</tt></li>
-<li>Supports shared IRQs and edge triggering</li>
-<li>256 ISR stubs generated in <tt>arch/x64/isr_stubs.asm</tt></li>
-<li>Common ISR dispatch: exceptions (int &lt; 32) panic; hardware IRQs route to registered handlers</li>
-</ul>
+<p>24 syscalls, dispatched via SYSCALL/SYSRETQ. Full table with numbers, names, and descriptions is in the <a href="standard.html">MOSIX standard specification</a>.</p>
 
 <hr>
 
 <h2>Drivers</h2>
-
-<h3>PCI Subsystem</h3>
-<p>CF8/CFC I/O port enumeration (256 buses x 32 devices x 8 functions). Full BAR decoding (I/O, memory, 64-bit, prefetchable). <tt>pci_map_bar</tt> uses <tt>PHYS_TO_VIRT</tt> for MMIO access. <tt>pci_enable_device</tt> sets bus master + memory space.</p>
-
-<h3>Display</h3>
-<ul>
-<li><b>Bochs VGA</b> (<tt>0x1234:0x1111/0x2111</tt>): 1024x768x32, VBE I/O ports</li>
-<li><b>VMware SVGA II</b> (<tt>0x15AD:0x0405</tt>): skeleton</li>
-<li><b>Intel i915</b> (<tt>352 lines</tt>): Gen 9.5-14 (Kaby Lake through Meteor Lake), ~70 PCI IDs, GMBUS EDID, panel power, backlight PWM</li>
-<li><b>NVIDIA GPU</b> (<tt>126 lines</tt>): Linux compat layer, BAR0+BAR2 mapping, ioctl stubs</li>
-<li><b>VGA text mode</b>: 80x25 at 0xB8000, hardware cursor</li>
-<li><b>Pixel framebuffer</b>: Glyph renderer for FB console</li>
-<li><b>DisplayJet</b>: MAEM-encrypted surfaces, 11 custom syscalls (110-120)</li>
-</ul>
-
-<h3>Storage</h3>
-<ul>
-<li><b>SATA (ATA PIO)</b>: IDENTIFY, LBA28 read/write, device type detection</li>
-<li><b>NVMe</b>: Polling-mode PCIe SSD driver</li>
-<li><b>USB storage</b>: Mass storage stub</li>
-</ul>
-
-<h3>Networking</h3>
-<ul>
-<li><b>Intel e1000</b> (<tt>0x8086:0x100E</tt>): probe stub</li>
-<li><b>VirtIO net</b> (<tt>0x1AF4:0x1000</tt>): probe stub</li>
-<li><b>Realtek RTL8139</b> (<tt>0x10EC:0x8139</tt>): probe stub</li>
-<li><b>Realtek RTL8723DE WiFi</b> (<tt>355 lines</tt>): PCIe, MMIO, DMA rings, efuse MAC, packet TX</li>
-</ul>
-
-<h3>Input</h3>
-<ul>
-<li><b>PS/2 i8042</b>: Controller initialisation</li>
-<li><b>PS/2 keyboard</b>: Scancode &rarr; ASCII with punctuation mapping</li>
-<li><b>Synaptics touchpad</b>: Skeleton</li>
-</ul>
-
-<h3>Other</h3>
-<ul>
-<li><b>Serial</b>: 16550 UART on COM1 at 115200 baud</li>
-<li><b>HDA Audio</b>: Intel High-Definition Audio skeleton</li>
-<li><b>TPM 2.0</b>: Trusted Platform Module</li>
-<li><b>Realtek Bluetooth</b>: UART HCI transport, firmware download skeleton</li>
-</ul>
-
-<h3>Dynamic Driver Framework</h3>
-<p>Two-tier model: (1) native Zirv drivers registered via <tt>driver_register</tt> with PCI vendor/device ID table, (2) Linux compat drivers via <tt>pci_compat_register_driver</tt>. The <tt>linux_compat.h</tt> bridge (610 lines) provides spinlocks, MMIO accessors, DMA API, list operations, timers, and logging macros for porting Linux drivers.</p>
-
-<hr>
-
-<h2>ELF Binary Loader</h2>
-
-<p><b>Files:</b> <tt>kernel/loader/elf.c</tt>, <tt>kernel/loader/embedded.c</tt></p>
-<p>Static ELF64 loader: validates header, iterates PT_LOAD program headers, allocates physical pages, maps at ELF-specified VAs, zero-fills BSS. 17 binaries are embedded via NASM <tt>incbin</tt> (<tt>init_bin.asm</tt>) including init, shell, and all utilities.</p>
+<p>Display: Bochs VGA, VMware SVGA II, Intel i915 (Gen 9.5-14, 70 PCI IDs, 352 lines), NVIDIA GPU (Linux compat, 126 lines), DisplayJet (MAEM encrypted, 515 lines). Storage: SATA (ATA PIO), NVMe, USB mass storage. Networking: Intel e1000, VirtIO net/block, Realtek RTL8139, Realtek RTL8723DE WiFi (355 lines, PCIe, DMA rings, efuse MAC, packet TX). Input: PS/2 i8042, keyboard (scancode to ASCII), Synaptics touchpad. Other: HDA audio, Realtek Bluetooth (UART HCI), TPM 2.0, serial 16550 UART, Linux compat driver bridge.</p>
 
 <hr>
 
 <div class="footer">
-Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
 </div>
 
 </div>

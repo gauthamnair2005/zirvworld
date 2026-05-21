@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>MOSIX — Distributions</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1>Creating a <span>MOSIX</span> Distribution</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="distributions.html">Distributions</a>
+<a href="download.html">Download</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
+</div>
+
+<hr>
+
+<h2>What is a MOSIX Distribution?</h2>
+
+<p>Just as Linux distributions (Debian, Arch, Fedora) all share the Linux kernel but differ in package management, init systems, and defaults, a <b>MOSIX distribution</b> is any operating system that implements the <a href="standard.html">MOSIX standard</a>. The standard defines:</p>
+<ul>
+<li>The <b>filesystem hierarchy</b> (/bin, /lib, /user, /boot, /config, /zirv, /mounts, /tmp)</li>
+<li>The <b>/zirv device namespace</b> (unified device tree replacing /dev, /sys, /proc, /run)</li>
+<li>The <b>syscall ABI</b> (24 syscalls, x86-64 SYSCALL instruction)</li>
+<li>The <b>MAEM security model</b> (optional, for in-memory encryption)</li>
+</ul>
+
+<p><b>Zirvium</b> is the reference distribution &mdash; analogous to how the Linux kernel is the reference for Linux distributions. Anyone can create a new MOSIX distribution by implementing the standard.</p>
+
+<hr>
+
+<h2>Approach A: Use Zirvium Directly</h2>
+
+<p>The simplest approach. Clone the Zirvium kernel and its submodules, build the ISO, and you have a fully functional MOSIX OS:</p>
+
+<pre>git clone https://github.com/gauthamnair2005/zirvium.git
+cd zirvium
+git submodule update --init --recursive
+make run</pre>
+
+<p>This gives you: the Zirvium kernel, zirvlibc, zirvinit (PID 1), zirvshell (19 commands), and 17 embedded utilities. Everything boots from a single GRUB2 ISO.</p>
+
+<hr>
+
+<h2>Approach B: Fork Zirvium</h2>
+
+<p>Fork the repository and customise:</p>
+<ul>
+<li><b>Kernel</b>: Add new drivers, syscalls, scheduler, or architecture support</li>
+<li><b>Userspace</b>: Replace zirvinit, zirvshell, or zirvutils with your own implementations</li>
+<li><b>Drivers</b>: Port Linux drivers using the <tt>linux_compat.h</tt> API bridge</li>
+<li><b>Branding</b>: Change boot banners, shell prompts, distribution name</li>
+</ul>
+
+<p>As long as you maintain the <a href="standard.html">MOSIX ABI</a>, your userspace programs remain compatible with other MOSIX distributions.</p>
+
+<hr>
+
+<h2>Approach C: Build From Scratch</h2>
+
+<p>Implement the MOSIX standard in your own kernel. You need:</p>
+
+<h3>1. Syscall ABI</h3>
+<p>Implement the 24 MOSIX syscalls at the assigned numbers using the x86-64 SYSCALL/SYSRETQ mechanism. See the <a href="standard.html">MOSIX standard</a> for the full table.</p>
+
+<h3>2. Filesystem Hierarchy</h3>
+<p>Create an in-memory or disk-backed filesystem with the standard MOSIX directories: /bin, /lib, /user, /boot, /config, /zirv (with sata, pata, nvme, usb, net, input, display, tty, audio subdirectories), /mounts, /tmp.</p>
+
+<h3>3. Console Device</h3>
+<p>At minimum, implement <tt>/zirv/tty/virtual0</tt> as a read/write console device that accepts keyboard input and writes to a display (VGA text mode, serial, or framebuffer).</p>
+
+<h3>4. ELF64 Loader</h3>
+<p>Implement a static ELF64 binary loader that maps PT_LOAD segments, zero-fills BSS, and jumps to <tt>e_entry</tt>. Binaries are compiled with <tt>-static -no-pie -z max-page-size=0x1000</tt>.</p>
+
+<h3>5. C Library</h3>
+<p>Use <a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a> as your userspace library, or implement the syscall wrappers yourself. The libc ABI is simple: each function maps to a <tt>_syscallN</tt> inline assembly wrapper.</p>
+
+<hr>
+
+<h2>Compatibility Checklist</h2>
+
+<p>For your OS to be MOSIX-compliant, it must pass these checks:</p>
+
+<table>
+<tr><th>#</th><th>Requirement</th><th>Details</th></tr>
+<tr><td>1</td><td>MOSIX filesystem hierarchy</td><td>/bin, /lib, /user, /boot, /config, /zirv, /mounts, /tmp exist</td></tr>
+<tr><td>2</td><td>/zirv device namespace</td><td>Devices appear under /zirv/&lt;bus&gt;/&lt;type&gt;&lt;index&gt;</td></tr>
+<tr><td>3</td><td>Console device</td><td>/zirv/tty/virtual0 exists and supports read/write</td></tr>
+<tr><td>4</td><td>Syscall ABI</td><td>24 syscalls at correct numbers, x86-64 SYSCALL convention</td></tr>
+<tr><td>5</td><td>ELF64 loading</td><td>Static no-pie ELF64 binaries load and execute</td></tr>
+<tr><td>6</td><td>libc compatibility</td><td>zirvlibc programs compile and run without modification</td></tr>
+<tr><td>7</td><td>zirvinit boots</td><td>PID 1 is zirvinit (or compatible), launches shell</td></tr>
+<tr><td>8</td><td>zirvshell commands</td><td>Core commands (help, echo, pwd, ls, run) work</td></tr>
+</table>
+
+<hr>
+
+<h2>Current Distributions</h2>
+
+<table>
+<tr><th>Distribution</th><th>Kernel</th><th>Description</th></tr>
+<tr><td><b>Zirvium</b></td><td>Zirvium (reference)</td><td>The reference MOSIX distribution. From-scratch x86-64 kernel, full ecosystem.</td></tr>
+<tr><td><i>Your distribution here</i></td><td><i>Your kernel</i></td><td><i>Follow the guide above and submit a PR!</i></td></tr>
+</table>
+
+<hr>
+
+<div class="footer">
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>
