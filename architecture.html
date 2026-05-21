@@ -78,7 +78,7 @@
 <hr>
 
 <h2>System Calls</h2>
-<p>24 syscalls, dispatched via SYSCALL/SYSRETQ. Full table with numbers, names, and descriptions is in the <a href="standard.html">MOSIX standard specification</a>.</p>
+<p>25 syscalls (0&ndash;103), dispatched via SYSCALL/SYSRETQ. Notable additions: <b>SYS_EXECVE (59)</b> implements save/restore semantics — the caller's address space is preserved and restored when the child exits, enabling the shell to run external commands without forking. <b>SYS_PCI_READ (103)</b> exposes PCI device info to userspace. <b>SYS_DNS_LOOKUP (102)</b> provides kernel-level DNS resolution. Full table in the <a href="standard.html">MOSIX standard specification</a>.</p>
 
 <hr>
 

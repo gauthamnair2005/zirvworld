@@ -38,9 +38,9 @@
 
 <p>The core x86-64 kernel &mdash; the reference MOSIX kernel implementation. Implements 4-level paging, bitmap PMM (1 TiB max), higher-half VMM, ELF64 loading, MOSIX VFS, PCI enumeration, and dynamic driver framework. Boots via GRUB2 (Multiboot2) or Limine. 25 syscalls covering file I/O, memory management, process control, time, hostname, system power, and DNS resolution.</p>
 
-<p>Key subsystems: PMM, VMM, kernel heap, process management, ring-buffer IPC, CMOS RTC + TSC uptime, triple console (serial + VGA + framebuffer), ELF loader with 17 embedded binaries, DNS resolver (kernel-level, syscall&nbsp;102), Linux compat layer (<tt>linux_compat.h</tt>).</p>
+<p>Key subsystems: PMM, VMM, kernel heap, process management (create, fork-like save/restore execve, wait4, zombie reaping), ring-buffer IPC, CMOS RTC + TSC uptime, triple console (serial + VGA + framebuffer), ELF loader with 19 embedded binaries, <b>execve save/restore</b> (shell survives after running external commands), DNS resolver (kernel-level, syscall&nbsp;102), <b>PCI device enumeration exposed to userspace</b> (syscall&nbsp;103, <tt>lspci</tt> utility), Linux compat layer (<tt>linux_compat.h</tt>).</p>
 
-<p>Drivers ported from Linux kernel source via <tt>linux_compat.h</tt>: NVIDIA GPU, VirtIO block, VirtIO net. These drivers are sourced from the latest Linux kernel tree and adapted to the MOSIX device model with minimal changes.</p>
+<p>Drivers ported from Linux kernel source via <tt>linux_compat.h</tt>: NVIDIA GPU (Enveediya), Intel Arc GPU, AMD Radeon GPU, VirtIO block, VirtIO net, RTL8139 NIC, xHCI USB&nbsp;3.0, Thunderbolt&nbsp;3/4 &amp; USB4, WiFi&nbsp;7 (BE200, MT7927, QCNCM865, BCM4389). These drivers are sourced from the latest Linux kernel tree and adapted to the MOSIX device model with minimal changes.</p>
 
 <p>Build targets: <tt>make</tt> (kernel ELF), <tt>make iso</tt> (bootable ISO), <tt>make run</tt> (QEMU), <tt>make vmzirv</tt> (kernel-only), <tt>make debug</tt> (GDB stub).</p>
 
@@ -71,9 +71,9 @@
 <hr>
 
 <h2>zirvshell</h2>
-<p><tt>C11 / ASM &mdash; MOSIX natural-language shell (438 lines)</tt></p>
+<p><tt>C11 / ASM &mdash; MOSIX natural-language shell (666 lines)</tt></p>
 
-<p>The reference MOSIX shell. English-like command syntax alongside standard POSIX aliases. 19 commands including date, settime, timezone, uptime, reboot, shutdown. CWD-aware prompt, line editor with backspace, double-quoted argument parsing, multi-word natural language commands.</p>
+<p>The reference MOSIX shell. English-like command syntax alongside standard POSIX aliases. Built-in commands: echo, pwd, uname, clear, whoami, ls, cat, date, settime, timezone, uptime, reboot, shutdown, poweroff, suspend, cd, mkdir, rm, rmdir, mv, cp, help, exit. External commands in <tt>/bin/</tt> are executed via <b>execve with automatic caller save/restore</b> &mdash; the shell process is preserved and returns to the prompt after every command. CWD-aware prompt, line editor with backspace, double-quoted argument parsing, multi-word natural language commands.</p>
 
 <p><tt>make -C zirvshell</tt> produces <tt>zirvshell.elf</tt>, embedded as <tt>/bin/shell</tt>.</p>
 
@@ -82,9 +82,9 @@
 <hr>
 
 <h2>zirvutils</h2>
-<p><tt>C11 / ASM &mdash; 17 MOSIX embedded utilities</tt></p>
+<p><tt>C11 / ASM &mdash; 18 MOSIX embedded utilities + ifconfig</tt></p>
 
-<p>Standalone command-line utilities: hello, cat, sysinfo, clear, echo, reboot, shutdown, suspend, poweroff, ping, sleep, true, false, yes, uname, hostname. All statically linked against zirvlibc, compiled as standalone ELF64 binaries, and embedded into the kernel via <tt>init_bin.asm</tt>.</p>
+<p>Standalone command-line utilities: hello, cat, sysinfo, clear, echo, reboot, shutdown, suspend, poweroff, ping, sleep, true, false, yes, uname, hostname, <b>ifconfig</b>, <b>lspci</b>. All statically linked against zirvlibc, compiled as standalone ELF64 binaries, and embedded into the kernel via <tt>init_bin.asm</tt>. External commands now run via the kernel's execve save/restore mechanism, so the shell prompt returns after every utility completes.</p>
 
 <p><a href="https://github.com/gauthamnair2005/zirvutils">source on github &raquo;</a></p>
 
