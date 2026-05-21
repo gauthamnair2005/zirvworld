@@ -36,9 +36,11 @@
 <h2>zirvium</h2>
 <p><tt>C11 / ASM &mdash; GPLv3</tt></p>
 
-<p>The core x86-64 kernel &mdash; the reference MOSIX kernel implementation. Implements 4-level paging, bitmap PMM (1 TiB max), higher-half VMM, ELF64 loading, MOSIX VFS, PCI enumeration, and dynamic driver framework. Boots via GRUB2 (Multiboot2) or Limine. 24 syscalls covering file I/O, memory management, process control, time, hostname, and system power.</p>
+<p>The core x86-64 kernel &mdash; the reference MOSIX kernel implementation. Implements 4-level paging, bitmap PMM (1 TiB max), higher-half VMM, ELF64 loading, MOSIX VFS, PCI enumeration, and dynamic driver framework. Boots via GRUB2 (Multiboot2) or Limine. 25 syscalls covering file I/O, memory management, process control, time, hostname, system power, and DNS resolution.</p>
 
-<p>Key subsystems: PMM, VMM, kernel heap, process management, ring-buffer IPC, CMOS RTC + TSC uptime, triple console (serial + VGA + framebuffer), ELF loader with 17 embedded binaries, Linux compat layer (610-line <tt>linux_compat.h</tt>).</p>
+<p>Key subsystems: PMM, VMM, kernel heap, process management, ring-buffer IPC, CMOS RTC + TSC uptime, triple console (serial + VGA + framebuffer), ELF loader with 17 embedded binaries, DNS resolver (kernel-level, syscall&nbsp;102), Linux compat layer (<tt>linux_compat.h</tt>).</p>
+
+<p>Drivers ported from Linux kernel source via <tt>linux_compat.h</tt>: NVIDIA GPU, VirtIO block, VirtIO net. These drivers are sourced from the latest Linux kernel tree and adapted to the MOSIX device model with minimal changes.</p>
 
 <p>Build targets: <tt>make</tt> (kernel ELF), <tt>make iso</tt> (bootable ISO), <tt>make run</tt> (QEMU), <tt>make vmzirv</tt> (kernel-only), <tt>make debug</tt> (GDB stub).</p>
 
