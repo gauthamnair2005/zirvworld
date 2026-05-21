@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>Zirvium — MOSIX Standard</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1>The <span>MOSIX</span> Standard &mdash; Modern OSIX Specification</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="download.html">Download</a>
+<a href="user.html">User Docs</a>
+<a href="dev.html">Dev Docs</a>
+</div>
+
+<hr>
+
+<h2>What is MOSIX?</h2>
+
+<p><b>MOSIX</b> (Modern OSIX) is an operating system standard that modernises the traditional POSIX/FHS model for contemporary hardware and software needs. It was designed alongside the Zirvium kernel to provide a clean, minimal, and secure foundation for operating system development. MOSIX is not related to the historical MOSIX distributed OS from the 1990s.</p>
+
+<p>The MOSIX standard addresses four key areas of modernisation:</p>
+<ul>
+<li><b>Unified device namespace</b> &mdash; Replace <tt>/dev</tt>, <tt>/sys</tt>, <tt>/proc</tt>, and <tt>/run</tt> with a single <tt>/zirv</tt> hierarchy</li>
+<li><b>Simplified filesystem hierarchy</b> &mdash; Reduce the FHS to essential directories only</li>
+<li><b>Modern syscall ABI</b> &mdash; Drop obsolete syscalls, add modern equivalents</li>
+<li><b>Memory encryption</b> &mdash; Enforce encryption of sensitive in-memory data (display surfaces, key material)</li>
+</ul>
+
+<hr>
+
+<h2>Filesystem Hierarchy</h2>
+
+<p>MOSIX replaces the traditional FHS (Filesystem Hierarchy Standard) with a simplified layout:</p>
+
+<table>
+<tr><th>Path</th><th>MOSIX</th><th>Replaces (POSIX)</th><th>Purpose</th></tr>
+<tr><td><tt>/</tt></td><td>Root</td><td>/</td><td>Root directory</td></tr>
+<tr><td><tt>/bin</tt></td><td>System binaries</td><td>/bin, /sbin, /usr/bin, /usr/sbin</td><td>All executables in one place</td></tr>
+<tr><td><tt>/lib</tt></td><td>Libraries</td><td>/lib, /usr/lib</td><td>Shared and static libraries</td></tr>
+<tr><td><tt>/user</tt></td><td>User home area</td><td>/home, /root</td><td>Home directories for all users</td></tr>
+<tr><td><tt>/boot</tt></td><td>Boot</td><td>/boot</td><td>Bootloader and kernel images</td></tr>
+<tr><td><tt>/config</tt></td><td>Configuration</td><td>/etc</td><td>System-wide configuration files</td></tr>
+<tr><td><tt>/zirv</tt></td><td>Device namespace</td><td>/dev, /sys, /proc, /run</td><td>All device, system, and runtime data</td></tr>
+<tr><td><tt>/mounts</tt></td><td>Mount points</td><td>/mnt, /media</td><td>Filesystem mount points</td></tr>
+<tr><td><tt>/tmp</tt></td><td>Temporary files</td><td>/tmp</td><td>World-writable temporary storage</td></tr>
+</table>
+
+<h3>Design rationale</h3>
+<ul>
+<li><b>/bin</b> merges all executable directories. No distinction between "user" and "system" binaries &mdash; all are equally important</li>
+<li><b>/user</b> replaces both /home and /root. A single hierarchy for all users including root</li>
+<li><b>/config</b> uses a descriptive name rather than the cryptic /etc</li>
+<li><b>/zirv</b> unifies four separate hierarchies into one, simplifying device discovery and reducing mount overhead</li>
+</ul>
+
+<hr>
+
+<h2>The /zirv Device Namespace</h2>
+
+<p>The <tt>/zirv</tt> directory is the single entry point for all device, system, and runtime information. It replaces <tt>/dev</tt>, <tt>/sys</tt>, <tt>/proc</tt>, and <tt>/run</tt> from traditional Unix systems.</p>
+
+<table>
+<tr><th>Path</th><th>Content</th><th>Dynamic?</th></tr>
+<tr><td><tt>/zirv/sata/*</tt></td><td>SATA (AHCI) block devices</td><td>Yes (per-device)</td></tr>
+<tr><td><tt>/zirv/pata/*</tt></td><td>PATA (IDE) block devices</td><td>Yes (per-device)</td></tr>
+<tr><td><tt>/zirv/nvme/*</tt></td><td>NVMe SSD devices</td><td>Yes (per-device)</td></tr>
+<tr><td><tt>/zirv/usb/*</tt></td><td>USB mass storage devices</td><td>Yes (per-device)</td></tr>
+<tr><td><tt>/zirv/net/*</tt></td><td>Network interfaces (wlan0, bt0, eth0, etc.)</td><td>Yes (per-interface)</td></tr>
+<tr><td><tt>/zirv/input/*</tt></td><td>Input devices (keyboard, touchpad, mouse)</td><td>Yes (per-device)</td></tr>
+<tr><td><tt>/zirv/display/*</tt></td><td>Display/graphics devices (gpu0, etc.)</td><td>Yes (per-GPU)</td></tr>
+<tr><td><tt>/zirv/tty/*</tt></td><td>Terminal/console devices</td><td>Yes (per-TTY)</td></tr>
+<tr><td><tt>/zirv/audio/*</tt></td><td>Audio devices (playback, capture)</td><td>Yes (per-device)</td></tr>
+</table>
+
+<h3>Device naming convention</h3>
+<pre>/zirv/&lt;bus&gt;/&lt;type&gt;&lt;index&gt;</pre>
+<p>Where <tt>&lt;bus&gt;</tt> is the hardware bus (sata, pata, nvme, usb, net, input, display, tty, audio), <tt>&lt;type&gt;</tt> is a media/function type descriptor, and <tt>&lt;index&gt;</tt> is a zero-based instance counter. Examples: <tt>/zirv/sata/disk0</tt>, <tt>/zirv/net/wlan0</tt>, <tt>/zirv/display/gpu0</tt>, <tt>/zirv/tty/virtual0</tt>.</p>
+
+<hr>
+
+<h2>System Call ABI</h2>
+
+<p>MOSIX defines an x86-64 syscall ABI based on the Linux convention but with custom extensions. Syscall numbers 0-99 follow the Linux x86-64 assignments where applicable; numbers 96-101 and 110-120 are MOSIX-specific.</p>
+
+<h3>Calling convention</h3>
+<pre>RAX = syscall number
+RDI = arg1  RSI = arg2  RDX = arg3
+R10 = arg4  R8  = arg5  R9  = arg6
+Return: RAX = result (positive or zero) or negative errno on error
+Instruction: SYSCALL (enters ring 0), SYSRETQ (returns to ring 3)</pre>
+
+<h3>MOSIX syscall table</h3>
+<table>
+<tr><th>Range</th><th>Numbers</th><th>Description</th></tr>
+<tr><td>Standard Linux ABI</td><td>0-3, 9, 11-12, 22, 39, 59-61, 78-80</td><td>read, write, open, close, mmap, munmap, brk, pipe, getpid, execve, exit, wait4, getdents, getcwd, chdir</td></tr>
+<tr><td>MOSIX extensions</td><td>13</td><td>SYS_UPTIME &mdash; seconds since boot</td></tr>
+<tr><td>MOSIX extensions</td><td>89-90</td><td>SYS_GETHOSTNAME, SYS_SETHOSTNAME</td></tr>
+<tr><td>MOSIX extensions</td><td>96-99</td><td>SYS_GETDATETIME, SYS_SETDATETIME, SYS_GETTZ, SYS_SETTZ</td></tr>
+<tr><td>MOSIX extensions</td><td>100-101</td><td>SYS_REBOOT, SYS_SHUTDOWN</td></tr>
+<tr><td>DisplayJet extensions</td><td>110-120</td><td>Display compositor protocol (connect, surfaces, present, access control)</td></tr>
+</table>
+
+<h3>Error convention</h3>
+<p>Negative errno values in RAX on failure: <tt>-ENOMEM = -12</tt>, <tt>-EBADF = -9</tt>, <tt>-EINVAL = -22</tt>, <tt>-EPIPE = -32</tt>. The libc wrappers return -1 and set internal state.</p>
+
+<hr>
+
+<h2>MAEM Security Standard</h2>
+
+<p><b>MAEM</b> (Memory-Attested Encryption of Surfaces) is a MOSIX security specification for encrypting sensitive in-memory data. The initial implementation targets display framebuffers, but the architecture is general.</p>
+
+<h3>Requirements</h3>
+<ol>
+<li><b>Encryption at rest</b>: All surface buffers must be stored encrypted in memory at all times</li>
+<li><b>Per-surface keys</b>: Each surface must have a unique encryption key</li>
+<li><b>Hardware entropy</b>: Key derivation must use hardware random number generation when available</li>
+<li><b>Cryptographic wipe</b>: On deallocation, the buffer must be overwritten with encrypted garbage before pages are freed</li>
+<li><b>Key separation</b>: Access to one surface must not compromise other surfaces</li>
+</ol>
+
+<h3>Cryptographic primitives</h3>
+<table>
+<tr><td><b>Encryption</b></td><td>ChaCha20 (20 rounds, 32-byte key, 12-byte nonce, 32-bit counter)</td></tr>
+<tr><td><b>Key derivation</b></td><td>HKDF (extract: SHA-256 with salt, expand: iterative SHA-256 with counter)</td></tr>
+<tr><td><b>Hash</b></td><td>SHA-256 (FIPS 180-4, 64-round compression)</td></tr>
+<tr><td><b>Entropy</b></td><td>RDRAND (primary) with xorshift64+RDTSC fallback</td></tr>
+</table>
+
+<hr>
+
+<h2>Design Principles</h2>
+
+<ol>
+<li><b>Minimality</b>: Define only what is needed. No obsolete interfaces (STREAMS, SysV IPC, etc.)</li>
+<li><b>Security by default</b>: Encrypt sensitive data in memory, don't trust physical memory access</li>
+<li><b>Flat hierarchy</b>: No deep nesting. /zirv replaces /dev + /sys + /proc + /run with one flat namespace</li>
+<li><b>Self-describing devices</b>: Everything in /zirv has a type, bus, and index. No guesswork about hardware</li>
+<li><b>Freestanding-first</b>: The userspace ABI does not depend on a libc. C library is a convenience, not a requirement</li>
+<li><b>English-like interfaces</b>: Where possible, userspace tools accept natural language input</li>
+</ol>
+
+<hr>
+
+<div class="footer">
+Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

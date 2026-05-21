@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>Zirvium — DisplayJet &amp; MAEM</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1><span>DisplayJet</span> &mdash; MAEM-Encrypted Display Driver</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="download.html">Download</a>
+<a href="user.html">User Docs</a>
+<a href="dev.html">Dev Docs</a>
+</div>
+
+<hr>
+
+<h2>Overview</h2>
+
+<p><b>DisplayJet</b> is an in-kernel display driver for the Zirvium OS that provides a compositor-based display server protocol entirely in ring 0. It drives Bochs VBE-compatible display hardware (1024x768x32bpp) and implements the <b>MAEM</b> (Memory-Attested Encryption of Surfaces) security layer, encrypting every framebuffer surface at rest using ChaCha20 with per-surface keys derived via HKDF-SHA256.</p>
+
+<p>The driver exposes 11 custom syscalls (110&ndash;120) for compositor management, surface creation/destruction, encrypted reads and writes, display mode querying, and access grants. A single compositor process connects at a time and manages up to 32 GPU surfaces.</p>
+
+<p><b>Source:</b> <a href="https://github.com/gauthamnair2005/zirvdisplayjet">github.com/gauthamnair2005/zirvdisplayjet</a></p>
+
+<hr>
+
+<h2>Architecture</h2>
+
+<pre>  +-------------------+
+  | ZirvUI (user)     |
+  | Compositor app    |
+  +--------+----------+
+           | syscalls 110-120
+  +--------+----------+
+  | DisplayJet (ring 0)|
+  | Surface management |
+  | ChaCha20 encrypt   |
+  | Bochs VBE backend  |
+  +--------+----------+
+           | PCI BAR0
+  +--------+----------+
+  | Bochs VBE hardware |
+  | (QEMU stdvga)     |
+  +-------------------+</pre>
+
+<h3>Key concepts</h3>
+<ul>
+<li><b>Single compositor model</b>: Only one process can connect as compositor at a time (enforced by <tt>g_dj.compositor_pid</tt>)</li>
+<li><b>Surface pool</b>: Up to 32 surfaces (<tt>DJ_MAX_SURFACES</tt>), each backed by physically-contiguous pages allocated from <tt>pmm_alloc_pages</tt></li>
+<li><b>Encrypted at rest</b>: Every surface buffer is encrypted in kernel memory. Only decrypted transiently during read/present operations</li>
+<li><b>Format</b>: Only RGBX8888 (32 bits per pixel) is currently supported</li>
+</ul>
+
+<hr>
+
+<h2>MAEM Security Architecture</h2>
+
+<p>MAEM (Memory-Attested Encryption of Surfaces) ensures that display buffer data is never stored in plaintext, even in kernel memory. Physical memory inspection cannot recover pixel data.</p>
+
+<pre>┌─────────────────────────────────────────────────────────────────┐
+│  Boot:                                                         │
+│    RDRAND (or xorshift64+RDTSC) ──► 32-byte seed              │
+│    HKDF("DisplayJet MAEM v1", seed) ──► g_master_key (32B)    │
+│                                                                 │
+│  Surface creation:                                              │
+│    HKDF(g_master_key, surface_id, info=surface_id)             │
+│      ──► per-surface s->key (32B)                              │
+│    get_random_bytes() ──► s->nonce (12B)                       │
+│    s->access_counter = 0                                       │
+│    ChaCha20(s->key, s->nonce, counter=0, zeros) ──► buffer    │
+│      (buffer encrypted immediately after allocation)           │
+│                                                                 │
+│  surface_write:                                                │
+│    ChaCha20(s->key, s->nonce, counter=offset/64, plaintext)   │
+│      ──► ciphertext stored in s->buffer                        │
+│                                                                 │
+│  surface_read / present:                                       │
+│    ChaCha20(s->key, s->nonce, counter=offset/64, ciphertext)  │
+│      ──► decrypted to caller's buffer / scanout               │
+│                                                                 │
+│  destroy / disconnect:                                         │
+│    ChaCha20(all-0xFF key, all-0xFF nonce, 0, buffer)           │
+│      ──► cryptographic wipe                                    │
+│    secure_zero(s->key, s->nonce)                                │
+│    pmm_free_pages()                                            │
+│                                                                 │
+│  grant_access:                                                 │
+│    HKDF(s->key, g_master_key, info={counter, surface_id})     │
+│      ──► ephemeral access grant key (32B)                      │
+│    s->access_counter++                                         │
+└─────────────────────────────────────────────────────────────────┘</pre>
+
+<h3>Entropy sources</h3>
+<ul>
+<li><b>Primary:</b> RDRAND instruction (CPUID leaf 1, ECX bit 30 checked before use)</li>
+<li><b>Fallback:</b> xorshift64 PRNG seeded with RDTSC (for QEMU without <tt>-cpu host</tt>)</li>
+</ul>
+
+<h3>Key sizes</h3>
+<table>
+<tr><td>Master key</td><td>32 bytes (256-bit)</td></tr>
+<tr><td>Per-surface key</td><td>32 bytes (256-bit)</td></tr>
+<tr><td>Nonce</td><td>12 bytes (96-bit)</td></tr>
+<tr><td>ChaCha20 block</td><td>64 bytes</td></tr>
+<tr><td>Access grant key</td><td>32 bytes (256-bit)</td></tr>
+</table>
+
+<hr>
+
+<h2>Syscall API (110&ndash;120)</h2>
+
+<h3>Userspace header: <tt>displayjet.h</tt></h3>
+
+<table>
+<tr><th>#</th><th>Function</th><th>Description</th></tr>
+<tr><td>110</td><td><tt>dj_connect()</tt></td><td>Register calling process as compositor. Returns 0 on success. Only one compositor allowed.</td></tr>
+<tr><td>111</td><td><tt>dj_disconnect()</tt></td><td>Unregister compositor. Crypto-wipes and frees all surfaces, resets surface ID counter.</td></tr>
+<tr><td>112</td><td><tt>dj_create_surface(w, h, &amp;id)</tt></td><td>Allocate DMA buffer, derive MAEM key, encrypt-empty. Returns surface ID via pointer.</td></tr>
+<tr><td>113</td><td><tt>dj_destroy_surface(id)</tt></td><td>Crypto-wipe (all-0xFF re-encrypt) and <tt>pmm_free_pages</tt> the surface.</td></tr>
+<tr><td>114</td><td><tt>dj_present(id)</tt></td><td>Decrypt surface buffer and copy to scanout framebuffer (4 KB chunks).</td></tr>
+<tr><td>115</td><td><tt>dj_get_mode(&amp;mode)</tt></td><td>Query display resolution, stride, BPP, connector name.</td></tr>
+<tr><td>116</td><td><tt>dj_surface_write(id, data, sz)</tt></td><td>Encrypt user data with ChaCha20 and store in surface buffer. Returns bytes written.</td></tr>
+<tr><td>117</td><td><tt>dj_surface_read(id, buf, sz)</tt></td><td>Decrypt surface buffer to user buffer. Returns bytes read.</td></tr>
+<tr><td>118</td><td><tt>dj_list_surfaces(infos, &amp;cnt)</tt></td><td>Enumerate active surfaces (ID, width, height, stride, BPP).</td></tr>
+<tr><td>119</td><td><tt>dj_request_access(id, &amp;grant)</tt></td><td>Request access to a surface. Stub &mdash; always returns 0.</td></tr>
+<tr><td>120</td><td><tt>dj_grant_access(id, &amp;grant)</tt></td><td>Derive ephemeral key from surface key + access counter + master key.</td></tr>
+</table>
+
+<h3>Key types</h3>
+<pre>typedef struct {
+    uint32_t width, height, stride;
+    uint8_t  bpp;
+    int      connected;
+    char     connector_name[64];
+} dj_display_mode_t;
+
+typedef struct {
+    uint32_t id, width, height, stride;
+    uint8_t  bpp;
+} dj_surface_info_t;
+
+typedef struct {
+    uint8_t  key[32];
+    uint32_t surface_id;
+    uint32_t counter;
+} dj_access_grant_t;</pre>
+
+<hr>
+
+<h2>Kernel Driver Structure</h2>
+
+<p><b>File:</b> <tt>drivers/zirv/displayjet/displayjet.c</tt> (515 lines)</p>
+
+<h3>Global state (<tt>g_dj</tt>)</h3>
+<pre>static struct {
+    void         *fb_virt;          // scanout framebuffer (virtual)
+    uint64_t      fb_phys;          // scanout framebuffer (physical)
+    uint32_t      width, height, stride;
+    uint8_t       bpp;
+    bool          hw_ready;
+
+    int           compositor_pid;   // -1 if none connected
+    dj_surface_t  surfaces[32];     // surface pool
+    uint32_t      next_surface_id;
+} g_dj;</pre>
+
+<h3>Per-surface structure</h3>
+<pre>typedef struct {
+    uint32_t id, width, height, stride;
+    uint8_t  bpp;
+    dj_format_t format;
+    void    *buffer;          // physically-contiguous pages (encrypted)
+    size_t   buffer_size;
+
+    uint8_t  key[32];         // per-surface ChaCha20 key
+    uint8_t  nonce[12];       // per-surface nonce
+    uint32_t access_counter;
+
+    int      owner_pid;
+    bool     used;
+} dj_surface_t;</pre>
+
+<h3>Hardware initialisation</h3>
+<ol>
+<li>PCI scan for Bochs VBE: vendor <tt>0x1234</tt>, device <tt>0x1111</tt> or <tt>0x2111</tt></li>
+<li>VBE I/O port programming: disable &rarr; set xres=1024, yres=768, bpp=32 &rarr; re-enable with LFB</li>
+<li>BAR0 mapping via <tt>pci_map_bar</tt> (uses <tt>PHYS_TO_VIRT</tt>)</li>
+<li>Version check: <tt>(ver &amp; 0xB0C0) != 0xB0C0</tt></li>
+<li>Register as <tt>DEV_CLASS_DISPLAY_GPU</tt> via <tt>zirv_register_device</tt></li>
+</ol>
+
+<hr>
+
+<h2>Cryptographic Primitives</h2>
+
+<p><b>File:</b> <tt>drivers/zirv/displayjet/crypto.c</tt> (231 lines) &mdash; All crypto is implemented from scratch in kernel space with no external library.</p>
+
+<h3>ChaCha20</h3>
+<p>IETF variant (RFC 8439-like): 20 rounds, 32-byte key, 12-byte nonce, 32-bit counter. State: "expand 32-byte k" constants, 8 key words, counter, 3 nonce words. Encryption: XOR keystream blocks with plaintext.</p>
+
+<h3>SHA-256</h3>
+<p>FIPS 180-4: standard 64-round compression with K constants. Streaming API: <tt>dj_sha256_init</tt>, <tt>dj_sha256_update</tt> (byte-by-byte), <tt>dj_sha256_final</tt> (padding + length encoding).</p>
+
+<h3>HKDF (simplified)</h3>
+<ul>
+<li><b>Extract</b>: <tt>SHA256(salt_padded(64) || ikm)</tt> (non-standard, avoids HMAC)</li>
+<li><b>Expand</b>: Iterates <tt>SHA256(prk || info || counter)</tt> in 32-byte chunks</li>
+</ul>
+
+<h3>Secure zero</h3>
+<pre>void dj_secure_zero(void *buf, size_t len) {
+    volatile uint8_t *p = (volatile uint8_t *)buf;
+    for (size_t i = 0; i < len; i++) p[i] = 0;
+}</pre>
+<p>Uses volatile writes to prevent compiler optimisations from eliding the zeroing.</p>
+
+<hr>
+
+<h2>Access Grants (SUPS)</h2>
+
+<p>The access grant mechanism enables ephemeral key delegation between processes. When a compositor grants access to a surface, a derived key is created from the surface's key, the master key, and the current access counter. The grant key is time-limited (counter invalidates old grants) and surface-specific.</p>
+
+<p>The comment in the source references <b>SUPS</b> (Secure User Prompt) &mdash; a future trusted-path UI for confirming access grants before they are issued.</p>
+
+<hr>
+
+<h2>Build &amp; Integration</h2>
+
+<p>DisplayJet is compiled as part of the Zirvium kernel build. The Makefile is a placeholder that delegates to the kernel's top-level build:</p>
+
+<pre>make run    # DisplayJet is included automatically</pre>
+
+<p>The driver is integrated via:</p>
+<ol>
+<li>Source files placed in <tt>drivers/zirv/displayjet/</tt></li>
+<li>Userspace header in <tt>include/displayjet.h</tt></li>
+<li>Syscall dispatch cases added to <tt>kernel/syscall/syscall.c</tt> for numbers 110-120</li>
+<li>Initialisation called from <tt>kernel/main.c</tt></li>
+</ol>
+
+<hr>
+
+<h2>Git History</h2>
+
+<table>
+<tr><td><tt>0e53d11</tt></td><td>Fix #UD crash: add CPUID check and xorshift64 fallback for MAEM entropy</td></tr>
+<tr><td><tt>a426354</tt></td><td>Fix: add missing <tt>&lt;stddef.h&gt;</tt> for size_t</td></tr>
+<tr><td><tt>65e13fe</tt></td><td>Add MAEM security: ChaCha20 + SHA-256 + HKDF encryption</td></tr>
+<tr><td><tt>fe61411</tt></td><td>Initial DisplayJet kernel driver (Bochs VBE, surface management, compositor protocol)</td></tr>
+</table>
+
+<hr>
+
+<div class="footer">
+Zirvium &mdash; a MOSIX operating system &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

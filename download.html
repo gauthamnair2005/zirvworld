@@ -3,27 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
 <title>Zirvium — Download</title>
-<style>
-body { background: #fff; color: #000; font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
-a { color: #00f; } a:visited { color: #609; } a:active { color: #f00; }
-.container { margin: 0; padding: 8px 24px; }
-.logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
-.logo-row img { width: 48px; height: 48px; }
-h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: #000; margin: 0; }
-h1 span { color: #00f; }
-h2 { font-family: Times, "Times New Roman", serif; font-size: 20px; font-weight: normal; color: #000; margin: 20px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
-h3 { font-family: Times, "Times New Roman", serif; font-size: 16px; font-weight: bold; margin: 12px 0 2px; }
-p { margin: 6px 0; color: #000; }
-tt, code, pre { font-family: "Courier New", Courier, monospace; font-size: 13px; }
-pre { background: #f4f4f4; border: 1px solid #ccc; padding: 8px; overflow-x: auto; line-height: 1.3; }
-hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
-.header-links { margin: 4px 0 8px; }
-.header-links a { color: #00f; text-decoration: underline; margin-right: 16px; font-size: 14px; }
-td { vertical-align: top; padding: 6px 12px 6px 0; }
-.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
-.footer a { color: #666; } .footer a:visited { color: #666; }
-</style>
 </head>
 <body>
 
@@ -38,21 +19,26 @@ td { vertical-align: top; padding: 6px 12px 6px 0; }
 <a href="index.html">Home</a>
 <a href="projects.html">Projects</a>
 <a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
 <a href="download.html">Download</a>
 <a href="user.html">User Docs</a>
-<a href="dev.html">Developer Docs</a>
+<a href="dev.html">Dev Docs</a>
 </div>
 
 <hr>
 
 <h2>Source Code</h2>
 
-<p>All Zirvium projects are available on GitHub. Clone the main repository to get everything:</p>
+<p>All Zirvium projects are available on GitHub under GPLv3:</p>
 
 <table>
-<tr><td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td><td>Kernel and OS (includes zirvinit, zirvshell as submodules)</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td><td>Kernel and OS (includes zirvinit, zirvshell, zirvutils as submodules)</td></tr>
 <tr><td><a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></td><td>Freestanding C library</td></tr>
-<tr><td><a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a></td><td>Command-line utilities (placeholder)</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a></td><td>17 command-line utilities</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvdisplayjet">zirvdisplayjet</a></td><td>MAEM-encrypted display driver</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvui">zirvui</a></td><td>Graphical desktop compositor</td></tr>
 <tr><td><a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a></td><td>Website source</td></tr>
 </table>
 
@@ -62,33 +48,41 @@ td { vertical-align: top; padding: 6px 12px 6px 0; }
 
 <h3>Requirements</h3>
 <ul>
-<li>x86-64-elf cross-compiler (or gcc with freestanding support)</li>
+<li>x86-64-elf cross-compiler (<tt>x86_64-elf-gcc</tt>) or system gcc</li>
 <li>NASM (&gt;= 2.14)</li>
 <li>GNU Make</li>
 <li>grub-mkrescue and xorriso (for ISO creation)</li>
 <li>mtools (for ISO creation)</li>
-<li>QEMU (for testing)</li>
+<li>QEMU (&gt;= 6.0, for testing)</li>
 </ul>
 
 <h3>Build and Run</h3>
 
 <pre>git clone https://github.com/gauthamnair2005/zirvium.git
 cd zirvium
-git submodule update --init
-make iso
-qemu-system-x86_64 -cdrom build/zirvium.iso -serial stdio -m 512M</pre>
+git submodule update --init --recursive
+make run</pre>
 
-<p>This will boot the kernel in QEMU with serial console output visible in your terminal.</p>
+<p>This single command builds the kernel with all embedded userspace binaries, creates a bootable ISO, and launches QEMU with serial console output visible in your terminal.</p>
 
 <h3>Build Targets</h3>
 
 <table>
-<tr><td><tt>make</tt></td><td>Build kernel ELF</td></tr>
-<tr><td><tt>make iso</tt></td><td>Build bootable GRUB2 ISO</td></tr>
+<tr><td><tt>make</tt></td><td>Build kernel ELF with embedded userspace binaries</td></tr>
+<tr><td><tt>make iso</tt></td><td>Build bootable GRUB2/Multiboot2 ISO image</td></tr>
 <tr><td><tt>make run</tt></td><td>Build ISO and launch in QEMU</td></tr>
+<tr><td><tt>make vmzirv</tt></td><td>Build kernel-only ELF (no embedded binaries)</td></tr>
 <tr><td><tt>make debug</tt></td><td>Build ISO and launch QEMU with GDB stub on port 1234</td></tr>
-<tr><td><tt>make clean</tt></td><td>Remove build artefacts</td></tr>
+<tr><td><tt>make bin</tt></td><td>Strip the ELF to a flat binary</td></tr>
+<tr><td><tt>make clean</tt></td><td>Remove all build artefacts</td></tr>
 </table>
+
+<h3>Build Individual Components</h3>
+
+<pre>make -C zirvinit       # just the init binary (zirvinit.elf)
+make -C zirvshell      # just the shell binary (zirvshell.elf)
+make -C zirvlibc       # just the C library (libzirvlibc.a)
+make -C zirvutils      # all 17 utility binaries</pre>
 
 <hr>
 
@@ -96,51 +90,54 @@ qemu-system-x86_64 -cdrom build/zirvium.iso -serial stdio -m 512M</pre>
 
 <p>The default <tt>make run</tt> target launches QEMU with:</p>
 <ul>
-<li>Serial output redirected to stdio</li>
-<li>512 MiB RAM</li>
-<li>Standard VGA display</li>
-<li>IDE disk (blank 10 MiB image)</li>
-<li>VirtIO block device</li>
-<li>e1000, VirtIO net, and RTL8139 NICs (user-mode networking)</li>
+<li>Serial output redirected to stdio (<tt>-serial stdio</tt>)</li>
+<li>512 MiB RAM (<tt>-m 512M</tt>)</li>
+<li>Standard VGA display (<tt>-vga std</tt>) with SDL window</li>
+<li>IDE disk (blank 10 MiB image) + VirtIO block device</li>
+<li>Three NICs: Intel e1000, VirtIO net, Realtek RTL8139 (user-mode networking)</li>
+<li><tt>-no-reboot</tt> to stop on triple fault</li>
 </ul>
 
-<p>You can adjust the command-line in the Makefile or invoke QEMU directly:</p>
+<p>Manual invocation:</p>
 
-<pre>qemu-system-x86_64 -cdrom build/zirvium.iso -serial stdio -m 256M -vga std -display sdl</pre>
+<pre>qemu-system-x86_64 \
+    -cdrom build/zirvium.iso \
+    -serial stdio \
+    -m 256M \
+    -vga std \
+    -display sdl</pre>
 
 <hr>
 
 <h2>Directory Structure</h2>
 
 <pre>zirvium/
-  arch/x64/          Architecture-specific code (boot, GDT, IDT, syscall)
+  arch/x64/          Architecture-specific (boot, GDT, IDT, syscall)
   kernel/            Core kernel
-    mm/              Memory management (PMM, VMM, heap)
+    mm/              PMM, VMM, heap
     proc/            Process management
-    syscall/         System call handlers
-    ipc/             Inter-process communication (pipes)
-    irq/             Interrupt handling (PIC)
-    loader/          ELF loader, embedded binaries
+    syscall/         24 syscall handlers
+    ipc/             Ring-buffer pipes
+    irq/             8259A PIC management
+    loader/          ELF loader, embedded binary table
+    time/            CMOS RTC, TSC uptime, timezone
   fs/                MOSIX Virtual Filesystem
   drivers/           Device drivers
-    pci/             PCI bus enumeration
+    pci/             PCI bus + compat layer
     serial/          16550 UART
     vga/             VGA text mode, framebuffer console
-    zirv/            Device namespace drivers
-      sata/          ATA PIO
-      nvme/          NVMe
-      usb_storage/   USB mass storage
-      input/ps2/     PS/2 keyboard and Synaptics touchpad
+    zirv/            Native device drivers
       display/       Bochs VGA, VMware SVGA, Intel i915
+      input/ps2/     PS/2 keyboard and Synaptics touchpad
       audio/hda/     High-Definition Audio
       wifi/          Realtek RTL8723DE
       bluetooth/     Realtek Bluetooth
-      driver.c       Dynamic driver framework
-      device.c       Device registry
+    gpu/             NVIDIA GPU (Linux compat layer)
+    compat/          linux_compat.h API bridge
   libs/zirvlibc/     Freestanding C library
   zirvinit/          Init system (submodule)
   zirvshell/         Shell (submodule)
-  zirvutils/         Utilities (submodule, placeholder)</pre>
+  zirvutils/         17 utilities (submodule)</pre>
 
 <hr>
 

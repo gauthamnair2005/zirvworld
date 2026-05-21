@@ -3,34 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
 <title>Zirvium — Developer Documentation</title>
 <style>
-body { background: #fff; color: #000; font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
-a { color: #00f; } a:visited { color: #609; } a:active { color: #f00; }
-.container { margin: 0; padding: 8px 24px; max-width: 960px; }
-.logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
-.logo-row img { width: 48px; height: 48px; }
-h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: #000; margin: 0; }
-h1 span { color: #00f; }
-h2 { font-family: Times, "Times New Roman", serif; font-size: 22px; font-weight: normal; color: #000; margin: 24px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
-h3 { font-family: Times, "Times New Roman", serif; font-size: 17px; font-weight: bold; margin: 16px 0 4px; }
-h4 { font-family: Times, "Times New Roman", serif; font-size: 15px; font-weight: bold; margin: 10px 0 2px; }
-p { margin: 6px 0; color: #000; }
-tt, code, pre { font-family: "Courier New", Courier, monospace; font-size: 13px; }
-pre { background: #f4f4f4; border: 1px solid #ccc; padding: 8px; overflow-x: auto; line-height: 1.3; }
-hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
-.header-links { margin: 4px 0 8px; }
-.header-links a { color: #00f; text-decoration: underline; margin-right: 16px; font-size: 14px; }
-td { vertical-align: top; padding: 4px 12px 4px 0; }
-ul, ol { margin: 4px 0; padding-left: 20px; }
-li { margin: 2px 0; }
-.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
-.footer a { color: #666; } .footer a:visited { color: #666; }
 .toc ul { list-style: none; padding-left: 0; }
 .toc li { margin: 3px 0; }
 .toc a { text-decoration: none; }
 .toc a:hover { text-decoration: underline; }
-code.block { display: block; white-space: pre; background: #f4f4f4; border: 1px solid #ccc; padding: 8px; margin: 6px 0; font-size: 12px; }
 </style>
 </head>
 <body>
@@ -46,9 +25,12 @@ code.block { display: block; white-space: pre; background: #f4f4f4; border: 1px 
 <a href="index.html">Home</a>
 <a href="projects.html">Projects</a>
 <a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
 <a href="download.html">Download</a>
 <a href="user.html">User Docs</a>
-<a href="dev.html">Developer Docs</a>
+<a href="dev.html">Dev Docs</a>
 </div>
 
 <hr>
@@ -66,19 +48,19 @@ code.block { display: block; white-space: pre; background: #f4f4f4; border: 1px 
 <li><a href="#heap">7. Kernel Heap</a></li>
 <li><a href="#process">8. Process Management</a></li>
 <li><a href="#syscalls">9. System Calls</a></li>
-<li><a href="#vfs">10. Virtual Filesystem</a></li>
-<li><a href="#ipc">11. Inter-Process Communication</a></li>
-<li><a href="#irq">12. Interrupt Handling</a></li>
-<li><a href="#drivers">13. Driver Framework</a></li>
-<li><a href="#elf-loader">14. ELF Binary Loader</a></li>
-<li><a href="#console">15. Console Subsystem</a></li>
-<li><a href="#libc">16. zirvlibc Internals</a></li>
-<li><a href="#init">17. zirvinit</a></li>
-<li><a href="#shell">18. zirvshell</a></li>
-<li><a href="#porting">19. Porting Guide</a></li>
-<li><a href="#debugging">20. Debugging</a></li>
-<li><a href="#userspace">21. Writing MOSIX Userspace Programs</a></li>
-<li><a href="#time">22. Time Subsystem</a></li>
+<li><a href="#time">10. Time Subsystem</a></li>
+<li><a href="#vfs">11. Virtual Filesystem</a></li>
+<li><a href="#ipc">12. Inter-Process Communication</a></li>
+<li><a href="#irq">13. Interrupt Handling</a></li>
+<li><a href="#drivers">14. Driver Framework</a></li>
+<li><a href="#elf-loader">15. ELF Binary Loader</a></li>
+<li><a href="#console">16. Console Subsystem</a></li>
+<li><a href="#libc">17. zirvlibc Internals</a></li>
+<li><a href="#init">18. zirvinit</a></li>
+<li><a href="#shell">19. zirvshell</a></li>
+<li><a href="#porting">20. Porting Guide</a></li>
+<li><a href="#debugging">21. Debugging</a></li>
+<li><a href="#userspace">22. Writing MOSIX Userspace Programs</a></li>
 <li><a href="#displayjet">23. DisplayJet Driver API</a></li>
 <li><a href="#zirvui">24. ZirvUI Compositor</a></li>
 </ul>
@@ -88,14 +70,13 @@ code.block { display: block; white-space: pre; background: #f4f4f4; border: 1px 
 
 <h2 id="toolchain">1. Toolchain Setup</h2>
 
-<p>Zirvium requires a cross-compiler targeting <tt>x86_64-elf</tt>. The build system will fall back to the system <tt>gcc</tt> if the cross-compiler is not installed, but this is not recommended for production builds.</p>
+<p>Zirvium requires a cross-compiler targeting <tt>x86_64-elf</tt>:</p>
 
-<h4>Building a cross-compiler (recommended)</h4>
 <pre>export PREFIX=/usr/local/cross
 export TARGET=x86_64-elf
 export PATH="$PREFIX/bin:$PATH"
 
-# Binutils
+# Binutils 2.42
 wget https://ftp.gnu.org/gnu/binutils/binutils-2.42.tar.xz
 tar xf binutils-2.42.tar.xz
 mkdir build-binutils && cd build-binutils
@@ -103,7 +84,7 @@ mkdir build-binutils && cd build-binutils
 make -j$(nproc)
 make install
 
-# GCC
+# GCC 13.2.0
 wget https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.xz
 tar xf gcc-13.2.0.tar.xz
 mkdir build-gcc && cd build-gcc
@@ -112,263 +93,146 @@ mkdir build-gcc && cd build-gcc
 make -j$(nproc) all-gcc
 make install-gcc</pre>
 
-<h4>Other requirements</h4>
-<ul>
-<li>NASM &gt;= 2.14</li>
-<li>GNU Make</li>
-<li>grub-mkrescue + xorriso (for ISO images)</li>
-<li>mtools (for ISO images)</li>
-<li>QEMU (for testing)</li>
-</ul>
+<p>Other requirements: NASM &gt;= 2.14, GNU Make, grub-mkrescue + xorriso, mtools, QEMU.</p>
 
 <hr>
 
 <h2 id="building">2. Building the Kernel</h2>
 
-<h4>Basic build</h4>
 <pre>git clone https://github.com/gauthamnair2005/zirvium.git
 cd zirvium
-git submodule update --init
+git submodule update --init --recursive
 make</pre>
 
-<p>This produces <tt>build/zirvium.elf</tt>, a static ELF64 binary linked at <tt>0xFFFFFFFF80000000</tt> with the boot stub at 1 MiB.</p>
+<p>Produces <tt>build/zirvium.elf</tt>, linked at <tt>0xFFFFFFFF80000000</tt> with boot stub at 1 MiB.</p>
 
 <h4>Build targets</h4>
 <table>
-<tr><td><tt>make</tt></td><td>Build kernel ELF only</td></tr>
-<tr><td><tt>make iso</tt></td><td>Build a GRUB2 bootable ISO image</td></tr>
+<tr><td><tt>make</tt></td><td>Build kernel ELF with embedded userspace</td></tr>
+<tr><td><tt>make iso</tt></td><td>Build GRUB2 bootable ISO</td></tr>
 <tr><td><tt>make run</tt></td><td>Build ISO and run in QEMU</td></tr>
-<tr><td><tt>make debug</tt></td><td>Build ISO and launch QEMU with GDB stub on port 1234</td></tr>
-<tr><td><tt>make bin</tt></td><td>Strip the ELF to a flat binary</td></tr>
+<tr><td><tt>make vmzirv</tt></td><td>Kernel-only ELF (no embedded userspace, <tt>-DVMZIRV</tt>)</td></tr>
+<tr><td><tt>make debug</tt></td><td>Run QEMU with GDB stub on port 1234</td></tr>
+<tr><td><tt>make bin</tt></td><td>Strip ELF to flat binary</td></tr>
 <tr><td><tt>make clean</tt></td><td>Remove all build artefacts</td></tr>
 </table>
 
 <h4>Makefile variables</h4>
 <table>
-<tr><td><tt>CC</tt></td><td>C compiler (default: <tt>x86_64-elf-gcc</tt>, fallback: <tt>gcc</tt>)</td></tr>
-<tr><td><tt>LD</tt></td><td>Linker (default: <tt>x86_64-elf-ld</tt>)</td></tr>
-<tr><td><tt>AS</tt></td><td>Assembler (default: <tt>nasm</tt>)</td></tr>
+<tr><td><tt>CC</tt></td><td><tt>x86_64-elf-gcc</tt> (fallback: <tt>gcc</tt>)</td></tr>
+<tr><td><tt>LD</tt></td><td><tt>x86_64-elf-ld</tt></td></tr>
+<tr><td><tt>AS</tt></td><td><tt>nasm</tt></td></tr>
 </table>
 
-<p>The kernel is compiled with <tt>-mcmodel=kernel -mno-red-zone -ffreestanding</tt>. The <tt>KERNEL</tt> preprocessor define is set, which controls conditional compilation in shared headers (e.g., <tt>stdio.c</tt> excludes <tt>write</tt>-based output when built for kernel space).</p>
+<p>Compiler flags: <tt>-std=c11 -ffreestanding -mcmodel=kernel -mno-red-zone -fno-pic -fno-stack-protector -mno-mmx -mno-sse -mno-sse2 -DKERNEL -O2</tt></p>
 
 <hr>
 
 <h2 id="source-tree">3. Source Tree Layout</h2>
 
 <pre>zirvium/
-  Makefile              Top-level build
-  kernel/kernel.ld      Linker script
+  Makefile                Top-level build
+  kernel/kernel.ld        Linker script
 
-  arch/x64/             x86-64 architecture code
-    boot.asm            Multiboot2 boot stub (32-bit -> long mode)
-    gdt.c/.h            GDT and TSS setup
-    idt.c/.h            IDT and ISR dispatch
-    isr_stubs.asm       256 ISR entry stubs
-    syscall_entry.asm   SYSCALL/SYSRETQ handler
-    cpu.h               Port I/O, CR/MSR access, RDTSC
+  arch/x64/               x86-64 architecture code
+    boot.asm              Multiboot2 boot stub (32-bit -> long mode)
+    gdt.c/.h              GDT and TSS setup
+    idt.c/.h              IDT and ISR dispatch
+    isr_stubs.asm         256 ISR entry stubs
+    syscall_entry.asm     SYSCALL/SYSRETQ handler
+    cpu.h                 Port I/O, CR/MSR access, RDTSC
 
-  kernel/               Core kernel
-    main.c              Entry point, init sequence
-    console.c/.h        Triple console (VGA + FB + serial)
-    mm/
-      pmm.c/.h          Physical memory bitmap allocator
-      vmm.c/.h          4-level page table manager
-      heap.c            kmalloc/kfree bump allocator
-    proc/
-      process.c/.h      Process descriptor, create, enter usermode
-    syscall/
-      syscall.c/.h      Syscall dispatch and handlers
-    ipc/
-      pipe.c/.h         Ring-buffer pipe IPC
-    irq/
-      irq.c/.h          8259A PIC management
-    loader/
-      elf.c/.h          Static ELF64 binary loader
-      embedded.c/.h     Embedded binary table
-      init_bin.asm      incbin of init.elf and shell.elf
+  kernel/                 Core kernel
+    main.c                Entry point, 20-step init sequence
+    console.c/.h          Triple console (VGA + FB + serial)
+    mm/                   pmm.c, vmm.c, heap.c
+    proc/                 process.c/.h
+    syscall/              syscall.c/.h (24 syscalls)
+    ipc/                  pipe.c/.h
+    irq/                  irq.c/.h (8259A PIC)
+    loader/               elf.c/.h, embedded.c/.h, init_bin.asm
+    time/                 time.c (CMOS RTC, TSC uptime, timezone)
 
-  fs/
-    vfs.c               MOSIX virtual filesystem
-    mosix.h             VFS types and operations
+  fs/                     vfs.c, mosix.h
 
   drivers/
-    pci/pci.c           PCI bus enumeration
-    serial/serial.c     16550 UART driver
-    vga/
-      vga.c             VGA text mode (80x25)
-      fb_console.c      Pixel framebuffer console
-    zirv/
-      device.c          Device registry (/zirv namespace)
-      driver.c          Dynamic driver framework
-      sata.c            ATA PIO driver
-      nvme.c            NVMe polling driver
-      usb_storage.c     USB mass storage stub
-      tpm.c             TPM 2.0 driver
-      intel_e1000.c     Intel e1000 NIC
-      virtio.c          VirtIO net/block
-      realtek.c         Realtek RTL8139
-      input/ps2/        PS/2 (i8042, keyboard, synaptics)
-      display/          Bochs VGA, VMware SVGA, i915
-      audio/hda/        High-Definition Audio
-      wifi/rtl8723de/   Realtek RTL8723DE WiFi
-      bluetooth/btrtl.c Realtek Bluetooth
-    compat/
-      linux_compat.h    Ports Linux drivers to MOSIX/Zirvium
+    pci/                  pci.c, pci_compat.c
+    serial/               serial.c (16550 UART)
+    vga/                  vga.c, fb_console.c
+    zirv/                 Native drivers
+      device.c, driver.c  Device registry, dynamic driver framework
+      sata.c, nvme.c, usb_storage.c, tpm.c
+      intel_e1000.c, virtio.c, realtek.c (RTL8139)
+      input/ps2/          i8042, keyboard, synaptics
+      display/            bochs_vga.c, vmware.c, i915/
+      audio/hda/          HDA audio
+      wifi/rtl8723de/     Realtek RTL8723DE WiFi
+      bluetooth/          btrtl.c
+      displayjet/         MAEM-encrypted display driver
+    gpu/                  nvidia.c (Linux compat)
+    compat/               linux_compat.h
 
-  libs/zirvlibc/        Freestanding C library (vendored copy)
-
-  zirvinit/             Init system (submodule)
-  zirvshell/            Shell (submodule)
-  zirvutils/            Utilities (submodule)</pre>
+  libs/zirvlibc/          Freestanding C library
+  zirvinit/               Init system (submodule)
+  zirvshell/              Shell (submodule)
+  zirvutils/              17 utilities (submodule)</pre>
 
 <hr>
 
 <h2 id="boot">4. Boot Process</h2>
 
-<h3>Stage 1: GRUB2 (Multiboot2)</h3>
-<p>The kernel ELF contains a Multiboot2 header. GRUB2 loads the kernel at physical address 0x100000 (1 MiB) and jumps to the entry point in <tt>boot.asm</tt> with <tt>EAX = 0x36D76289</tt> (Multiboot2 magic) and <tt>EBX</tt> pointing to the Multiboot2 info structure.</p>
+<p><b>Stage 1:</b> GRUB2 loads kernel at 0x100000, jumps to <tt>boot.asm</tt> with Multiboot2 magic.</p>
 
-<h3>Stage 2: boot.asm (32-bit to 64-bit)</h3>
-<ol>
-<li>Disables interrupts (CLI)</li>
-<li>Sets up a minimal boot stack</li>
-<li>Checks CPUID availability and long mode support</li>
-<li>Builds 4-level page tables with 2 MiB huge pages:
-  <ul>
-  <li>Identity map: 0x00000000 - 0x100000000 (4 GiB)</li>
-  <li>Higher-half map: <tt>0xFFFFFFFF80000000</tt> (kernel)</li>
-  </ul>
-</li>
-<li>Loads a 64-bit GDT with kernel code/data segments</li>
-<li>Performs a far jump into long mode</li>
-<li>Sets up segment registers and calls <tt>kernel_main</tt></li>
-</ol>
+<p><b>Stage 2:</b> <tt>arch/x64/boot.asm</tt> &mdash; disables interrupts, checks CPUID/long mode, builds 4-level page tables (identity map 0-4 GiB + higher-half at <tt>0xFFFFFFFF80000000</tt>), loads 64-bit GDT, far-jumps into long mode, calls <tt>kernel_main</tt>.</p>
 
-<h3>Stage 3: kernel_main</h3>
-<p>The init sequence in <tt>kernel/main.c</tt> proceeds as follows:</p>
-
-<pre>1. serial_init(SERIAL_COM1)         -- Early serial output
-2. gdt_init()                       -- GDT with user segments
-3. idt_init()                       -- IDT with 256 ISR entries
-4. irq_init()                       -- PIC remap (IRQ 0-15 -> INT 32-47)
-5. Parse Multiboot2 memory map
-6. pmm_init()                       -- Physical memory bitmap
-7. vmm_init()                       -- 4-level paging, PHYS_MAP_BASE
-8. vga_init()                       -- VGA text mode buffer
-9. console_init()                   -- Console subsystem
-10. vfs_init()                      -- MOSIX directory tree
-11. proc_init()                     -- Process table
-12. embedded_init()                 -- Embedded binary table
-13. syscall_init()                  -- SYSCALL MSRs
-14. pci_init()                      -- PCI bus enumeration
-15. driver_register() / probe      -- Dynamic drivers
-16. i8042_init() / keyboard_init() -- PS/2 keyboard
-17. proc_create(0)                  -- Create PID 1
-18. elf_load_process(PID 1, init)  -- Load zirvinit.elf
-19. proc_enter_usermode(PID 1)     -- Jump to ring 3</pre>
+<p><b>Stage 3:</b> <tt>kernel_main</tt> &mdash; 20-step init sequence (serial, GDT, IDT, PIC, memory, console, VFS, processes, syscalls, time, PCI, drivers, keyboard) then creates PID 1 and jumps to ring 3.</p>
 
 <hr>
 
 <h2 id="pmm">5. Physical Memory Manager</h2>
 
-<p><b>File:</b> <tt>kernel/mm/pmm.c</tt>, <tt>kernel/mm/pmm.h</tt></p>
+<p><b>File:</b> <tt>kernel/mm/pmm.c</tt> &mdash; Bitmap allocator, 1 bit per 4 KiB frame (supports 1 TiB max).</p>
 
-<p>The PMM uses a bitmap allocator with one bit per 4 KiB page frame. Bit = 1 means the frame is in use; bit = 0 means it is free. The bitmap is statically allocated in BSS and supports up to 1 TiB of physical memory (268 million frames, 32 MiB bitmap).</p>
-
-<h4>Key data structures</h4>
 <pre>static uint64_t bitmap[BITMAP_WORDS];   // BITMAP_WORDS = MAX_PMM_PAGES / 64
-static size_t total_pages;               // total discovered RAM pages
-static size_t free_pages;                // currently free pages
-static size_t search_start;              // next allocation hint</pre>
+static size_t total_pages, free_pages, search_start;</pre>
 
-<h4>Initialisation</h4>
-<p><tt>pmm_init</tt> takes the Multiboot2 memory map tag address, entry size, and total size. It marks all bits as used (<tt>bitmap[i] = ~0ULL</tt>), then iterates the memory map entries: for each <tt>MB2_MMAP_AVAILABLE</tt> entry it clears the corresponding bits in the bitmap and increments the free page count.</p>
+<p>Initialisation: all bits set to 1 (used), then Multiboot2 memory map entries mark available regions as 0 (free). Page 0 is always reserved.</p>
 
-<h4>API reference</h4>
-<table>
-<tr><td><tt>pmm_alloc_page()</tt></td><td>Allocate a single 4 KiB frame. Returns physical address or 0 on OOM.</td></tr>
-<tr><td><tt>pmm_free_page(phys)</tt></td><td>Free a single frame by physical address.</td></tr>
-<tr><td><tt>pmm_alloc_pages(count)</tt></td><td>Allocate a contiguous run of frames. Returns first physical address.</td></tr>
-<tr><td><tt>pmm_free_pages(phys, count)</tt></td><td>Free a contiguous run of frames.</td></tr>
-<tr><td><tt>pmm_total_pages()</tt></td><td>Return total number of RAM frames.</td></tr>
-<tr><td><tt>pmm_free_page_count()</tt></td><td>Return number of free frames.</td></tr>
-</table>
+<p>API: <tt>pmm_alloc_page</tt>, <tt>pmm_free_page</tt>, <tt>pmm_alloc_pages</tt> (contiguous), <tt>pmm_free_pages</tt>, <tt>pmm_total_pages</tt>, <tt>pmm_free_page_count</tt>.</p>
 
-<h4>Allocation algorithm</h4>
-<p>Single page allocation scans from <tt>search_start</tt> to <tt>total_pages</tt>, then wraps around from 1 to <tt>search_start</tt>. This provides basic locality. Multi-page allocation scans for a contiguous run of free bits.</p>
+<p>Allocation uses sequential scan with wrap-around hint for locality.</p>
 
 <hr>
 
 <h2 id="vmm">6. Virtual Memory Manager</h2>
 
-<p><b>File:</b> <tt>kernel/mm/vmm.c</tt>, <tt>kernel/mm/vmm.h</tt></p>
+<p><b>File:</b> <tt>kernel/mm/vmm.c</tt> &mdash; x86-64 4-level paging (PML4 &rarr; PDP &rarr; PD &rarr; PT).</p>
 
-<p>The VMM manages x86-64 4-level paging: PML4 &rarr; PDP &rarr; PD &rarr; PT. Each table has 512 entries covering 9 bits of the virtual address. Page size is 4 KiB (with 2 MiB huge page support).</p>
-
-<h4>Virtual memory layout</h4>
-<pre>0x0000000000000000 - 0x00007FFFFFFFFFFF   User space (per-process)
-0xFFFF800000000000 - 0xFFFFFFFF7FFFFFFF   PHYS_MAP_BASE (direct physical map)
-0xFFFFFFFF80000000 - 0xFFFFFFFFFFFFFFFF   Kernel image (KERNEL_VIRT_BASE)</pre>
-
-<h4>Key constants</h4>
-<table>
-<tr><td><tt>KERNEL_VIRT_BASE</tt></td><td><tt>0xFFFFFFFF80000000</tt></td></tr>
-<tr><td><tt>KERNEL_PHYS_BASE</tt></td><td><tt>0x200000</tt> (2 MiB)</td></tr>
-<tr><td><tt>PHYS_MAP_BASE</tt></td><td><tt>0xFFFF800000000000</tt></td></tr>
-</table>
+<pre>0x0000000000000000 - 0x00007FFFFFFFFFFF   User space
+0xFFFF800000000000 - 0xFFFFFFFF7FFFFFFF   PHYS_MAP_BASE
+0xFFFFFFFF80000000 - 0xFFFFFFFFFFFFFFFF   Kernel image</pre>
 
 <h4>Page table entry flags</h4>
 <table>
 <tr><td><tt>PTE_PRESENT</tt></td><td>Page is in memory</td></tr>
 <tr><td><tt>PTE_WRITABLE</tt></td><td>Writable</td></tr>
 <tr><td><tt>PTE_USER</tt></td><td>Accessible from ring 3</td></tr>
-<tr><td><tt>PTE_HUGE</tt></td><td>2 MiB page (at PD level)</td></tr>
+<tr><td><tt>PTE_HUGE</tt></td><td>2 MiB page</td></tr>
 <tr><td><tt>PTE_GLOBAL</tt></td><td>Not flushed on CR3 switch</td></tr>
 <tr><td><tt>PTE_NO_EXEC</tt></td><td>Execute disabled (NX bit)</td></tr>
 </table>
 
-<h4>API reference</h4>
-<table>
-<tr><td><tt>vmm_init()</tt></td><td>Set up kernel address space with identity map, PHYS_MAP, kernel image</td></tr>
-<tr><td><tt>vmm_map_page(as, virt, phys, flags)</tt></td><td>Map a single 4 KiB page</td></tr>
-<tr><td><tt>vmm_unmap_page(as, virt)</tt></td><td>Unmap a single page</td></tr>
-<tr><td><tt>vmm_virt_to_phys(as, virt)</tt></td><td>Translate virtual to physical address</td></tr>
-<tr><td><tt>vmm_create_address_space()</tt></td><td>Create a new PML4 with kernel upper-half cloned</td></tr>
-<tr><td><tt>vmm_destroy_address_space(as)</tt></td><td>Free all user pages and tables</td></tr>
-<tr><td><tt>vmm_switch_address_space(as)</tt></td><td>Load CR3 to activate address space</td></tr>
-<tr><td><tt>vmm_clear_user_space(as)</tt></td><td>Free all user-space pages (for process exit)</td></tr>
-</table>
-
-<h4>PHYS_TO_VIRT macro</h4>
-<p>The <tt>PHYS_TO_VIRT(p)</tt> macro converts a physical address to a directly-mapped virtual address: <tt>(void *)((uintptr_t)(p) + PHYS_MAP_BASE)</tt>. This is the primary way kernel code accesses arbitrary physical memory.</p>
+<p><tt>PHYS_TO_VIRT(p)</tt>: <tt>(void *)((uintptr_t)(p) + PHYS_MAP_BASE)</tt> &mdash; primary method for kernel to access arbitrary physical memory.</p>
 
 <hr>
 
 <h2 id="heap">7. Kernel Heap</h2>
 
-<p><b>File:</b> <tt>kernel/mm/heap.c</tt></p>
+<p><b>File:</b> <tt>kernel/mm/heap.c</tt> &mdash; Bump allocator over 4 MiB static arena. Headers have magic markers for integrity checking (<tt>HEAP_MAGIC_ALLOC = 0xA110CA7E</tt>, <tt>HEAP_MAGIC_FREE = 0xFEEDF00D</tt>).</p>
 
-<p>A bump allocator over a 4 MiB static arena. Each allocation has a header with a magic marker for integrity checking:</p>
+<p><b>Limitation:</b> <tt>kfree</tt> marks free but does not coalesce or reuse. Will be replaced with a slab allocator.</p>
 
-<pre>#define HEAP_SIZE        (4 * 1024 * 1024)
-#define HEAP_MAGIC_ALLOC  0xA110CA7E
-#define HEAP_MAGIC_FREE   0xFEEDF00D
-
-typedef struct {
-    uint32_t magic;          // HEAP_MAGIC_ALLOC when in use
-    size_t   size;           // aligned payload size
-} heap_hdr_t;</pre>
-
-<p><b>Known limitation:</b> <tt>kfree</tt> marks the header with <tt>HEAP_MAGIC_FREE</tt> but does <b>not</b> coalesce adjacent free blocks or return pages to the PMM. Freed memory is not reused. This is acceptable for early-stage kernel drivers but will be replaced with a slab/page allocator in a future phase.</p>
-
-<table>
-<tr><td><tt>kmalloc(size, flags)</tt></td><td>Allocate from the bump arena (16-byte aligned)</td></tr>
-<tr><td><tt>kzalloc(size, flags)</tt></td><td>Allocate zeroed memory</td></tr>
-<tr><td><tt>kcalloc(n, size, flags)</tt></td><td>Allocate zeroed array</td></tr>
-<tr><td><tt>kfree(ptr)</tt></td><td>Mark as freed (no reuse, no coalescing)</td></tr>
-<tr><td><tt>krealloc(ptr, new_size, flags)</tt></td><td>Allocate new block, copy, free old</td></tr>
-</table>
+<p>API: <tt>kmalloc</tt>, <tt>kzalloc</tt>, <tt>kcalloc</tt>, <tt>kfree</tt>, <tt>krealloc</tt>.</p>
 
 <hr>
 
@@ -376,82 +240,60 @@ typedef struct {
 
 <p><b>Files:</b> <tt>kernel/proc/process.c</tt>, <tt>kernel/proc/process.h</tt></p>
 
-<h4>Process descriptor</h4>
 <pre>typedef struct process {
     uint32_t         pid;
     proc_state_t     state;       // UNUSED, RUNNING, BLOCKED, ZOMBIE
-    address_space_t *as;          // per-process page tables
-    uint64_t         user_rip;    // entry point or saved RIP
-    uint64_t         user_rsp;    // saved user stack pointer
-    uint64_t         kstack_top;  // TSS kernel stack (for IRQ from ring 3)
-    uint64_t         brk;         // program break (heap end)
-    uint64_t         mmap_cursor; // mmap allocation cursor
-    open_file_t     *fds[64];     // file descriptor table
+    address_space_t *as;
+    uint64_t         user_rip, user_rsp;
+    uint64_t         kstack_top;  // TSS kernel stack (16 KiB)
+    uint64_t         brk;         // program break
+    uint64_t         mmap_cursor;
+    open_file_t     *fds[64];
     int              exit_code;
     struct process  *parent, *child, *next_sibling;
     char             cwd[256];
-    struct process  *next;        // global process list
+    struct process  *next;
 } process_t;</pre>
 
-<h4>User virtual memory layout</h4>
+<h4>Memory layout</h4>
 <pre>PROC_USTACK_TOP    0x0000700000000000   User stack (grows down, 64 KiB)
 PROC_HEAP_START    0x0000100000000000   Initial brk
 PROC_MMAP_START    0x0000200000000000   First mmap VA</pre>
 
-<h4>API reference</h4>
-<table>
-<tr><td><tt>proc_init()</tt></td><td>Initialise process list</td></tr>
-<tr><td><tt>proc_create(entry_virt)</tt></td><td>Create a new process with fresh address space and stack</td></tr>
-<tr><td><tt>proc_enter_usermode(proc)</tt></td><td>Switch to process stack, load CR3, IRETQ to ring 3</td></tr>
-<tr><td><tt>proc_current()</tt></td><td>Return the currently running process</td></tr>
-<tr><td><tt>proc_exit(proc, code)</tt></td><td>Mark process as zombie with exit code</td></tr>
-<tr><td><tt>proc_alloc_fd(proc, file)</tt></td><td>Allocate a file descriptor</td></tr>
-<tr><td><tt>proc_get_fd(proc, fd)</tt></td><td>Get open file by descriptor</td></tr>
-<tr><td><tt>proc_close_fd(proc, fd)</tt></td><td>Close a file descriptor</td></tr>
-<tr><td><tt>proc_link_child(parent, child)</tt></td><td>Link child into parent's process tree</td></tr>
-</table>
-
-<h4>User mode entry</h4>
-<p><tt>proc_enter_usermode</tt> performs the following critical sequence:</p>
-<ol>
-<li>Sets <tt>TSS.RSP0</tt> to the process's kernel stack (so interrupts from ring 3 use the right stack)</li>
-<li>Saves user RIP/RSP into local variables (survives stack switch)</li>
-<li>Switches to the per-process kernel stack (the boot stack will be lost after CR3 switch because it's only identity-mapped)</li>
-<li>Switches address space (loads CR3)</li>
-<li>Pushes SS, RSP, RFLAGS, CS, RIP as an IRET frame</li>
-<li>Executes IRETQ to jump to ring 3</li>
-</ol>
+<p><b>No scheduler yet</b> &mdash; single-process execution. PID 1 runs to completion. <tt>proc_enter_usermode</tt> switches to per-process kernel stack, loads CR3, builds IRETQ frame, executes IRETQ to ring 3.</p>
 
 <hr>
 
 <h2 id="syscalls">9. System Calls</h2>
 
-<p><b>Files:</b> <tt>kernel/syscall/syscall.c</tt>, <tt>arch/x64/syscall_entry.asm</tt></p>
+<p>24 syscalls, dispatched via <tt>syscall_entry.asm</tt>. Linux x86-64 ABI with MOSIX extensions:</p>
 
-<h4>Syscall number assignment (MOSIX x86-64 ABI)</h4>
 <table>
-<tr><td>0</td><td><tt>SYS_READ</tt></td><td><tt>read(fd, buf, count)</tt></td></tr>
-<tr><td>1</td><td><tt>SYS_WRITE</tt></td><td><tt>write(fd, buf, count)</tt></td></tr>
-<tr><td>2</td><td><tt>SYS_OPEN</tt></td><td><tt>open(path, flags)</tt></td></tr>
-<tr><td>3</td><td><tt>SYS_CLOSE</tt></td><td><tt>close(fd)</tt></td></tr>
-<tr><td>9</td><td><tt>SYS_MMAP</tt></td><td><tt>mmap(addr, length, prot, flags, fd, offset)</tt></td></tr>
-<tr><td>11</td><td><tt>SYS_MUNMAP</tt></td><td><tt>munmap(addr, length)</tt></td></tr>
-<tr><td>12</td><td><tt>SYS_BRK</tt></td><td><tt>brk(addr)</tt></td></tr>
-<tr><td>22</td><td><tt>SYS_PIPE</tt></td><td><tt>pipe(fds)</tt></td></tr>
-<tr><td>39</td><td><tt>SYS_GETPID</tt></td><td><tt>getpid()</tt></td></tr>
-<tr><td>59</td><td><tt>SYS_EXECVE</tt></td><td><tt>execve(path, argv, envp)</tt></td></tr>
-<tr><td>60</td><td><tt>SYS_EXIT</tt></td><td><tt>exit(status)</tt></td></tr>
-<tr><td>61</td><td><tt>SYS_WAIT4</tt></td><td><tt>wait4(pid, status, options, rusage)</tt></td></tr>
-<tr><td>13</td><td><tt>SYS_UPTIME</tt></td><td><tt>uptime()</tt></td></tr>
-<tr><td>78</td><td><tt>SYS_GETDENTS</tt></td><td><tt>getdents(fd, ents, count)</tt></td></tr>
-<tr><td>79</td><td><tt>SYS_GETCWD</tt></td><td><tt>getcwd(buf, size)</tt></td></tr>
-<tr><td>80</td><td><tt>SYS_CHDIR</tt></td><td><tt>chdir(path)</tt></td></tr>
-<tr><td>96</td><td><tt>SYS_GETDATETIME</tt></td><td><tt>getdatetime(dt)</tt></td></tr>
-<tr><td>97</td><td><tt>SYS_SETDATETIME</tt></td><td><tt>setdatetime(dt)</tt></td></tr>
-<tr><td>98</td><td><tt>SYS_GETTZ</tt></td><td><tt>gettz()</tt></td></tr>
-<tr><td>99</td><td><tt>SYS_SETTZ</tt></td><td><tt>settz(minutes)</tt></td></tr>
-<tr><td>100</td><td><tt>SYS_REBOOT</tt></td><td><tt>reboot()</tt></td></tr>
-<tr><td>101</td><td><tt>SYS_SHUTDOWN</tt></td><td><tt>shutdown()</tt></td></tr>
+<tr><th>#</th><th>Name</th><th>Description</th></tr>
+<tr><td>0</td><td>SYS_READ</td><td>Read from VFS node or pipe</td></tr>
+<tr><td>1</td><td>SYS_WRITE</td><td>Write to VFS node or pipe</td></tr>
+<tr><td>2</td><td>SYS_OPEN</td><td>Open a path</td></tr>
+<tr><td>3</td><td>SYS_CLOSE</td><td>Close FD</td></tr>
+<tr><td>9</td><td>SYS_MMAP</td><td>Anonymous mmap only</td></tr>
+<tr><td>11</td><td>SYS_MUNMAP</td><td>Unmap memory</td></tr>
+<tr><td>12</td><td>SYS_BRK</td><td>Set program break</td></tr>
+<tr><td>13</td><td>SYS_UPTIME</td><td>Seconds since boot</td></tr>
+<tr><td>22</td><td>SYS_PIPE</td><td>Create pipe (2 FDs)</td></tr>
+<tr><td>39</td><td>SYS_GETPID</td><td>Get PID</td></tr>
+<tr><td>59</td><td>SYS_EXECVE</td><td>Execute embedded binary</td></tr>
+<tr><td>60</td><td>SYS_EXIT</td><td>Exit process</td></tr>
+<tr><td>61</td><td>SYS_WAIT4</td><td>Wait for zombie child</td></tr>
+<tr><td>78</td><td>SYS_GETDENTS</td><td>Read directory entries</td></tr>
+<tr><td>79</td><td>SYS_GETCWD</td><td>Get CWD</td></tr>
+<tr><td>80</td><td>SYS_CHDIR</td><td>Change directory</td></tr>
+<tr><td>89</td><td>SYS_GETHOSTNAME</td><td>Get hostname</td></tr>
+<tr><td>90</td><td>SYS_SETHOSTNAME</td><td>Set hostname</td></tr>
+<tr><td>96</td><td>SYS_GETDATETIME</td><td>Read CMOS RTC datetime</td></tr>
+<tr><td>97</td><td>SYS_SETDATETIME</td><td>Set CMOS RTC datetime</td></tr>
+<tr><td>98</td><td>SYS_GETTZ</td><td>Get timezone offset (minutes)</td></tr>
+<tr><td>99</td><td>SYS_SETTZ</td><td>Set timezone offset</td></tr>
+<tr><td>100</td><td>SYS_REBOOT</td><td>ACPI reset (0xCF9), KBC fallback</td></tr>
+<tr><td>101</td><td>SYS_SHUTDOWN</td><td>QEMU (0x604) / Bochs (0xB004) exit</td></tr>
 </table>
 
 <h4>Calling convention</h4>
@@ -460,1058 +302,366 @@ RDI = arg1  RSI = arg2  RDX = arg3
 R10 = arg4  R8  = arg5  R9  = arg6
 Return: RAX = result or negative errno</pre>
 
-<h4>Entry handler (syscall_entry.asm)</h4>
-<ol>
-<li>Swap to per-CPU kernel stack (load from <tt>syscall_kernel_stack_top</tt>)</li>
-<li>Push callee-saved registers (RBX, RBP, R12-R15)</li>
-<li>Swap R10 (arg4) into RCX for the C ABI</li>
-<li>Call <tt>syscall_dispatch(num, a1, a2, a3, a4, a5, a6)</tt></li>
-<li>On return, restore registers and SYSRETQ</li>
-</ol>
-
-<h4>Syscall dispatch rules</h4>
+<h4>Dispatch rules</h4>
 <ul>
-<li><b>read/write</b>: Looks up the file descriptor, dispatches to VFS read/write or pipe read/write based on type</li>
-<li><b>open</b>: Looks up the path in VFS, allocates an open file descriptor</li>
-<li><b>mmap</b>: Supports anonymous mappings only (PROT_READ|WRITE, MAP_PRIVATE|ANONYMOUS)</li>
-<li><b>brk</b>: Grows or shrinks the program break, mapping/unmapping pages as needed</li>
-<li><b>execve</b>: Finds the binary via <tt>embedded_find</tt>, loads it into the current process, replaces address space (old pages are freed)</li>
-<li><b>exit</b>: Calls <tt>proc_exit</tt>, then halts</li>
-<li><b>uptime</b>: Returns seconds since boot from <tt>time_uptime_seconds()</tt></li>
-<li><b>getdatetime/setdatetime</b>: Read/write the CMOS RTC via the time subsystem</li>
-<li><b>gettz/settz</b>: Query/set the system timezone offset in minutes</li>
-<li><b>reboot</b>: Writes ACPI reset register (0xCF9: 0x0E then 0x06), falls back to keyboard controller (0x64: 0xFE)</li>
-<li><b>shutdown</b>: Writes QEMU exit port (0x604: 0x2000) and Bochs exit port (0xB004: 0x2000)</li>
-<li><b>getdents</b>: Read directory entries from a VFS directory node</li>
+<li><b>read/write</b>: FD lookup &rarr; VFS or pipe dispatch based on type</li>
+<li><b>mmap</b>: Anonymous only (PROT_READ|WRITE, MAP_PRIVATE|ANONYMOUS)</li>
+<li><b>brk</b>: Grows/shrinks program break, maps/unmaps pages</li>
+<li><b>execve</b>: Finds binary via <tt>embedded_find</tt>, loads ELF, replaces address space</li>
+<li><b>exit</b>: Calls <tt>proc_exit</tt>, halts</li>
+<li><b>uptime</b>: TSC-based since boot</li>
+<li><b>getdatetime/setdatetime</b>: CMOS RTC via time subsystem</li>
+<li><b>reboot</b>: 0xCF9 = 0x0E then 0x06; KBC 0x64 = 0xFE</li>
+<li><b>shutdown</b>: 0x604 = 0x2000, 0xB004 = 0x2000</li>
 </ul>
-
-<h4>Error convention</h4>
-<p>All syscalls return a negative errno value in RAX on failure (e.g. <tt>-ENOMEM</tt> = -12, <tt>-EBADF</tt> = -9, <tt>-EINVAL</tt> = -22). The libc wrappers negate the value for <tt>errno</tt>-style reporting.</p>
 
 <hr>
 
-<h2 id="vfs">10. Virtual Filesystem</h2>
+<h2 id="time">10. Time Subsystem</h2>
+
+<p><b>File:</b> <tt>kernel/time/time.c</tt></p>
+
+<h4>CMOS RTC</h4>
+<ul>
+<li>Reads from RTC registers (seconds, minutes, hours, day, month, year, century)</li>
+<li>Auto-detects BCD vs binary and 12h vs 24h mode</li>
+<li>Checks UIP (Update In Progress) bit for coherency</li>
+<li>NMI mask bit preserved</li>
+</ul>
+
+<h4>TSC-based uptime</h4>
+<pre>uint64_t time_uptime_seconds(void) {
+    uint64_t now = rdtsc();
+    uint64_t elapsed = now - g_boot_tsc;
+    return elapsed / g_tsc_freq;
+}</pre>
+<p>TSC frequency detected via CPUID leaf 0x15 (falls back to 2 GHz if unavailable). Boot TSC captured in <tt>time_init()</tt>.</p>
+
+<h4>Timezone</h4>
+<p>Offset stored in minutes east of UTC. <tt>time_get()</tt> adds offset before returning. <tt>normalize_datetime()</tt> handles carry/borrow across all fields.</p>
+
+<p>Default fallback: <tt>2005-11-22 15:36:00 UTC</tt></p>
+
+<hr>
+
+<h2 id="vfs">11. Virtual Filesystem</h2>
 
 <p><b>Files:</b> <tt>fs/vfs.c</tt>, <tt>fs/mosix.h</tt></p>
 
-<p>The MOSIX VFS implements an in-memory directory tree. It does not yet support persistent storage (no block-device filesystem driver), but provides the full path-based API needed by userspace.</p>
+<p>In-memory directory tree using a 256 KiB static arena allocator. Standard MOSIX paths: <tt>/</tt>, <tt>/bin</tt>, <tt>/lib</tt>, <tt>/user</tt>, <tt>/boot</tt>, <tt>/config</tt>, <tt>/zirv</tt> (with per-bus subdirectories), <tt>/mounts</tt>, <tt>/tmp</tt>.</p>
 
-<h4>Standard MOSIX paths</h4>
-<pre>/                Root
-/bin/            System binaries (init, shell)
-/lib/            System libraries
-/user/           User data
-/boot/           Boot configuration
-/config/         System configuration
-/zirv/           Device namespace
-  sata/          SATA devices
-  pata/          PATA devices
-  nvme/          NVMe devices
-  usb/           USB storage
-  net/           Network interfaces
-  input/         Input devices
-  display/       Display devices
-  tty/           Terminal devices
-    virtual0     Console (keyboard+serial in, VGA+serial+FB out)
-  audio/         Audio devices
-/mounts/         Mount points
-/tmp/            Temporary files</pre>
-
-<h4>Data structures</h4>
 <pre>typedef struct vnode {
     char name[64];
     vnode_type_t type;       // DIRECTORY, DEVICE
     struct vnode *parent, *child, *next;
-    vnode_ops_t *ops;        // read, write, readdir, lookup, create, unlink, release
-    void *private;           // device-specific data
+    vnode_ops_t *ops;
+    void *private;
 } vnode_t;</pre>
 
-<h4>API</h4>
-<table>
-<tr><td><tt>vfs_init()</tt></td><td>Create the directory tree</td></tr>
-<tr><td><tt>vfs_lookup(path)</tt></td><td>Walk path and return vnode</td></tr>
-<tr><td><tt>vfs_mount(path)</tt></td><td>Mount a filesystem (framework)</td></tr>
-<tr><td><tt>vfs_register_device(path, ops, priv)</tt></td><td>Create a device node</td></tr>
-</table>
+<p>API: <tt>vfs_init</tt>, <tt>vfs_lookup</tt>, <tt>vfs_mount</tt>, <tt>vfs_register_device</tt>.</p>
 
-<p>The console device at <tt>/zirv/tty/virtual0</tt> is the primary I/O endpoint for userspace. Its <tt>read</tt> operation polls both PS/2 keyboard input and serial input. Its <tt>write</tt> operation outputs to all three consoles simultaneously.</p>
+<p>The console at <tt>/zirv/tty/virtual0</tt> is the primary I/O endpoint: read polls PS/2 keyboard and serial; write outputs to serial + VGA + framebuffer.</p>
 
 <hr>
 
-<h2 id="ipc">11. Inter-Process Communication</h2>
+<h2 id="ipc">12. Inter-Process Communication</h2>
 
-<p><b>File:</b> <tt>kernel/ipc/pipe.c</tt>, <tt>kernel/ipc/pipe.h</tt></p>
-
-<p>Ring-buffer pipes with a 4 KiB circular buffer.</p>
-
-<h4>Data structure</h4>
-<pre>typedef struct pipe {
-    uint8_t  buf[4096];       // ring buffer
-    uint32_t read_pos;        // consumer index
-    uint32_t write_pos;       // producer index
-    uint32_t count;           // bytes in buffer
-    bool     read_closed;
-    bool     write_closed;
-} pipe_t;</pre>
-
-<p><b>EOF semantics:</b> <tt>pipe_read</tt> returns 0 (EOF) when <tt>write_closed</tt> is <tt>true</tt> AND the buffer is empty. If data is still buffered, it returns remaining bytes first.</p>
-
-<h4>API</h4>
-<table>
-<tr><td><tt>pipe_create()</tt></td><td>Allocate and initialise a pipe</td></tr>
-<tr><td><tt>pipe_read(pipe, buf, count)</tt></td><td>Read from pipe (spin-waits for data)</td></tr>
-<tr><td><tt>pipe_write(pipe, buf, count)</tt></td><td>Write to pipe</td></tr>
-<tr><td><tt>pipe_destroy(pipe)</tt></td><td>Free pipe buffer</td></tr>
-</table>
+<p><b>File:</b> <tt>kernel/ipc/pipe.c</tt> &mdash; Ring-buffer pipes with <tt>PIPE_BUF_SIZE</tt> (256 bytes). <tt>pipe_read</tt> returns 0 (EOF) when write end is closed and buffer empty. <tt>pipe_write</tt> returns -1 (EPIPE) when read end is closed.</p>
 
 <hr>
 
-<h2 id="irq">12. Interrupt Handling</h2>
-
-<p><b>File:</b> <tt>kernel/irq/irq.c</tt></p>
+<h2 id="irq">13. Interrupt Handling</h2>
 
 <ul>
 <li>8259A PIC remapped: IRQ 0-15 &rarr; IDT vectors 32-47</li>
-<li><tt>request_irq(irq, handler, flags)</tt>: Register a handler for an IRQ</li>
-<li><tt>irq_dispatch(int_no)</tt>: Called from the common ISR stub, routes to registered handlers</li>
-<li><tt>irq_eoi(int_no)</tt>: Send End-of-Interrupt to PIC</li>
-<li>Supports shared IRQs and edge triggering</li>
+<li>256 ISR stubs in <tt>arch/x64/isr_stubs.asm</tt></li>
+<li><tt>isr_dispatch</tt>: exceptions (int &lt; 32) &rarr; panic; else &rarr; <tt>irq_dispatch</tt></li>
+<li>4 slots per IRQ line for shared IRQs</li>
 </ul>
-
-<p>The common ISR dispatch (<tt>isr_dispatch</tt> in <tt>main.c</tt>) checks: if <tt>int_no &lt; 32</tt>, it's a CPU exception (panic). Otherwise it calls <tt>irq_dispatch</tt>.</p>
 
 <hr>
 
-<h2 id="drivers">13. Driver Framework</h2>
+<h2 id="drivers">14. Driver Framework</h2>
 
 <h3>Device Registry</h3>
-<p><b>File:</b> <tt>drivers/zirv/device.c</tt></p>
-
-<p>Each hardware device gets an entry in the <tt>/zirv</tt> namespace. The registry assigns a unique device path based on bus type and instance counter:</p>
-<pre>zirv_register_device(bus, media, ops, priv) &rarr; creates /zirv/&lt;bus&gt;/&lt;media&gt;&lt;n&gt;</pre>
-
-<p>The driver vtable (<tt>zirv_device_ops_t</tt>) supports:</p>
-<ul>
-<li><tt>init</tt> &mdash; Initialise device</li>
-<li><tt>read_sectors</tt> / <tt>write_sectors</tt> &mdash; Block I/O</li>
-<li><tt>ioctl</tt> &mdash; Device control</li>
-<li><tt>shutdown</tt> &mdash; Power down</li>
-</ul>
+<p><b>File:</b> <tt>drivers/zirv/device.c</tt> &mdash; Assigns <tt>/zirv/&lt;bus&gt;/&lt;type&gt;&lt;n&gt;</tt> paths. Driver vtable (<tt>zirv_device_ops_t</tt>): init, read_sectors, write_sectors, ioctl, shutdown.</p>
 
 <h3>Dynamic Driver Probing</h3>
-<p><b>File:</b> <tt>drivers/zirv/driver.c</tt></p>
-
-<p>Drivers are registered via <tt>driver_register()</tt> with a vendor/device ID table. During <tt>driver_probe_all()</tt>, each PCI device is matched against the driver table and the first matching driver's <tt>init()</tt> is called.</p>
-
-<p>Registered drivers in <tt>main.c:</tt></p>
-<ul>
-<li>Bochs VGA</li>
-<li>VMware SVGA</li>
-<li>TPM 2.0</li>
-<li>Intel e1000</li>
-<li>VirtIO net / block</li>
-<li>Realtek RTL8139</li>
-</ul>
-
-<h3>Linux Driver Compatibility Layer</h3>
-<p><b>File:</b> <tt>drivers/compat/linux_compat.h</tt> (610 lines)</p>
-<p>This layer ports existing Linux drivers to MOSIX/Zirvium with a comprehensive API bridge. It provides:</p>
-<ul>
-<li><b>Type mappings:</b> <tt>u8/u16/u32/u64</tt>, <tt>__le16/32/64</tt>, <tt>phys_addr_t</tt>, <tt>dma_addr_t</tt></li>
-<li><b>Bit operations:</b> <tt>set_bit</tt>, <tt>clear_bit</tt>, <tt>test_bit</tt>, <tt>BIT()</tt>, <tt>GENMASK()</tt></li>
-<li><b>Memory/MMIO:</b> <tt>readb/w/l/q</tt>, <tt>writeb/w/l/q</tt>, <tt>ioremap</tt>, <tt>iounmap</tt>, <tt>memcpy_from/toio</tt>, <tt>memset_io</tt></li>
-<li><b>Barriers:</b> <tt>mb()</tt>, <tt>rmb()</tt>, <tt>wmb()</tt>, <tt>READ_ONCE/WRITE_ONCE</tt></li>
-<li><b>Synchronisation:</b> <tt>spinlock_t</tt>, <tt>mutex_t</tt>, <tt>atomic_t</tt>, <tt>atomic64_t</tt>, <tt>completion</tt>, <tt>wait_queue_head_t</tt></li>
-<li><b>Memory management:</b> <tt>kzalloc</tt>, <tt>kfree</tt>, <tt>kmalloc</tt>, <tt>kcalloc</tt>, <tt>krealloc</tt>, <tt>devm_*</tt> stubs</li>
-<li><b>Linked lists:</b> <tt>list_head</tt>, <tt>list_add/del/for_each</tt>, <tt>hlist</tt></li>
-<li><b>PCI helpers:</b> <tt>pci_read/write_config_*</tt>, <tt>pci_resource_start/len</tt>, <tt>pci_enable_device</tt></li>
-<li><b>DMA API:</b> <tt>dma_alloc_coherent</tt>, <tt>dma_free_coherent</tt>, <tt>dma_map_single</tt></li>
-<li><b>IRQ/timers:</b> <tt>request_irq/free_irq</tt>, <tt>timer_list</tt>, <tt>del_timer</tt>, <tt>jiffies</tt></li>
-<li><b>Logging:</b> <tt>pr_debug/info/warn/err</tt>, <tt>dev_dbg/info/warn/err</tt></li>
-<li><b>Utility:</b> <tt>min/max/clamp</tt>, <tt>ERR_PTR/PTR_ERR/IS_ERR</tt>, <tt>container_of</tt>, <tt>kref</tt></li>
-</ul>
-<p>An <b>NVIDIA GPU stub</b> (<tt>drivers/zirv/nvidia.c</tt>) demonstrates the bridge by probing via <tt>pci_compat</tt> and conditionally initialising the device. This dramatically reduces the fear of driver availability &mdash; if hardware has a Linux driver, it can be adapted for Zirvium.</p>
-
-<hr>
-
-<h2 id="elf-loader">14. ELF Binary Loader</h2>
-
-<p><b>File:</b> <tt>kernel/loader/elf.c</tt></p>
-
-<p>Loads static ELF64 binaries into a process address space.</p>
-
-<h4>Load process</h4>
+<p>Two-tier model:</p>
 <ol>
-<li>Read ELF header: validate magic (<tt>\x7fELF</tt>), class (64-bit), encoding (little-endian), version</li>
-<li>Iterate program headers (<tt>e_phoff</tt>, <tt>e_phnum</tt>)</li>
-<li>For each <tt>PT_LOAD</tt> segment:
-  <ul>
-  <li>Align virtual address to page boundary</li>
-  <li>Allocate physical pages for each page in the segment</li>
-  <li>Map pages into process address space at the ELF-specified VA</li>
-  <li>Copy segment data from ELF file</li>
-  <li>Zero-fill <tt>p_memsz - p_filesz</tt> bytes (BSS)</li>
-  </ul>
-</li>
-<li>Set <tt>proc-&gt;user_rip = ehdr-&gt;e_entry</tt></li>
+<li><b>Native drivers</b>: registered via <tt>driver_register(zirv_driver_t)</tt> with PCI vendor/device ID table. Match during <tt>driver_probe_all()</tt>.</li>
+<li><b>Linux compat drivers</b>: via <tt>pci_compat_register_driver(pci_driver_linux)</tt> for Linux-ported drivers.</li>
 </ol>
 
-<h4>Embedded binaries</h4>
-<p><b>File:</b> <tt>kernel/loader/embedded.c</tt>, <tt>kernel/loader/init_bin.asm</tt></p>
-<p>Multiple userspace ELF binaries are embedded into the kernel via NASM <tt>incbin</tt>. The <tt>embedded_init</tt> function records their addresses and sizes; <tt>embedded_find(path)</tt> returns the binary data by path.</p>
+<p>Registered drivers: Bochs VGA, VMware SVGA, Intel i915, NVIDIA GPU (compat), TPM 2.0, Intel e1000, VirtIO net/block, Realtek RTL8139, Realtek RTL8723DE WiFi, Realtek Bluetooth.</p>
 
-<p>Currently embedded binaries (11 total):</p>
-<table>
-<tr><td><tt>/bin/init</tt></td><td><tt>zirvinit.elf</tt></td><td>PID 1 init system</td></tr>
-<tr><td><tt>/bin/shell</tt></td><td><tt>zirvshell.elf</tt></td><td>MOSIX English-language shell</td></tr>
-<tr><td><tt>/bin/hello</tt></td><td><tt>hello.elf</tt></td><td>Hello-world test program</td></tr>
-<tr><td><tt>/bin/cat</tt></td><td><tt>cat.elf</tt></td><td>File/device reader</td></tr>
-<tr><td><tt>/bin/sysinfo</tt></td><td><tt>sysinfo.elf</tt></td><td>System information display</td></tr>
-<tr><td><tt>/bin/clear</tt></td><td><tt>clear.elf</tt></td><td>Terminal clear utility</td></tr>
-<tr><td><tt>/bin/echo</tt></td><td><tt>echo.elf</tt></td><td>Echo arguments to stdout</td></tr>
-<tr><td><tt>/bin/reboot</tt></td><td><tt>reboot.elf</tt></td><td>System reboot</td></tr>
-<tr><td><tt>/bin/shutdown</tt></td><td><tt>shutdown.elf</tt></td><td>System shutdown</td></tr>
-<tr><td><tt>/bin/suspend</tt></td><td><tt>suspend.elf</tt></td><td>System suspend</td></tr>
-<tr><td><tt>/bin/poweroff</tt></td><td><tt>poweroff.elf</tt></td><td>System power-off</td></tr>
-</table>
-
-<pre>init_bin.asm excerpt:
-  section .rodata
-  global zirvinit_bin_start, zirvinit_bin_end
-  zirvinit_bin_start: incbin "zirvinit/zirvinit.elf"
-  align 4096
-  zirvinit_bin_end:
-
-  global zirvutil_hello_bin_start, zirvutil_hello_bin_end
-  zirvutil_hello_bin_start: incbin "zirvutils/hello.elf"
-  align 4096
-  zirvutil_hello_bin_end:</pre>
+<h3>Linux Compat Layer</h3>
+<p><b>File:</b> <tt>drivers/compat/linux_compat.h</tt> (610 lines) &mdash; Comprehensive API bridge providing: type mappings, bit operations, MMIO accessors, memory barriers, spinlocks, mutexes, atomic ops, waitqueues, completions, timers, linked lists, PCI helpers, DMA API, logging, and utility macros.</p>
 
 <hr>
 
-<h2 id="console">15. Console Subsystem</h2>
+<h2 id="elf-loader">15. ELF Binary Loader</h2>
 
-<p><b>File:</b> <tt>kernel/console.c</tt>, <tt>kernel/console.h</tt></p>
+<p><b>File:</b> <tt>kernel/loader/elf.c</tt> &mdash; Validates ELF64 header, iterates PT_LOAD, maps pages into process address space at ELF-specified VAs, zero-fills BSS. Sets <tt>proc-&gt;user_rip = ehdr-&gt;e_entry</tt>.</p>
 
-<p>The console subsystem provides simultaneous output across three display backends:</p>
-<ul>
-<li><b>Serial</b> (COM1, 115200 baud)</li>
-<li><b>VGA text mode</b> (80x25 character buffer at 0xB8000)</li>
-<li><b>Pixel framebuffer</b> (text rendered to the GPU framebuffer)</li>
-</ul>
-
-<p>Colour output with component-tagged, colour-coded logging via <tt>klog(tag, component, format, ...)</tt>:</p>
-<pre>klog(LOG_OK, "VMM ", "Virtual memory active (Higher-Half)");</pre>
+<p><b>Embedded binaries</b> (<tt>kernel/loader/embedded.c</tt>, <tt>init_bin.asm</tt>): 17 binaries via NASM <tt>incbin</tt>. <tt>embedded_find(path)</tt> returns binary data by path. The VMZIRV build mode (<tt>-DVMZIRV</tt>) produces a kernel with empty stub symbols (no embedded binaries).</p>
 
 <hr>
 
-<h2 id="libc">16. zirvlibc Internals</h2>
+<h2 id="console">16. Console Subsystem</h2>
 
-<p><b>Directory:</b> <tt>libs/zirvlibc/</tt> (also standalone at <tt>zirvlibc/</tt>)</p>
-
-<h4>Architecture</h4>
-<pre>include/
-  ctype.h
-  datetime.h      datetime struct, getdatetime/setdatetime/gettz/settz
-  dirent.h        dirent struct, getdents
-  stdio.h
-  stdlib.h
-  string.h
-  unistd.h
-  zirv/syscall.h
-src/
-  ctype.c         Character classification
-  datetime.c      getdatetime, setdatetime, gettz, settz wrappers
-  stdio.c         printf/snprintf/vsnprintf formatter
-  stdlib.c        exit, abort, atoi, atol (malloc is stub)
-  string.c        memcpy, memset, strlen, strcmp, etc.
-  syscall.c       _syscall0 through _syscall6 inline asm trampolines
-  unistd.c        read, write, open, close, execve, mmap, etc.
-tests/
-  test_libc.c     Unit tests for string, ctype, stdio</pre>
-
-<h4>Syscall wrappers (src/syscall.c)</h4>
-<p>Each wrapper uses inline assembly to invoke the <tt>syscall</tt> instruction:</p>
-<pre>long _syscall3(long n, long a1, long a2, long a3) {
-    long ret;
-    __asm__ volatile("syscall"
-        : "=a"(ret)
-        : "a"(n), "D"(a1), "S"(a2), "d"(a3)
-        : "rcx", "r11", "memory");
-    return ret;
-}</pre>
-
-<p>Arguments are passed in RDI, RSI, RDX, R10, R8, R9 per the x86-64 SYSCALL ABI. The <tt>rcx</tt> and <tt>r11</tt> clobbers are required because SYSCALL saves RIP into RCX and RFLAGS into R11.</p>
-
-<h4>printf implementation</h4>
-<p><tt>vsnprintf</tt> is a self-contained formatter in <tt>src/stdio.c</tt>. It supports <tt>%s, %d, %u, %x, %p, %c, %%</tt> with a sink-based output model. When built for userspace (<tt>#ifndef KERNEL</tt>), it wraps the formatter with <tt>printf</tt>/<tt>vprintf</tt> that call the <tt>write</tt> syscall.</p>
-
-<h4>Building</h4>
-<pre>make          # produces libzirvlibc.a
-make test     # builds and runs unit tests</pre>
-
-<p>Unit tests in <tt>test_libc.c</tt> verify string operations (memcpy, strcmp, strstr, memmove), character classification, and printf formatting.</p>
+<p><b>File:</b> <tt>kernel/console.c</tt> &mdash; Triple multiplexer: serial (COM1, 115200) + VGA text mode (80x25 at 0xB8000) + pixel framebuffer (glyph renderer). Colour-coded logging via <tt>klog(tag, component, format, ...)</tt>.</p>
 
 <hr>
 
-<h2 id="init">17. zirvinit</h2>
+<h2 id="libc">17. zirvlibc Internals</h2>
 
-<p><b>Directory:</b> <tt>zirvinit/</tt></p>
+<p>Freestanding C library providing <tt>&lt;string.h&gt;</tt>, <tt>&lt;ctype.h&gt;</tt>, <tt>&lt;stdio.h&gt;</tt> (printf with %s%d%u%lu%llu%x%p%c%%, zero-padded width), <tt>&lt;stdlib.h&gt;</tt> (exit, atoi, atol; malloc is stub), <tt>&lt;unistd.h&gt;</tt> (read/write/open/close/execve/mmap/brk/sbrk/getpid/uptime/reboot/shutdown/gethostname/sethostname/getcwd/chdir/getdents), <tt>&lt;datetime.h&gt;</tt>, <tt>&lt;dirent.h&gt;</tt>, <tt>&lt;zirv/syscall.h&gt;</tt>.</p>
 
-<p>The init system is a minimal static ELF binary (<tt>zirvinit.elf</tt>, ~28 lines C + 20 lines assembly). Its complete source:</p>
-
-<pre>int main(void) {
-    printf("\n  Z I R V I N I T\n");
-    printf("  ---------------\n");
-    printf("  MOSIX Compliant PID 1\n\n");
-    printf("[ INIT ] Starting MOSIX lifecycle...\n");
-    printf("[ INIT ] Verifying /zirv namespace...\n");
-    printf("[ INIT ] Launching ZirvShell...\n");
-    execve("/bin/shell", argv, envp);
-    printf("[ INIT ] execve failed!\n");
-    for (;;) ;
-}</pre>
-
-<h4>crt0.asm</h4>
-<p>The entry point calls <tt>main</tt>, and if it ever returns, falls back to <tt>SYS_EXIT</tt>:</p>
-<pre>_start:
-    call main
-    mov rax, 60    ; SYS_EXIT
-    xor rdi, rdi
-    syscall
-.halt: hlt; jmp .halt</pre>
-
-<h4>Build</h4>
-<p>Compiled with the same freestanding flags as the kernel, linked against zirvlibc sources:</p>
-<pre>make -C zirvinit</pre>
+<p>Syscall wrappers use inline assembly (<tt>_syscall0</tt> through <tt>_syscall6</tt>) with the x86-64 SYSCALL ABI. Build produces <tt>libzirvlibc.a</tt>.</p>
 
 <hr>
 
-<h2 id="shell">18. zirvshell</h2>
+<h2 id="init">18. zirvinit</h2>
 
-<p><b>Directory:</b> <tt>zirvshell/</tt></p>
-
-<p>The MOSIX shell is a 275-line C program that provides an English-like natural language interface.</p>
-
-<h4>Architecture</h4>
-<ul>
-<li><b>Prompt</b>: Calls <tt>getcwd()</tt> and displays CWD in the prompt</li>
-<li><b>Line editor</b>: <tt>read_line()</tt> reads characters one at a time via <tt>read(STDIN_FILENO, ...)</tt>, supports backspace</li>
-<li><b>Argument parser</b>: <tt>parse_args()</tt> splits by whitespace, supports double-quoted strings</li>
-<li><b>Command dispatch</b>: If-then chain matching on <tt>argv[0]</tt> with aliases</li>
-</ul>
-
-<h4>Command reference</h4>
-<table>
-<tr><td><tt>help</tt> / <tt>help me please</tt></td><td>Display help text</td></tr>
-<tr><td><tt>echo</tt> / <tt>say</tt></td><td>Echo text</td></tr>
-<tr><td><tt>pwd</tt> / <tt>where</tt></td><td>Print working directory</td></tr>
-<tr><td><tt>clear</tt> / <tt>clear the screen</tt></td><td>ANSI escape clear</td></tr>
-<tr><td><tt>ls</tt> / <tt>list</tt></td><td>List /bin and /zirv</td></tr>
-<tr><td><tt>cat</tt> / <tt>display</tt></td><td>Display file (stub)</td></tr>
-<tr><td><tt>run</tt> / <tt>exec</tt></td><td>Execute a binary via <tt>execve</tt></td></tr>
-<tr><td><tt>go to</tt> / <tt>cd</tt></td><td>Change directory via <tt>chdir</tt></td></tr>
-<tr><td><tt>show files</tt></td><td>List directory</td></tr>
-<tr><td><tt>show system status</tt></td><td>Display PID and kernel info</td></tr>
-<tr><td><tt>whoami</tt></td><td>Print "root"</td></tr>
-<tr><td><tt>uname</tt></td><td>Print "Zirvium"</td></tr>
-<tr><td><tt>date</tt></td><td>Not available (stub)</td></tr>
-<tr><td><tt>uptime</tt></td><td>Not available (stub)</td></tr>
-<tr><td><tt>reboot</tt></td><td>Not available (stub)</td></tr>
-</table>
-
-<h4>Build</h4>
-<pre>make -C zirvshell</pre>
+<p><b>Directory:</b> <tt>zirvinit/</tt> &mdash; 28 lines of C. PID 1 prints MOSIX banner and calls <tt>execve("/bin/shell", ...)</tt>. Linked against zirvlibc, compiled with same freestanding flags as kernel.</p>
 
 <hr>
 
-<h2 id="porting">19. Porting Guide</h2>
+<h2 id="shell">19. zirvshell</h2>
 
-<h3>Porting the kernel to a new architecture</h3>
+<p><b>Directory:</b> <tt>zirvshell/</tt> &mdash; 438-line REPL shell with English-like syntax. Features: CWD-aware prompt, line editor (backspace), double-quoted argument parsing, natural language commands (<tt>help me please</tt>, <tt>clear the screen</tt>).</p>
+
+<p>All 19 shell commands implemented: help, echo/say, pwd/where, uname, whoami, clear, ls/list/show files, cat/display, run/exec, go to/cd, date, settime, timezone, uptime, reboot, shutdown/poweroff, suspend, exit.</p>
+
+<hr>
+
+<h2 id="porting">20. Porting Guide</h2>
+
+<h3>Porting to a new architecture</h3>
 <ol>
-<li>Create <tt>arch/&lt;arch&gt;/</tt> with:
-  <ul>
-  <li>Boot code (stub entry point)</li>
-  <li>Context switch code</li>
-  <li>Interrupt dispatch</li>
-  <li>MMU/page table management</li>
-  <li>Timer/clock source</li>
-  </ul>
-</li>
-<li>Implement <tt>arch/&lt;arch&gt;/cpu.h</tt> (port I/O, barriers, special registers)</li>
-<li>Implement <tt>arch/&lt;arch&gt;/gdt.h</tt> (or equivalent privilege-level mechanism)</li>
-<li>Implement <tt>arch/&lt;arch&gt;/idt.h</tt> (or equivalent interrupt vector table)</li>
-<li>Add the new arch to the Makefile's source lists</li>
-<li>Update the linker script for the target's memory layout</li>
+<li>Create <tt>arch/&lt;arch&gt;/</tt> with boot code, context switch, interrupt dispatch, MMU management, timer</li>
+<li>Implement <tt>cpu.h</tt> (port I/O, barriers, special registers)</li>
+<li>Implement <tt>gdt.h</tt> (or equivalent privilege mechanism)</li>
+<li>Implement <tt>idt.h</tt> (or equivalent interrupt vector table)</li>
+<li>Update Makefile and linker script</li>
 </ol>
 
 <h3>Writing a new driver</h3>
 <ol>
-<li>Implement the driver init/read/write/ioctl functions</li>
-<li>Create a <tt>zirv_driver_t</tt> struct with vendor/device IDs</li>
+<li>Implement init/read/write/ioctl functions</li>
+<li>Create <tt>zirv_driver_t</tt> with vendor/device IDs</li>
 <li>Register via <tt>driver_register(&amp;my_driver)</tt> in <tt>kernel/main.c</tt></li>
-<li>The PCI subsystem will call <tt>my_driver.init(pci_device)</tt> during probe if vendor/device match</li>
-<li>In <tt>init()</tt>, call <tt>zirv_register_device(bus, media, ops, priv)</tt> to create the <tt>/zirv</tt> entry</li>
+<li>PCI subsystem calls <tt>my_driver.init(pci_device)</tt> on match</li>
+<li>Call <tt>zirv_register_device(bus, media, ops, priv)</tt> for <tt>/zirv</tt> entry</li>
 </ol>
 
 <h3>Adding a syscall</h3>
 <ol>
-<li>Add a new <tt>SYS_*</tt> constant in <tt>kernel/syscall/syscall.h</tt></li>
-<li>Add the same constant in <tt>libs/zirvlibc/include/zirv/syscall.h</tt></li>
-<li>Implement the handler function in <tt>kernel/syscall/syscall.c</tt></li>
-<li>Add the dispatch case to <tt>syscall_dispatch</tt></li>
-<li>Add a wrapper in <tt>libs/zirvlibc/src/unistd.c</tt></li>
-<li>Add the prototype in <tt>libs/zirvlibc/include/unistd.h</tt></li>
+<li>Add <tt>SYS_*</tt> constant in <tt>kernel/syscall/syscall.h</tt></li>
+<li>Add same constant in <tt>libs/zirvlibc/include/zirv/syscall.h</tt></li>
+<li>Implement handler in <tt>kernel/syscall/syscall.c</tt></li>
+<li>Add dispatch case to <tt>syscall_dispatch</tt></li>
+<li>Add wrapper in <tt>libs/zirvlibc/src/unistd.c</tt></li>
+<li>Add prototype in <tt>libs/zirvlibc/include/unistd.h</tt></li>
 </ol>
 
 <hr>
 
-<h2 id="debugging">20. Debugging</h2>
+<h2 id="debugging">21. Debugging</h2>
 
 <h3>QEMU + GDB</h3>
-<pre>make debug</pre>
-<p>This launches QEMU with <tt>-s -S</tt> (stops at startup and listens on TCP port 1234 for GDB). Then connects GDB:</p>
-<pre>gdb build/zirvium.elf \
+<pre>make debug
+gdb build/zirvium.elf \
     -ex "target remote :1234" \
     -ex "set pagination off" \
     -ex "b kernel_main" \
     -ex "continue"</pre>
 
 <h3>Serial output</h3>
-<p>The kernel outputs all console messages simultaneously to serial COM1. When running in QEMU with <tt>-serial stdio</tt>, all kernel logs appear in the terminal.</p>
+<p>Use <tt>-serial stdio</tt> &mdash; all kernel logs appear in the terminal.</p>
 
 <h3>Useful QEMU flags</h3>
 <table>
-<tr><td><tt>-serial stdio</tt></td><td>Redirect serial to terminal</td></tr>
 <tr><td><tt>-d cpu_reset,int</tt></td><td>Log CPU resets and interrupts</td></tr>
-<tr><td><tt>-no-reboot</tt></td><td>Stop on triple fault instead of rebooting</td></tr>
+<tr><td><tt>-no-reboot</tt></td><td>Stop on triple fault</td></tr>
 <tr><td><tt>-s -S</tt></td><td>Wait for GDB on port 1234</td></tr>
-<tr><td><tt>-m 512M</tt></td><td>Set RAM size</td></tr>
 </table>
 
 <hr>
 
-<h2 id="userspace">21. Writing MOSIX Userspace Programs</h2>
+<h2 id="userspace">22. Writing MOSIX Userspace Programs</h2>
 
-<p>This section is a complete guide to creating your own programs that run on Zirvium. MOSIX userspace programs are static ELF64 binaries that use the MOSIX x86-64 syscall ABI and link against <tt>zirvlibc</tt>.</p>
+<p>Userspace programs are static ELF64 binaries linked against zirvlibc. Each needs three files:</p>
 
-<h3>21.1 Program Lifecycle</h3>
-<ol>
-<li>The kernel ELF loader maps your binary into a process address space</li>
-<li>The kernel sets up a stack and jumps to <tt>_start</tt> (the ELF entry point)</li>
-<li>Your <tt>crt0.asm</tt> calls <tt>main()</tt></li>
-<li>Your program runs, makes syscalls via zirvlibc wrappers</li>
-<li>Your program calls <tt>exit()</tt> or <tt>_exit()</tt>, which invokes <tt>SYS_EXIT</tt></li>
-<li>The kernel reclaims all memory and marks the process as a zombie</li>
-</ol>
-
-<h3>21.2 Required Files</h3>
-
-<p>Every MOSIX userspace program needs three files:</p>
-
-<h4>1. crt0.asm — C runtime entry point</h4>
-<pre>; crt0.asm — MOSIX userspace entry point
-; Assembles with: nasm -f elf64 crt0.asm -o crt0.o
-[bits 64]
+<h4>crt0.asm</h4>
+<pre>[bits 64]
 section .text
 global _start
 extern main
-
 _start:
-    ; The kernel passes:
-    ;   RDI = argc
-    ;   RSI = argv (pointer to array on stack, if any)
-    ; For now we call main with no arguments.
-    xor rbp, rbp        ; mark stack frame boundary
-    mov rdi, 0          ; argc = 0
-    mov rsi, 0          ; argv = NULL
+    xor rbp, rbp
+    mov rdi, 0
+    mov rsi, 0
     call main
-
-    ; If main returns, exit with its return value
-    mov rdi, rax        ; status = main return value
-    mov rax, 60         ; SYS_EXIT
+    mov rdi, rax
+    mov rax, 60
     syscall
+.halt: hlt; jmp .halt</pre>
 
-.halt:
-    hlt
-    jmp .halt</pre>
-
-<h4>2. main.c — Your program</h4>
-<pre>#include &lt;stdio.h&gt;      // printf, puts, putchar
-#include &lt;string.h&gt;     // strlen, strcmp, memset, memcpy
-#include &lt;unistd.h&gt;     // read, write, open, close, getpid, brk, execve
-#include &lt;stdlib.h&gt;     // exit, atoi
-
-int main(void)
-{
-    printf("Hello from MOSIX!\n");
-    printf("My PID is %d\n", getpid());
-    return 0;
-}</pre>
-
-<h4>3. Makefile — Build system</h4>
-<pre># Makefile — MOSIX userspace program
-CC      := x86_64-elf-gcc
-LD      := x86_64-elf-ld
-AS      := nasm
-
-# Path to zirvlibc (adjust to your setup)
-LIBC_DIR := ../zirvlibc
-
-CFLAGS := \
-    -std=c11 \
-    -ffreestanding \
-    -fno-stack-protector \
-    -fno-pic \
-    -mno-red-zone \
-    -mno-mmx -mno-sse -mno-sse2 \
-    -Wall -Wextra -O2 \
-    -I$(LIBC_DIR)/include
-
-LDFLAGS := \
-    -nostdlib \
-    -static \
-    -no-pie \
-    -z max-page-size=0x1000
-
-# zirvlibc source files to compile and link
-LIBC_SRCS := \
-    $(LIBC_DIR)/src/string.c \
-    $(LIBC_DIR)/src/ctype.c \
-    $(LIBC_DIR)/src/stdio.c \
-    $(LIBC_DIR)/src/unistd.c \
-    $(LIBC_DIR)/src/syscall.c \
-    $(LIBC_DIR)/src/stdlib.c
-
-LIBC_BUILD := build/libc
-LIBC_OBJS := $(patsubst $(LIBC_DIR)/src/%.c,$(LIBC_BUILD)/%.o,$(LIBC_SRCS))
-
-SRCS := main.c crt0.asm
-OBJS := main.o crt0.o
-
-TARGET := myprogram.elf
-
-.PHONY: all clean
-
-all: $(TARGET)
-
-$(TARGET): $(OBJS) $(LIBC_OBJS)
-	$(LD) $(LDFLAGS) -o $@ $^
-
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $&lt;
-
-%.o: %.asm
-	$(AS) -f elf64 -o $@ $&lt;
-
-$(LIBC_BUILD)/%.o: $(LIBC_DIR)/src/%.c
-	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c -o $@ $&lt;
-
-clean:
-	rm -f $(TARGET) $(OBJS)
-	rm -rf $(LIBC_BUILD)</pre>
-
-<h3>21.3 Compiler and Linker Flags Explained</h3>
-
-<table>
-<tr><td><tt>-ffreestanding</tt></td><td>No standard library startup; the compiler does not assume a hosted environment</td></tr>
-<tr><td><tt>-fno-stack-protector</tt></td><td>No canary code (there is no thread-local storage for the canary)</td></tr>
-<tr><td><tt>-fno-pic</tt></td><td>Position-dependent code (no GOT/PLT needed)</td></tr>
-<tr><td><tt>-mno-red-zone</tt></td><td>No 128-byte red zone below RSP (important because kernel/IRQ stacks may clobber it)</td></tr>
-<tr><td><tt>-mno-mmx -mno-sse -mno-sse2</tt></td><td>No SIMD instructions (the kernel does not save/restore FPU state on context switch)</td></tr>
-<tr><td><tt>-nostdlib</tt></td><td>Do not link against the host's standard library</td></tr>
-<tr><td><tt>-static</tt></td><td>Produce a fully static binary (no dynamic linking support)</td></tr>
-<tr><td><tt>-no-pie</tt></td><td>No position-independent executable (the loader expects fixed load addresses)</td></tr>
-<tr><td><tt>-z max-page-size=0x1000</tt></td><td>Use 4 KiB page alignment for segments</td></tr>
-</table>
-
-<h3>21.4 Available Syscall API</h3>
-
-<p>All syscalls are accessible via the <tt>&lt;unistd.h&gt;</tt> wrappers. The prototypes are MOSIX-specific:</p>
-
-<table>
-<tr><th colspan="2">Process control</th></tr>
-<tr><td><tt>int getpid(void)</tt></td><td>Return the process ID</td></tr>
-<tr><td><tt>void exit(int status)</tt></td><td>Terminate the process with exit status</td></tr>
-<tr><td><tt>void _exit(int status)</tt></td><td>Same as exit (immediate, no cleanup)</td></tr>
-<tr><td><tt>int execve(const char *path, char *const argv[], char *const envp[])</tt></td><td>Replace process with a new program</td></tr>
-
-<tr><th colspan="2">File I/O</th></tr>
-<tr><td><tt>int read(int fd, void *buf, size_t count)</tt></td><td>Read from file descriptor</td></tr>
-<tr><td><tt>int write(int fd, const void *buf, size_t count)</tt></td><td>Write to file descriptor</td></tr>
-<tr><td><tt>int open(const char *path, int flags)</tt></td><td>Open a file or device</td></tr>
-<tr><td><tt>int close(int fd)</tt></td><td>Close a file descriptor</td></tr>
-
-<tr><th colspan="2">Memory management</th></tr>
-<tr><td><tt>void *sbrk(intptr_t increment)</tt></td><td>Increment the program break (heap); pass 0 to query current break</td></tr>
-<tr><td><tt>int brk(void *addr)</tt></td><td>Set the program break to an absolute address</td></tr>
-<tr><td><tt>long mmap(void *addr, size_t length, int prot, int flags, int fd, long offset)</tt></td><td>Map anonymous memory; <tt>prot</tt> = PROT_READ|PROT_WRITE, <tt>flags</tt> = MAP_PRIVATE|MAP_ANONYMOUS</td></tr>
-<tr><td><tt>int munmap(void *addr, size_t length)</tt></td><td>Unmap previously mapped memory</td></tr>
-
-<tr><th colspan="2">Directory operations</th></tr>
-<tr><td><tt>int getcwd(char *buf, size_t size)</tt></td><td>Get current working directory</td></tr>
-<tr><td><tt>int chdir(const char *path)</tt></td><td>Change current working directory</td></tr>
-<tr><td><tt>int getdents(int fd, struct dirent *ents, int count)</tt></td><td>Read directory entries (see <tt>&lt;dirent.h&gt;</tt>)</td></tr>
-
-<tr><th colspan="2">Time</th></tr>
-<tr><td><tt>uint64_t uptime(void)</tt></td><td>Seconds since boot</td></tr>
-<tr><td><tt>int getdatetime(struct datetime *dt)</tt></td><td>Read system datetime (see <tt>&lt;datetime.h&gt;</tt>)</td></tr>
-<tr><td><tt>int setdatetime(const struct datetime *dt)</tt></td><td>Set system datetime</td></tr>
-<tr><td><tt>int gettz(void)</tt></td><td>Get timezone offset in minutes east of UTC</td></tr>
-<tr><td><tt>int settz(int minutes)</tt></td><td>Set timezone offset</td></tr>
-
-<tr><th colspan="2">System</th></tr>
-<tr><td><tt>int reboot(void)</tt></td><td>Reboot the system (ACPI reset via 0xCF9)</td></tr>
-<tr><td><tt>int shutdown(void)</tt></td><td>Shut down the system (QEMU/Bochs exit port)</td></tr>
-</table>
-
-<h3>21.5 Available <tt>&lt;stdio.h&gt;</tt> API</h3>
-
-<table>
-<tr><td><tt>int printf(const char *fmt, ...)</tt></td><td>Formatted print to stdout</td></tr>
-<tr><td><tt>int puts(const char *s)</tt></td><td>Print string with newline</td></tr>
-<tr><td><tt>int putchar(int c)</tt></td><td>Print single character</td></tr>
-<tr><td><tt>int snprintf(char *str, size_t size, const char *fmt, ...)</tt></td><td>Formatted print to buffer</td></tr>
-<tr><td><tt>int vsnprintf(char *str, size_t size, const char *fmt, va_list ap)</tt></td><td>Formatted print with va_list</td></tr>
-<tr><td><tt>int vprintf(const char *fmt, va_list ap)</tt></td><td>Formatted print to stdout with va_list</td></tr>
-</table>
-
-<p>Format specifiers: <tt>%s</tt>, <tt>%d</tt>, <tt>%u</tt>, <tt>%lu</tt>, <tt>%llu</tt>, <tt>%x</tt>, <tt>%p</tt>, <tt>%c</tt>, <tt>%%</tt>. Zero-padded width (e.g. <tt>%02d</tt>, <tt>%02lu</tt>) is supported.</p>
-
-<h3>21.6 Step-by-Step: Hello World</h3>
-
-<h4>Step 1: Create your project directory</h4>
-<pre>mkdir myprogram
-cd myprogram</pre>
-
-<h4>Step 2: Write crt0.asm</h4>
-<p>Copy the crt0.asm shown above into <tt>crt0.asm</tt>.</p>
-
-<h4>Step 3: Write main.c</h4>
+<h4>main.c</h4>
 <pre>#include &lt;stdio.h&gt;
 #include &lt;unistd.h&gt;
 
 int main(void)
 {
-    printf("Hello from MOSIX!\n");
-    printf("My process ID is %d.\n", getpid());
-    printf("My current directory is: ");
-
+    printf("Hello from MOSIX! PID: %d\n", getpid());
     char cwd[256];
-    if (getcwd(cwd, sizeof(cwd)) &gt; 0) {
-        printf("%s", cwd);
-    } else {
-        printf("(unknown)");
-    }
-    printf("\n");
-
-    return 42;  // exit with status 42
+    if (getcwd(cwd, sizeof(cwd)) &gt; 0)
+        printf("CWD: %s\n", cwd);
+    return 42;
 }</pre>
 
-<h4>Step 4: Write the Makefile</h4>
-<p>Copy the Makefile shown above. Adjust <tt>LIBC_DIR</tt> to point to your local <tt>zirvlibc</tt> checkout.</p>
+<h4>Available syscall API</h4>
+<table>
+<tr><th colspan="2">Process control</th></tr>
+<tr><td><tt>getpid()</tt></td><td>Return process ID</td></tr>
+<tr><td><tt>exit(int)</tt> / <tt>_exit(int)</tt></td><td>Terminate process</td></tr>
+<tr><td><tt>execve(path, argv, envp)</tt></td><td>Replace process with new program</td></tr>
+<tr><th colspan="2">File I/O</th></tr>
+<tr><td><tt>read(fd, buf, count)</tt></td><td>Read from FD</td></tr>
+<tr><td><tt>write(fd, buf, count)</tt></td><td>Write to FD</td></tr>
+<tr><td><tt>open(path, flags)</tt></td><td>Open file/device</td></tr>
+<tr><td><tt>close(fd)</tt></td><td>Close FD</td></tr>
+<tr><th colspan="2">Memory</th></tr>
+<tr><td><tt>sbrk(increment)</tt></td><td>Increment program break</td></tr>
+<tr><td><tt>brk(addr)</tt></td><td>Set program break</td></tr>
+<tr><td><tt>mmap(addr, len, prot, flags, fd, off)</tt></td><td>Anonymous memory map</td></tr>
+<tr><td><tt>munmap(addr, len)</tt></td><td>Unmap memory</td></tr>
+<tr><th colspan="2">Directory</th></tr>
+<tr><td><tt>getcwd(buf, size)</tt></td><td>Get CWD</td></tr>
+<tr><td><tt>chdir(path)</tt></td><td>Change directory</td></tr>
+<tr><td><tt>getdents(fd, ents, count)</tt></td><td>Read directory entries</td></tr>
+<tr><th colspan="2">Time</th></tr>
+<tr><td><tt>uptime()</tt></td><td>Seconds since boot</td></tr>
+<tr><td><tt>getdatetime(dt)</tt></td><td>Read system datetime</td></tr>
+<tr><td><tt>setdatetime(dt)</tt></td><td>Set system datetime</td></tr>
+<tr><td><tt>gettz()</tt></td><td>Get timezone offset</td></tr>
+<tr><td><tt>settz(minutes)</tt></td><td>Set timezone offset</td></tr>
+<tr><th colspan="2">System</th></tr>
+<tr><td><tt>reboot()</tt></td><td>Reboot system</td></tr>
+<tr><td><tt>shutdown()</tt></td><td>Shut down system</td></tr>
+<tr><td><tt>gethostname(buf, len)</tt></td><td>Get hostname</td></tr>
+<tr><td><tt>sethostname(buf, len)</tt></td><td>Set hostname</td></tr>
+</table>
 
-<h4>Step 5: Build</h4>
-<pre>make</pre>
-<p>This produces <tt>myprogram.elf</tt>, a static ELF64 binary ready to run on Zirvium.</p>
-
-<h4>Step 6: Verify the binary</h4>
-<pre>file myprogram.elf
-# Expected output:
-# myprogram.elf: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, not stripped
-
-readelf -l myprogram.elf
-# Expected: one or more LOAD segments loading at a user-space virtual address</pre>
-
-<h3>21.7 Step-by-Step: Using mmap for Memory</h3>
-
+<h4>Example: Using mmap</h4>
 <pre>#include &lt;stdio.h&gt;
 #include &lt;unistd.h&gt;
 #include &lt;string.h&gt;
 
-int main(void)
-{
-    // Allocate 64 KiB of anonymous memory
+int main(void) {
     long addr = mmap(NULL, 65536,
-                     PROT_READ | PROT_WRITE,
-                     MAP_PRIVATE | MAP_ANONYMOUS,
-                     0, 0);
-    if (addr == (long)MAP_FAILED) {
+        PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+    if (addr == (long)-1) {
         printf("mmap failed!\n");
         return 1;
     }
-
-    printf("Allocated 64 KiB at 0x%x\n", (unsigned int)addr);
-
-    // Use the memory
     char *buf = (char *)addr;
     memcpy(buf, "MOSIX mmap works!", 18);
     printf("%s\n", buf);
-
-    // Free it
     munmap((void *)addr, 65536);
-    printf("Memory freed.\n");
-
     return 0;
 }</pre>
 
-<h3>21.8 Step-by-Step: Reading from the Console Device</h3>
+<h4>Build system (Makefile snippet)</h4>
+<pre>CC := x86_64-elf-gcc
+LD := x86_64-elf-ld
+AS := nasm
+CFLAGS := -std=c11 -ffreestanding -fno-stack-protector -fno-pic \
+          -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -Wall -Wextra -O2
+LDFLAGS := -nostdlib -static -no-pie -z max-page-size=0x1000
+LIBC_DIR := /path/to/zirvlibc</pre>
 
-<pre>#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-
-int main(void)
-{
-    printf("Type something and press Enter:\n");
-
-    char buf[128];
-    int n = read(STDIN_FILENO, buf, sizeof(buf) - 1);
-    if (n &gt; 0) {
-        buf[n] = '\0';
-        printf("You typed: %s", buf);
-    }
-
-    printf("Goodbye!\n");
-    return 0;
-}</pre>
-
-<h3>21.9 Using the Program Break (brk/sbrk)</h3>
-
-<pre>#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;string.h&gt;
-
-int main(void)
-{
-    // Query current break
-    void *cur = sbrk(0);
-    printf("Current program break: 0x%x\n", (unsigned int)(unsigned long)cur);
-
-    // Allocate 4096 bytes by moving the break forward
-    void *new_break = sbrk(4096);
-    printf("Old break: 0x%x\n", (unsigned int)(unsigned long)new_break);
-
-    // Use the memory
-    char *data = (char *)new_break;
-    memcpy(data, "Heap data!", 11);
-    printf("%s\n", data);
-
-    // Check new break
-    void *after = sbrk(0);
-    printf("New program break: 0x%x\n", (unsigned int)(unsigned long)after);
-
-    return 0;
-}</pre>
-
-<h3>21.10 Using Pipes for IPC</h3>
-
-<pre>#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-#include &lt;string.h&gt;
-
-int main(void)
-{
-    int fds[2];
-
-    // SYS_PIPE is syscall 22; the C library wrapper is pipe().
-    // For now, use the raw syscall since the pipe wrapper
-    // may not be exposed in unistd.h.
-    long result;
-    __asm__ volatile("syscall"
-        : "=a"(result)
-        : "a"(22), "D"(fds)
-        : "rcx", "r11", "memory");
-
-    if (result &lt; 0) {
-        printf("pipe() failed\n");
-        return 1;
-    }
-
-    printf("Pipe created: read_fd=%d write_fd=%d\n", fds[0], fds[1]);
-
-    // Write to the write end
-    char *msg = "Hello through pipe!";
-    write(fds[1], msg, strlen(msg));
-
-    // Read from the read end
-    char buf[64];
-    int n = read(fds[0], buf, sizeof(buf) - 1);
-    buf[n] = '\0';
-    printf("Read from pipe: %s\n", buf);
-
-    // Close both ends
-    close(fds[0]);
-    close(fds[1]);
-
-    return 0;
-}</pre>
-
-<h3>21.11 Embedding Your Program into the Kernel</h3>
-
-<p>To make your program available at boot time (accessible via <tt>execve("/bin/myprogram", ...)</tt>), you embed it into the kernel binary. This is how <tt>zirvinit</tt> and <tt>zirvshell</tt> are included.</p>
-
-<h4>Step 1: Add an incbin section</h4>
-<p>Edit <tt>kernel/loader/init_bin.asm</tt>:</p>
-<pre>section .rodata
-
-global zirvinit_bin_start, zirvinit_bin_end
-zirvinit_bin_start: incbin "zirvinit/zirvinit.elf"
-zirvinit_bin_end:
-
-global zirvshell_bin_start, zirvshell_bin_end
-zirvshell_bin_start: incbin "zirvshell/zirvshell.elf"
-zirvshell_bin_end:
-
-; Add your program here:
-global myprogram_bin_start, myprogram_bin_end
-myprogram_bin_start: incbin "myprogram/myprogram.elf"
-myprogram_bin_end:</pre>
-
-<h4>Step 2: Register the binary</h4>
-<p>Edit <tt>kernel/loader/embedded.c</tt>. Add the extern declarations and register in <tt>embedded_init()</tt>:</p>
-<pre>extern char myprogram_bin_start[];
-extern char myprogram_bin_end[];
-
-// In embedded_init():
-embedded_add("/bin/myprogram",
-             (uintptr_t)myprogram_bin_start,
-             (uintptr_t)myprogram_bin_end - (uintptr_t)myprogram_bin_start);</pre>
-
-<h4>Step 3: Add your program to the Makefile</h4>
-<p>In the top-level <tt>Makefile</tt>, add your program's ELF as a dependency of <tt>init_bin.asm.o</tt>:</p>
-<pre>MYPROGRAM_ELF := myprogram/myprogram.elf
-
-# Add to the dependency line:
-$(BUILD_DIR)/kernel/loader/init_bin.asm.o: \
-    kernel/loader/init_bin.asm \
-    $(ZIRVINIT_ELF) $(ZIRVSHELL_ELF) $(ZIRVUTILS_ELFS) \
-    $(MYPROGRAM_ELF)
-
-# Add a build rule:
-$(MYPROGRAM_ELF):
-	$(MAKE) -C myprogram</pre>
-
-<h4>Step 4: Rebuild</h4>
-<pre>make clean &amp;&amp; make iso</pre>
-
-<p>Your program is now embedded in the kernel and can be executed from ZirvShell with <tt>run /bin/myprogram</tt> or <tt>exec /bin/myprogram</tt>.</p>
-
-<h3>21.12 Complete Working Example: sysinfo</h3>
-
-<p>Here's a complete program that displays system information, similar to what the shell's <tt>show system status</tt> command outputs:</p>
-
-<pre>/* sysinfo.c — MOSIX system information utility */
-#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-
-int main(void)
-{
-    char cwd[256];
-
-    printf("=== MOSIX System Information ===\n");
-    printf("PID:      %d\n", getpid());
-    printf("Uname:    Zirvium\n");
-    printf("User:     root\n");
-
-    if (getcwd(cwd, sizeof(cwd)) &gt; 0)
-        printf("CWD:      %s\n", cwd);
-
-    // Try to read the console device to show it works
-    printf("Console:  /zirv/tty/virtual0\n");
-    printf("================================\n");
-
-    return 0;
-}</pre>
-
-<h3>21.13 Project Template</h3>
-
-<p>Use this directory structure as a template for new MOSIX userspace projects:</p>
-
-<pre>myproject/
-  Makefile       # Build system (see template above)
-  crt0.asm       # C runtime entry point
-  main.c         # Your program
-  build/         # Build artefacts (created by make)
-    libc/        # Compiled zirvlibc objects
-  ../zirvlibc/   # Link to zirvlibc (or copy it)</pre>
-
-<h3>21.14 Known Limitations</h3>
-
-<ul>
-<li><b>malloc/free</b>: These are stubs returning NULL. Use <tt>sbrk()</tt> or <tt>mmap()</tt> directly for dynamic memory.</li>
-<li><b>No stdlib.h functions</b>: Only <tt>exit</tt>, <tt>abort</tt>, <tt>atoi</tt>, and <tt>atol</tt> are implemented. No <tt>qsort</tt>, <tt>rand</tt>, etc.</li>
-<li><b>No floating point</b>: The kernel does not save/restore the FPU, MMX, or SSE state. Avoid <tt>float</tt>/<tt>double</tt> types.</li>
-<li><b>No thread support</b>: The kernel has no multi-threading (only processes).</li>
-<li><b>No signals</b>: Signal syscalls are not implemented.</li>
-<li><b>No filesystem persistence</b>: The VFS is in-memory only; file data is lost on reboot.</li>
-<li><b>Single process at a time</b>: While the kernel supports multiple processes, there is no scheduler yet &mdash; only PID 1 runs.</li>
-</ul>
-
-<h3>21.15 Quick Reference Card</h3>
-
-<pre>// ============================================================
-// MOSIX syscall quick reference (MOSIX x86-64 ABI)
-// ============================================================
-// RAX = number, RDI = arg1, RSI = arg2, RDX = arg3,
-// R10 = arg4, R8 = arg5, R9 = arg6
-// Return: RAX = result (negative = error)
-//
-//  #   Name           C prototype
-// --   ----           -----------
-//  0   SYS_READ       int read(fd, buf, count)
-//  1   SYS_WRITE      int write(fd, buf, count)
-//  2   SYS_OPEN       int open(path, flags)
-//  3   SYS_CLOSE      int close(fd)
-//  9   SYS_MMAP       long mmap(addr, len, prot, flags, fd, off)
-// 11   SYS_MUNMAP     int munmap(addr, len)
-// 12   SYS_BRK        int brk(addr)
-// 13   SYS_UPTIME     uint64_t uptime()
-// 22   SYS_PIPE       int pipe(fds[2])
-// 39   SYS_GETPID     int getpid()
-// 59   SYS_EXECVE     int execve(path, argv, envp)
-// 60   SYS_EXIT       void exit(status)
-// 61   SYS_WAIT4      int wait4(pid, status, opts, rusage)
-// 78   SYS_GETDENTS   int getdents(fd, ents, count)
-// 79   SYS_GETCWD     int getcwd(buf, size)
-// 80   SYS_CHDIR      int chdir(path)
-// 96   SYS_GETDATETIME int getdatetime(struct datetime *dt)
-// 97   SYS_SETDATETIME int setdatetime(const struct datetime *dt)
-// 98   SYS_GETTZ      int gettz()
-// 99   SYS_SETTZ      int settz(int offset_minutes)
-//100   SYS_REBOOT     int reboot()
-//101   SYS_SHUTDOWN   int shutdown()
-//
-// Standard FDs: STDIN_FILENO=0, STDOUT_FILENO=1, STDERR_FILENO=2
-// ============================================================</pre>
-
-<hr>
-
-<h2 id="time">22. Time Subsystem</h2>
-
-<p><b>File:</b> <tt>kernel/time/time.h</tt></p>
-
-<p>The kernel provides a platform-independent time API backed by the CMOS RTC (on x86-64) with a software timezone offset.</p>
-
-<h4>Data structure</h4>
-<pre>struct datetime {
-    int year;
-    int month;
-    int day;
-    int hour;
-    int minute;
-    int second;
-};</pre>
-
-<h4>API reference</h4>
-<table>
-<tr><td><tt>time_init()</tt></td><td>Read initial datetime from CMOS RTC, start uptime counter</td></tr>
-<tr><td><tt>time_get(struct datetime *dt)</tt></td><td>Read current datetime (RTC + elapsed uptime)</td></tr>
-<tr><td><tt>time_set(const struct datetime *dt)</tt></td><td>Write datetime back to CMOS RTC</td></tr>
-<tr><td><tt>time_uptime_seconds()</tt></td><td>Return seconds since boot as <tt>uint64_t</tt></td></tr>
-<tr><td><tt>time_get_tz()</tt></td><td>Return current timezone offset in minutes east of UTC</td></tr>
-<tr><td><tt>time_set_tz(int offset_minutes)</tt></td><td>Set timezone offset (persisted in kernel state)</td></tr>
-</table>
-
-<h4>Userspace access</h4>
-<p>These functions are exposed to userspace via the corresponding syscalls:</p>
-<table>
-<tr><td><tt>SYS_UPTIME</tt> (13)</td><td><tt>uptime()</tt></td><td>Returns <tt>time_uptime_seconds()</tt></td></tr>
-<tr><td><tt>SYS_GETDATETIME</tt> (96)</td><td><tt>getdatetime(dt)</tt></td><td>Calls <tt>time_get()</tt></td></tr>
-<tr><td><tt>SYS_SETDATETIME</tt> (97)</td><td><tt>setdatetime(dt)</tt></td><td>Calls <tt>time_set()</tt></td></tr>
-<tr><td><tt>SYS_GETTZ</tt> (98)</td><td><tt>gettz()</tt></td><td>Returns <tt>time_get_tz()</tt></td></tr>
-<tr><td><tt>SYS_SETTZ</tt> (99)</td><td><tt>settz(minutes)</tt></td><td>Calls <tt>time_set_tz()</tt></td></tr>
-</table>
-
-<p>The zirvlibc wrappers for these syscalls are declared in <tt>&lt;unistd.h&gt;</tt> and <tt>&lt;time.h&gt;</tt>.</p>
+<p>All flags explained: <tt>-ffreestanding</tt> (no libc startup), <tt>-fno-stack-protector</tt> (no TLS canary), <tt>-fno-pic</tt> (position-dependent), <tt>-mno-red-zone</tt> (no 128-byte below RSP), <tt>-mno-mmx -mno-sse -mno-sse2</tt> (no SIMD), <tt>-nostdlib</tt> (no host libc), <tt>-static</tt> (fully static), <tt>-no-pie</tt> (fixed load address).</p>
 
 <hr>
 
 <h2 id="displayjet">23. DisplayJet Driver API</h2>
 
-<p><b>Directory:</b> <tt>drivers/zirv/displayjet/</tt> in the kernel tree; standalone at <tt>~/projects/zirvdisplayjet/</tt></p>
+<p><b>Source:</b> <a href="https://github.com/gauthamnair2005/zirvdisplayjet">zirvdisplayjet</a></p>
 
-<p>DisplayJet is the MAEM-encrypted display driver for Zirvium. It drives Bochs VBE-compatible display hardware (Bochs VGA / QEMU stdvga) and exposes a userspace compositor API via custom syscalls. All framebuffer surfaces are encrypted in memory using ChaCha20 with per-surface keys derived via HKDF from a hardware-entropy master key.</p>
+<p>DisplayJet provides 11 custom syscalls (110&ndash;120) for a compositor-based display protocol. The driver drives Bochs VBE-compatible hardware at 1024x768x32bpp and encrypts all surfaces at rest using ChaCha20 with per-surface keys (MAEM).</p>
 
-<h4>Userspace API (displayjet.h)</h4>
-
+<h4>Syscall interface</h4>
 <table>
-<tr><th>Function</th><th>Description</th></tr>
-<tr><td><tt>dj_connect()</tt></td><td>Connect to the DisplayJet display server</td></tr>
-<tr><td><tt>dj_disconnect()</tt></td><td>Disconnect from the display server</td></tr>
-<tr><td><tt>dj_surface_create(width, height)</tt></td><td>Create a GPU surface, returns surface ID</td></tr>
-<tr><td><tt>dj_surface_destroy(surface_id)</tt></td><td>Destroy a surface and free its encrypted memory</td></tr>
-<tr><td><tt>dj_surface_present(surface_id)</tt></td><td>Present a surface to the display</td></tr>
-<tr><td><tt>dj_get_mode(mode)</tt></td><td>Query the current display mode (width, height, bpp)</td></tr>
-<tr><td><tt>dj_surface_read(surface_id, buf, x, y, w, h)</tt></td><td>Read encrypted pixels from a surface</td></tr>
-<tr><td><tt>dj_surface_write(surface_id, buf, x, y, w, h)</tt></td><td>Write encrypted pixels to a surface</td></tr>
-<tr><td><tt>dj_list_surfaces()</tt></td><td>List all active surfaces and their metadata</td></tr>
-<tr><td><tt>dj_request_access(target_pid, surface_id)</tt></td><td>Request access to another process's surface</td></tr>
-<tr><td><tt>dj_grant_access(target_pid, surface_id)</tt></td><td>Grant access to a surface</td></tr>
+<tr><td>110</td><td><tt>dj_connect()</tt></td><td>Register as compositor (single-compositor model)</td></tr>
+<tr><td>111</td><td><tt>dj_disconnect()</tt></td><td>Unregister, wipe all surfaces</td></tr>
+<tr><td>112</td><td><tt>dj_create_surface(w, h, &amp;id)</tt></td><td>Create MAEM-encrypted surface</td></tr>
+<tr><td>113</td><td><tt>dj_destroy_surface(id)</tt></td><td>Crypto-wipe and free surface</td></tr>
+<tr><td>114</td><td><tt>dj_present(id)</tt></td><td>Decrypt surface to scanout framebuffer</td></tr>
+<tr><td>115</td><td><tt>dj_get_mode(&amp;mode)</tt></td><td>Query display mode</td></tr>
+<tr><td>116</td><td><tt>dj_surface_write(id, data, sz)</tt></td><td>Encrypt-and-store user data</td></tr>
+<tr><td>117</td><td><tt>dj_surface_read(id, buf, sz)</tt></td><td>Decrypt surface to user buffer</td></tr>
+<tr><td>118</td><td><tt>dj_list_surfaces(infos, &amp;cnt)</tt></td><td>Enumerate active surfaces</td></tr>
+<tr><td>119</td><td><tt>dj_request_access(id, &amp;grant)</tt></td><td>Request access grant (stub)</td></tr>
+<tr><td>120</td><td><tt>dj_grant_access(id, &amp;grant)</tt></td><td>Derive ephemeral access key</td></tr>
 </table>
 
-<h4>MAEM (Memory-Attested Encryption of Surfaces)</h4>
+<h4>MAEM encryption flow</h4>
+<pre>Boot: RDRNAD (or xorshift64+RDTSC) &rarr; seed &rarr; HKDF("DisplayJet MAEM v1", seed) &rarr; g_master_key
 
-<p>Each surface's framebuffer data is encrypted in-place in physical memory:</p>
-<ul>
-<li><b>Key derivation:</b> A hardware-entropy master key is collected at boot. Per-surface keys are derived via HKDF(extract=HMAC-SHA256, expand=ChaCha20).</li>
-<li><b>Cipher:</b> ChaCha20 with a 256-bit key and 96-bit nonce. Each surface row uses a unique nonce derived from the row index.</li>
-<li><b>DMA fencing:</b> Access counters ensure that encrypted surfaces are never swapped or read by an untrusted DMA engine while in use.</li>
-<li><b>Attack model:</b> Cold-boot attacks, physical memory inspection, and DMA snooping cannot recover pixel data without the master key (which never leaves the CPU).</li>
-</ul>
+Create surface: HKDF(g_master_key, surface_id) &rarr; per-surface key
+                get_random_bytes() &rarr; 12-byte nonce
 
-<h4>Building</h4>
-<pre># DisplayJet is compiled as part of the kernel build
-make -C drivers/zirv/displayjet</pre>
+Write:   ChaCha20(key, nonce, counter, plaintext) &rarr; ciphertext stored in surface buffer
+Present: ChaCha20(key, nonce, counter, ciphertext) &rarr; decrypted to scanout FB
+Destroy: ChaCha20(0xFF..FF key, 0xFF..FF nonce, 0, buffer) &rarr; crypto wipe
+         secure_zero(key, nonce)
+         pmm_free_pages()</pre>
 
-<p><a href="https://github.com/gauthamnair2005/zirvdisplayjet">source on github &raquo;</a></p>
+<p>Key sizes: 32-byte keys, 12-byte nonces, 64-byte ChaCha20 blocks. Max 32 surfaces. Only format: RGBX8888 (32 bpp).</p>
+
+<p>See the <a href="displayjet.html">full DisplayJet documentation</a> for complete details.</p>
 
 <hr>
 
 <h2 id="zirvui">24. ZirvUI Compositor</h2>
 
-<p><b>Directory:</b> <tt>~/projects/zirvui/</tt></p>
+<p><b>Source:</b> <a href="https://github.com/gauthamnair2005/zirvui">zirvui</a></p>
 
-<p>ZirvUI is the graphical desktop compositor / shell for Zirvium. It connects to the DisplayJet driver and renders a complete desktop environment on the encrypted framebuffer.</p>
+<p>ZirvUI is a user-space graphical compositor that connects to DisplayJet and renders a full desktop. It is compiled as a freestanding ELF binary (<tt>zirvui.elf</tt>) linked against zirvlibc and the DisplayJet userspace API.</p>
 
-<h4>Architecture</h4>
+<h4>Compositor flow</h4>
+<ol>
+<li><tt>dj_connect()</tt> &mdash; register as compositor</li>
+<li><tt>dj_get_mode()</tt> &mdash; query display resolution</li>
+<li><tt>dj_create_surface(fb_w, fb_h, &amp;surf_id)</tt> &mdash; allocate encrypted surface</li>
+<li>Render desktop into local 3 MB framebuffer (1024x768x4):
+  <ul>
+  <li>Procedural background gradient</li>
+  <li>28-pixel top panel with dark navy background</li>
+  <li>System tray icons: WiFi, Bluetooth, speaker, battery, user, power</li>
+  <li>Live uptime clock (MM:SS) using 5x7 bitmap font</li>
+  <li>Hamburger menu + "ZirvUI" branding</li>
+  </ul>
+</li>
+<li><tt>dj_surface_write()</tt> &mdash; encrypt and upload full frame</li>
+<li><tt>dj_present()</tt> &mdash; decrypt to scanout every ~1 second</li>
+</ol>
 
-<pre>ZirvUI (zirvui.elf)
-  |
-  |-- DisplayJet client (displayjet.h)
-  |     Connects to driver, creates surfaces, presents frames
-  |
-  |-- Bitmap font renderer (5x7)
-  |     Renders all text and labels
-  |
-  |-- Panel renderer
-  |     Top bar with menu, branding, status icons, clock
-  |
-  |-- Icon renderers
-  |     Custom pixel renderers for WiFi, BT, speaker, battery,
-  |     user, and power icons
-  |
-  |-- Background renderer
-  |     Gradient fill with compositing</pre>
+<h4>5x7 bitmap font</h4>
+<p>96 glyphs (ASCII 32-126), 5 columns x 7 rows per glyph, packed as 5 bytes per glyph (one byte per column, bits 0-6 are rows). Spacing: 6 px per character (5 + 1 gap).</p>
 
-<h4>Panel layout</h4>
+<h4>Key files</h4>
+<table>
+<tr><td><tt>src/main.c</tt></td><td>Compositor main loop, rendering, DisplayJet protocol</td></tr>
+<tr><td><tt>src/crt0.asm</tt></td><td>Entry point, calls main, then SYS_EXIT</td></tr>
+<tr><td><tt>Makefile</tt></td><td>Freestanding x86_64-elf build</td></tr>
+</table>
 
-<pre>+------------------------------------------------------------------+
-| [=]  ZirvUI    [WiFi][BT][Spkr][Batt][User][Power]    MM:SS      |
-+------------------------------------------------------------------+
-|                                                                    |
-|                    (desktop background gradient)                    |
-|                                                                    |
-+------------------------------------------------------------------+</pre>
-
-<h4>Building</h4>
-<pre>git clone https://github.com/gauthamnair2005/zirvui.git
-cd zirvui
-make</pre>
-
-<p>Produces <tt>zirvui.elf</tt>, a freestanding ELF binary that can be embedded into the kernel at <tt>/bin/zirvui</tt> or launched from ZirvShell via <tt>run /bin/zirvui</tt>.</p>
-
-<p><a href="https://github.com/gauthamnair2005/zirvui">source on github &raquo;</a></p>
+<p>See the <a href="zirvui.html">full ZirvUI documentation</a> for complete details.</p>
 
 <hr>
 

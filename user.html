@@ -3,29 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
 <title>Zirvium — User Documentation</title>
 <style>
-body { background: #fff; color: #000; font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
-a { color: #00f; } a:visited { color: #609; } a:active { color: #f00; }
-.container { margin: 0; padding: 8px 24px; max-width: 960px; }
-.logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
-.logo-row img { width: 48px; height: 48px; }
-h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: #000; margin: 0; }
-h1 span { color: #00f; }
-h2 { font-family: Times, "Times New Roman", serif; font-size: 22px; font-weight: normal; color: #000; margin: 24px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
-h3 { font-family: Times, "Times New Roman", serif; font-size: 17px; font-weight: bold; margin: 16px 0 4px; }
-h4 { font-family: Times, "Times New Roman", serif; font-size: 15px; font-weight: bold; margin: 10px 0 2px; }
-p { margin: 6px 0; color: #000; }
-tt, code, pre { font-family: "Courier New", Courier, monospace; font-size: 13px; }
-pre { background: #f4f4f4; border: 1px solid #ccc; padding: 8px; overflow-x: auto; line-height: 1.3; }
-hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
-.header-links { margin: 4px 0 8px; }
-.header-links a { color: #00f; text-decoration: underline; margin-right: 16px; font-size: 14px; }
-td { vertical-align: top; padding: 4px 12px 4px 0; }
-ul, ol { margin: 4px 0; padding-left: 20px; }
-li { margin: 2px 0; }
-.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
-.footer a { color: #666; } .footer a:visited { color: #666; }
 .toc ul { list-style: none; padding-left: 0; }
 .toc li { margin: 3px 0; }
 .toc a { text-decoration: none; }
@@ -45,9 +25,12 @@ li { margin: 2px 0; }
 <a href="index.html">Home</a>
 <a href="projects.html">Projects</a>
 <a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
 <a href="download.html">Download</a>
 <a href="user.html">User Docs</a>
-<a href="dev.html">Developer Docs</a>
+<a href="dev.html">Dev Docs</a>
 </div>
 
 <hr>
@@ -61,11 +44,13 @@ li { margin: 2px 0; }
 <li><a href="#running">3. Running in QEMU</a></li>
 <li><a href="#boot-process">4. Boot Process</a></li>
 <li><a href="#shell">5. Using ZirvShell</a></li>
-<li><a href="#filesystem">6. MOSIX Filesystem</a></li>
-<li><a href="#device-namespace">7. The /zirv Device Namespace</a></li>
-<li><a href="#building-libc">8. Building zirvlibc</a></li>
-<li><a href="#faq">9. Frequently Asked Questions</a></li>
-<li><a href="#troubleshooting">10. Troubleshooting</a></li>
+<li><a href="#utilities">6. Embedded Utilities</a></li>
+<li><a href="#filesystem">7. MOSIX Filesystem</a></li>
+<li><a href="#device-namespace">8. The /zirv Device Namespace</a></li>
+<li><a href="#building-libc">9. Building zirvlibc</a></li>
+<li><a href="#displayjet">10. DisplayJet &amp; ZirvUI</a></li>
+<li><a href="#faq">11. Frequently Asked Questions</a></li>
+<li><a href="#troubleshooting">12. Troubleshooting</a></li>
 </ul>
 </div>
 
@@ -75,11 +60,18 @@ li { margin: 2px 0; }
 
 <p>Zirvium is an x86-64 operating system that implements the MOSIX (Modern OSIX) standard. It boots on bare metal hardware and in emulators like QEMU.</p>
 
-<p>The user-facing system consists of three layers:</p>
+<p>The user-facing system consists of four layers:</p>
 <ul>
 <li><b>Kernel</b> (zirvium) &mdash; Handles hardware, memory, processes, and drivers</li>
 <li><b>Init</b> (zirvinit) &mdash; PID 1, displays boot banner and launches the shell</li>
-<li><b>Shell</b> (zirvshell) &mdash; The command-line interface with English-like syntax</li>
+<li><b>Shell</b> (zirvshell) &mdash; Command-line interface with English-like syntax</li>
+<li><b>Utilities</b> (zirvutils) &mdash; 17 standalone command-line programs</li>
+</ul>
+
+<p>Optional (requires DisplayJet-enabled hardware):</p>
+<ul>
+<li><b>DisplayJet</b> (zirvdisplayjet) &mdash; MAEM-encrypted display driver</li>
+<li><b>ZirvUI</b> (zirvui) &mdash; Graphical desktop compositor</li>
 </ul>
 
 <hr>
@@ -88,7 +80,7 @@ li { margin: 2px 0; }
 
 <h3>System requirements</h3>
 <ul>
-<li>A Unix-like system with build tools (for building)</li>
+<li>A Unix-like system with build tools</li>
 <li>x86-64-elf cross-compiler (or system gcc)</li>
 <li>NASM &gt;= 2.14</li>
 <li>GNU Make</li>
@@ -106,49 +98,19 @@ sudo apt install build-essential nasm grub-pc-bin grub-common \
 git clone https://github.com/gauthamnair2005/zirvium.git
 cd zirvium
 
-# 3. Fetch submodules (zirvinit, zirvshell, zirvutils)
-git submodule update --init
+# 3. Fetch submodules
+git submodule update --init --recursive
 
-# 4. Build the kernel ELF
-make
-
-# 5. Build a bootable ISO image
-make iso
-
-# 6. (Optional) Build individual components
-make -C zirvinit       # just the init binary
-make -C zirvshell      # just the shell binary
-make -C zirvlibc       # just the C library</pre>
-
-<h3>Build outputs</h3>
-<table>
-<tr><td><tt>build/zirvium.elf</tt></td><td>Kernel ELF binary (Multiboot2-compatible)</td></tr>
-<tr><td><tt>build/zirvium.iso</tt></td><td>Bootable CD-ROM image (GRUB2)</td></tr>
-<tr><td><tt>zirvinit/zirvinit.elf</tt></td><td>Init binary</td></tr>
-<tr><td><tt>zirvshell/zirvshell.elf</tt></td><td>Shell binary</td></tr>
-<tr><td><tt>zirvlibc/libzirvlibc.a</tt></td><td>C library archive</td></tr>
-</table>
+# 4. Build and run
+make run</pre>
 
 <hr>
 
 <h2 id="running">3. Running in QEMU</h2>
 
-<h3>Quick start</h3>
+<p><tt>make run</tt> builds the ISO and launches QEMU with serial console output in your terminal. You will see the boot banner and eventually the shell prompt <tt>/ $</tt>.</p>
 
-<pre>make run</pre>
-
-<p>This single command builds the ISO and launches QEMU with the following configuration:</p>
-<ul>
-<li>Serial console redirected to your terminal</li>
-<li>512 MiB RAM</li>
-<li>Standard VGA display in an SDL window</li>
-<li>IDE disk (blank 10 MiB image)</li>
-<li>VirtIO block device</li>
-<li>Three NICs: Intel e1000, VirtIO net, and Realtek RTL8139</li>
-<li>Boot from CD-ROM (<tt>-boot d</tt>)</li>
-</ul>
-
-<h3>Manual QEMU invocation</h3>
+<p>For manual invocation:</p>
 
 <pre>qemu-system-x86_64 \
     -cdrom build/zirvium.iso \
@@ -159,7 +121,6 @@ make -C zirvlibc       # just the C library</pre>
 
 <h3>What to expect</h3>
 
-<p>When the system boots, you will see:</p>
 <pre>  Z I R V I U M    K E R N E L
   -----------------------------
   Developer: Gautham Nair
@@ -181,118 +142,70 @@ Lead Developer: Gautham Nair
 Type 'help' for MOSIX English syntax commands.
 / $</pre>
 
-<p>The <tt>/ $</tt> prompt indicates the shell is ready for input.</p>
-
 <hr>
 
 <h2 id="boot-process">4. Boot Process</h2>
 
-<p>When Zirvium boots, the following happens in sequence:</p>
-
 <ol>
 <li><b>GRUB2</b> loads the kernel from ISO and transfers control</li>
-<li><b>Boot stub</b> (assembly) sets up long mode page tables, loads GDT, and enters 64-bit mode</li>
-<li><b>kernel_main</b> initialises subsystems in order:
-  <ol>
-  <li>Serial port (COM1)</li>
-  <li>CPU: GDT, IDT, PIC interrupts</li>
-  <li>Memory: physical and virtual memory managers</li>
-  <li>Console: VGA text mode</li>
-  <li>Filesystem: MOSIX VFS tree</li>
-  <li>Process table</li>
-  <li>System calls (SYSCALL MSRs)</li>
-  <li>PCI bus enumeration</li>
-  <li>Device drivers (dynamic probing)</li>
-  <li>PS/2 keyboard</li>
-  </ol>
-</li>
-<li><b>PID 1</b> (zirvinit) is created, loaded from the embedded ELF, and started in user mode</li>
-<li><b>zirvinit</b> prints its banner and executes <tt>/bin/shell</tt> (zirvshell)</li>
-<li><b>zirvshell</b> displays its banner and presents the prompt</li>
+<li><b>Boot stub</b> (assembly) sets up long mode page tables and enters 64-bit mode</li>
+<li><b>kernel_main</b> initialises 20+ subsystems in order: serial, GDT, IDT, PIC, PMM, VMM, VGA, console, VFS, process table, syscalls, time, PCI, drivers, keyboard</li>
+<li><b>PID 1</b> (zirvinit) starts in user mode, prints banner, calls <tt>execve("/bin/shell")</tt></li>
+<li><b>ZirvShell</b> presents the <tt>/ $</tt> prompt</li>
 </ol>
 
 <hr>
 
 <h2 id="shell">5. Using ZirvShell</h2>
 
-<p>ZirvShell uses an English-like command syntax. Commands, their aliases, and descriptions:</p>
+<p>ZirvShell uses an English-like command syntax alongside standard names:</p>
 
 <h3>Basic commands</h3>
-
 <table>
-<tr><td><tt>help</tt></td><td>Display the full command list</td></tr>
-<tr><td><tt>echo &lt;text&gt;</tt></td><td>Print text to the console</td></tr>
-<tr><td><tt>say &lt;text&gt;</tt></td><td>Same as echo</td></tr>
-<tr><td><tt>clear</tt></td><td>Clear the terminal screen</td></tr>
-<tr><td><tt>clear the screen</tt></td><td>Same as clear (natural language alias)</td></tr>
+<tr><td><tt>help</tt> / <tt>help me please</tt></td><td>Display the full command list</td></tr>
+<tr><td><tt>echo &lt;text&gt;</tt> / <tt>say &lt;text&gt;</tt></td><td>Print text to the console</td></tr>
+<tr><td><tt>clear</tt> / <tt>clear the screen</tt></td><td>Clear the terminal screen</td></tr>
 </table>
 
 <h3>Navigation</h3>
-
 <table>
-<tr><td><tt>pwd</tt></td><td>Print current working directory</td></tr>
-<tr><td><tt>where</tt></td><td>Same as pwd</td></tr>
-<tr><td><tt>go to &lt;path&gt;</tt></td><td>Change directory</td></tr>
-<tr><td><tt>cd &lt;path&gt;</tt></td><td>Same as go to</td></tr>
+<tr><td><tt>pwd</tt> / <tt>where</tt></td><td>Print current working directory</td></tr>
+<tr><td><tt>go to &lt;path&gt;</tt> / <tt>cd &lt;path&gt;</tt></td><td>Change directory</td></tr>
+<tr><td><tt>ls</tt> / <tt>list</tt> / <tt>show files</tt></td><td>List directory contents via <tt>getdents</tt></td></tr>
+<tr><td><tt>cat &lt;file&gt;</tt> / <tt>display &lt;file&gt;</tt></td><td>Display file contents</td></tr>
 </table>
 
 <h3>System information</h3>
-
 <table>
 <tr><td><tt>uname</tt></td><td>Print the operating system name ("Zirvium")</td></tr>
 <tr><td><tt>whoami</tt></td><td>Print current user ("root")</td></tr>
 <tr><td><tt>show system status</tt></td><td>Print PID, kernel name, and userspace version</td></tr>
-</table>
-
-<h3>Files and directories</h3>
-
-<table>
-<tr><td><tt>ls</tt></td><td>List directory contents (currently shows /bin and /zirv)</td></tr>
-<tr><td><tt>list</tt></td><td>Same as ls</td></tr>
-<tr><td><tt>show files</tt></td><td>List directory contents</td></tr>
-<tr><td><tt>cat &lt;file&gt;</tt></td><td>Display file contents (currently a stub)</td></tr>
-<tr><td><tt>display &lt;file&gt;</tt></td><td>Same as cat</td></tr>
+<tr><td><tt>date</tt></td><td>Print date/time (e.g. "Sun 2024-03-15 14:30:00 UTC+0:00")</td></tr>
+<tr><td><tt>settime</tt></td><td>Set date/time (<tt>YYYY-MM-DD HH:MM:SS</tt>)</td></tr>
+<tr><td><tt>timezone</tt></td><td>Show or set timezone (<tt>UTC+/-H:MM</tt>)</td></tr>
+<tr><td><tt>uptime</tt></td><td>Print system uptime (days, hours, minutes, seconds)</td></tr>
 </table>
 
 <h3>Program execution</h3>
-
 <table>
-<tr><td><tt>run &lt;binary&gt;</tt></td><td>Execute a binary from /bin</td></tr>
-<tr><td><tt>exec &lt;binary&gt;</tt></td><td>Execute a binary (replaces the shell process)</td></tr>
+<tr><td><tt>run &lt;binary&gt;</tt></td><td>Execute a binary from <tt>/bin</tt> (replaces shell)</td></tr>
+<tr><td><tt>exec &lt;binary&gt;</tt></td><td>Same as run</td></tr>
 </table>
 
-<h3>Stubs (shell built-in not yet implemented)</h3>
-
-<p>The shell's built-in <tt>date</tt>, <tt>uptime</tt>, and <tt>reboot</tt> commands are stub implementations. However, the kernel exposes the corresponding syscalls, and separate <b>embedded utilities</b> are available via the <tt>run</tt> command:</p>
-
+<h3>System control</h3>
 <table>
-<tr><td><tt>date</tt></td><td>Shell stub — prints "date: not available"</td></tr>
-<tr><td><tt>uptime</tt></td><td>Shell stub — prints "uptime: not available"</td></tr>
-<tr><td><tt>reboot</tt></td><td>Shell stub — prints "reboot: not available"</td></tr>
-</table>
-
-<h3>Embedded Utilities</h3>
-
-<p>The kernel embeds several standalone utilities accessible via <tt>run /bin/&lt;name&gt;</tt>:</p>
-
-<table>
-<tr><td><tt>run /bin/hello</tt></td><td>Print a hello-world test message and PID</td></tr>
-<tr><td><tt>run /bin/cat</tt></td><td>Read and display file/device contents</td></tr>
-<tr><td><tt>run /bin/sysinfo</tt></td><td>Display system information (PID, CWD, kernel name)</td></tr>
-<tr><td><tt>run /bin/clear</tt></td><td>Clear the terminal screen (ANSI escape sequence)</td></tr>
-<tr><td><tt>run /bin/echo</tt></td><td>Echo arguments to stdout</td></tr>
-<tr><td><tt>run /bin/reboot</tt></td><td>Reboot the system via <tt>SYS_REBOOT</tt></td></tr>
-<tr><td><tt>run /bin/shutdown</tt></td><td>Shut down the system via <tt>SYS_SHUTDOWN</tt></td></tr>
-<tr><td><tt>run /bin/poweroff</tt></td><td>Power off the system</td></tr>
-<tr><td><tt>run /bin/suspend</tt></td><td>Suspend the system</td></tr>
+<tr><td><tt>reboot</tt></td><td>Reboot the system via ACPI reset (0xCF9)</td></tr>
+<tr><td><tt>shutdown</tt> / <tt>poweroff</tt></td><td>Shut down the system (QEMU/Bochs exit port)</td></tr>
+<tr><td><tt>suspend</tt></td><td>Suspend (not yet implemented)</td></tr>
+<tr><td><tt>exit</tt></td><td>Exit the shell</td></tr>
 </table>
 
 <h3>Shell features</h3>
 <ul>
 <li><b>Line editing</b>: Backspace works for correcting input</li>
-<li><b>Quoted arguments</b>: Use double quotes for arguments containing spaces</li>
-<li><b>Natural language</b>: Multi-word commands like <tt>help me please</tt> and <tt>clear the screen</tt> work</li>
-<li><b>CWD-aware prompt</b>: The prompt always shows the current directory path</li>
+<li><b>Quoted arguments</b>: Double quotes for arguments containing spaces</li>
+<li><b>Natural language</b>: Multi-word commands like <tt>help me please</tt> and <tt>clear the screen</tt></li>
+<li><b>CWD-aware prompt</b>: Always shows the current directory path</li>
 </ul>
 
 <h3>Example session</h3>
@@ -312,123 +225,156 @@ ZirvShell MOSIX Commands:
   show system status    Show system info
   go to &lt;path&gt;          Change directory
   date                  Print the system date/time
+  settime               Set the system date/time
+  timezone              Show or set timezone
   uptime                Print system uptime
   reboot                Reboot the system
+  shutdown              Shutdown the system
   exit                  Exit the shell
 
 / $ uname
 Zirvium
 
-/ $ whoami
-root
+/ $ date
+Sun 2024-03-15 14:30:00 UTC+0:00
 
-/ $ show system status
+/ $ run /bin/sysinfo
 Zirvium System Status:
   PID:        1
   Kernel:     Zirvium
   Userspace:  ZirvShell
+  Hostname:   zirvium
 
-/ $ go to /bin
-/bin $ pwd
-/bin
-/ $ exit
+/ $ go to /zirv
+/zirv $ ls
+.  ..  sata  pata  nvme  usb  net  input  display  tty  audio
+/zirv $ go to /zirv/tty
+/zirv/tty $ ls
+.  ..  virtual0
+/zirv/tty $ exit
 ZirvShell: exiting...</pre>
 
 <hr>
 
-<h2 id="filesystem">6. MOSIX Filesystem</h2>
+<h2 id="utilities">6. Embedded Utilities</h2>
 
-<p>The MOSIX standard replaces the traditional FHS (Filesystem Hierarchy Standard) with a simplified, modern layout:</p>
+<p>The kernel embeds 17 standalone utilities accessible via <tt>run /bin/&lt;name&gt;</tt>:</p>
 
 <table>
-<tr><td><tt>/</tt></td><td>Root directory</td></tr>
-<tr><td><tt>/bin</tt></td><td>System binaries (init, shell, utilities)</td></tr>
-<tr><td><tt>/lib</tt></td><td>System libraries</td></tr>
-<tr><td><tt>/user</tt></td><td>User home area</td></tr>
-<tr><td><tt>/boot</tt></td><td>Boot configuration</td></tr>
-<tr><td><tt>/config</tt></td><td>System configuration</td></tr>
-<tr><td><tt>/zirv</tt></td><td>Device namespace (replaces /dev, /sys, /run)</td></tr>
-<tr><td><tt>/mounts</tt></td><td>Mount points</td></tr>
-<tr><td><tt>/tmp</tt></td><td>Temporary files</td></tr>
+<tr><td><tt>run /bin/hello</tt></td><td>Print a hello-world test message and PID</td></tr>
+<tr><td><tt>run /bin/cat</tt></td><td>Read and display file/device contents (multiple files supported)</td></tr>
+<tr><td><tt>run /bin/sysinfo</tt></td><td>Display PID, CWD, kernel name, hostname</td></tr>
+<tr><td><tt>run /bin/clear</tt></td><td>Clear the terminal screen (ANSI escape sequences)</td></tr>
+<tr><td><tt>run /bin/echo</tt></td><td>Echo arguments to stdout</td></tr>
+<tr><td><tt>run /bin/reboot</tt></td><td>Reboot the system via <tt>SYS_REBOOT</tt></td></tr>
+<tr><td><tt>run /bin/shutdown</tt></td><td>Shut down the system via <tt>SYS_SHUTDOWN</tt></td></tr>
+<tr><td><tt>run /bin/poweroff</tt></td><td>Same as shutdown</td></tr>
+<tr><td><tt>run /bin/suspend</tt></td><td>Suspend (not supported on this hardware)</td></tr>
+<tr><td><tt>run /bin/ping</tt></td><td>Check if a VFS path is reachable via <tt>open()</tt></td></tr>
+<tr><td><tt>run /bin/sleep &lt;secs&gt;</tt></td><td>Busy-wait for N seconds using <tt>uptime()</tt></td></tr>
+<tr><td><tt>run /bin/true</tt></td><td>Return exit code 0</td></tr>
+<tr><td><tt>run /bin/false</tt></td><td>Return exit code 1</td></tr>
+<tr><td><tt>run /bin/yes</tt></td><td>Print "y" forever (until killed)</td></tr>
+<tr><td><tt>run /bin/uname</tt></td><td>Print system information (<tt>-a</tt> for all)</td></tr>
+<tr><td><tt>run /bin/hostname</tt></td><td>Get or set the system hostname</td></tr>
 </table>
-
-<p>The current VFS implementation is in-memory only (no persistent storage driver yet). Directory entries exist as defined above; file operations for device nodes are handled by their respective drivers.</p>
 
 <hr>
 
-<h2 id="device-namespace">7. The /zirv Device Namespace</h2>
+<h2 id="filesystem">7. MOSIX Filesystem</h2>
 
-<p>The <tt>/zirv</tt> directory unifies device management under a single hierarchy, replacing the traditional <tt>/dev</tt>, <tt>/sys</tt>, and <tt>/run</tt> split:</p>
+<p>MOSIX replaces the traditional FHS with a simplified layout:</p>
+
+<table>
+<tr><td><tt>/</tt></td><td>Root directory</td></tr>
+<tr><td><tt>/bin</tt></td><td>System binaries (init, shell, all utilities)</td></tr>
+<tr><td><tt>/lib</tt></td><td>System libraries</td></tr>
+<tr><td><tt>/user</tt></td><td>User home area (replaces /home, /root)</td></tr>
+<tr><td><tt>/boot</tt></td><td>Boot configuration</td></tr>
+<tr><td><tt>/config</tt></td><td>System configuration (replaces /etc)</td></tr>
+<tr><td><tt>/zirv</tt></td><td>Device namespace (replaces /dev, /sys, /proc, /run)</td></tr>
+<tr><td><tt>/mounts</tt></td><td>Mount points (replaces /mnt, /media)</td></tr>
+<tr><td><tt>/tmp</tt></td><td>Temporary files</td></tr>
+</table>
+
+<hr>
+
+<h2 id="device-namespace">8. The /zirv Device Namespace</h2>
 
 <table>
 <tr><td><tt>/zirv/sata/</tt></td><td>SATA (AHCI) storage devices</td></tr>
 <tr><td><tt>/zirv/pata/</tt></td><td>PATA (IDE) storage devices</td></tr>
 <tr><td><tt>/zirv/nvme/</tt></td><td>NVMe SSD devices</td></tr>
 <tr><td><tt>/zirv/usb/</tt></td><td>USB mass storage devices</td></tr>
-<tr><td><tt>/zirv/net/</tt></td><td>Network interfaces</td></tr>
+<tr><td><tt>/zirv/net/</tt></td><td>Network interfaces (wlan0, bt0, etc.)</td></tr>
 <tr><td><tt>/zirv/input/</tt></td><td>Input devices (keyboard, touchpad)</td></tr>
-<tr><td><tt>/zirv/display/</tt></td><td>Display/graphics devices</td></tr>
+<tr><td><tt>/zirv/display/</tt></td><td>Display/graphics devices (gpu0, etc.)</td></tr>
 <tr><td><tt>/zirv/tty/</tt></td><td>Terminal/console devices</td></tr>
 <tr><td><tt>/zirv/audio/</tt></td><td>Audio devices</td></tr>
 </table>
 
 <h3>Console device</h3>
-<p>The primary console device is at <tt>/zirv/tty/virtual0</tt>:</p>
-<ul>
-<li><b>Read</b>: Accepts input from both PS/2 keyboard and serial port</li>
-<li><b>Write</b>: Outputs simultaneously to VGA text mode, pixel framebuffer, and serial port</li>
-<li><b>Colour support</b>: ANSI escape sequences render with VGA attributes and framebuffer pixel colours</li>
-</ul>
+<p>The primary console at <tt>/zirv/tty/virtual0</tt> aggregates input from PS/2 keyboard and serial port, and outputs simultaneously to VGA text mode, pixel framebuffer, and serial UART. ANSI escape sequences render with VGA attributes and framebuffer pixel colours.</p>
 
 <hr>
 
-<h2 id="building-libc">8. Building zirvlibc</h2>
-
-<p>The C library can be built standalone:</p>
+<h2 id="building-libc">9. Building zirvlibc</h2>
 
 <pre>cd zirvlibc
 make          # produces libzirvlibc.a
 make test     # runs unit tests</pre>
 
-<p>The test suite verifies:</p>
-<ul>
-<li>String operations: memcpy, memmove, memset, strcpy, strcmp, strstr, etc.</li>
-<li>Character classification: isspace, isdigit, isalpha, toupper, etc.</li>
-<li>printf formatting: %s, %d, %u, %x, %p, %c, %% with snprintf truncation</li>
-</ul>
+<p>The test suite verifies string operations (memcpy, memmove, memset, strcmp, strstr), character classification, and printf formatting with all specifiers and zero-padding.</p>
 
 <hr>
 
-<h2 id="faq">9. Frequently Asked Questions</h2>
+<h2 id="displayjet">10. DisplayJet &amp; ZirvUI</h2>
+
+<p>Zirvium supports a graphical desktop environment via two optional components:</p>
+
+<p><b>DisplayJet</b> is an in-kernel display driver that provides a compositor-based protocol via 11 custom syscalls (110&ndash;120). It drives Bochs VBE-compatible display hardware at 1024x768x32bpp and encrypts all framebuffer surfaces in memory using ChaCha20 (MAEM). Up to 32 surfaces can be created, each with a unique per-surface encryption key derived via HKDF-SHA256.</p>
+
+<p><b>ZirvUI</b> is a user-space graphical compositor that connects to DisplayJet and renders a complete desktop: procedural background gradient, a 28-pixel top panel with system tray (WiFi, Bluetooth, speaker, battery, user, power icons), a live uptime clock in MM:SS format, and a hamburger menu with "ZirvUI" branding. All text is rendered using a custom 5x7 bitmap font (96 glyphs) with fixed-point cos/sin lookup tables for circular icon geometry.</p>
+
+<p>For full details, see the <a href="displayjet.html">DisplayJet</a> and <a href="zirvui.html">ZirvUI</a> documentation pages.</p>
+
+<hr>
+
+<h2 id="faq">11. Frequently Asked Questions</h2>
 
 <h3>What is MOSIX?</h3>
-<p>MOSIX is a modern operating system standard that replaces legacy paths (<tt>/dev</tt>, <tt>/sys</tt>, <tt>/proc</tt>) with a unified <tt>/zirv</tt> namespace, simplifies the FHS hierarchy, and drops obsolete interfaces.</p>
-
+<p>MOSIX (Modern OSIX) is an operating system standard that replaces legacy paths (/dev, /sys, /proc) with a unified /zirv namespace, simplifies the FHS hierarchy, and drops obsolete interfaces. It is not related to the historical MOSIX distributed OS.</p>
 
 <h3>What hardware does Zirvium support?</h3>
-<p>Currently: x86-64 CPUs with long mode, PCI bus, SATA (ATA PIO), NVMe, USB storage (stub), PS/2 keyboard, Synaptics touchpad, serial UART (16550), VGA text mode, pixel framebuffer, Bochs VGA, VMware SVGA, Intel i915 graphics, HDA audio, Intel e1000 NIC, VirtIO net/block, Realtek RTL8139 NIC, Realtek RTL8723DE WiFi, Realtek Bluetooth, and TPM 2.0.</p>
+<p>x86-64 CPUs with long mode, PCI bus, SATA (ATA PIO), NVMe, USB storage (stub), PS/2 keyboard, Synaptics touchpad, serial UART (16550), VGA text mode, pixel framebuffer, Bochs VGA, VMware SVGA, Intel i915 UHD graphics (Gen 9.5-14), NVIDIA GPUs (stub), HDA audio, Intel e1000 NIC, VirtIO net/block, Realtek RTL8139 NIC, Realtek RTL8723DE WiFi, Realtek Bluetooth, and TPM 2.0.</p>
 
 <h3>Can I boot Zirvium on real hardware?</h3>
-<p>Yes. Write <tt>build/zirvium.iso</tt> to a USB/CD and boot via UEFI/BIOS with GRUB2. However, real hardware support is experimental and hardware-specific drivers (AHCI, XHCI, etc.) may need additional work.</p>
+<p>Yes. Write <tt>build/zirvium.iso</tt> to a USB/CD and boot via UEFI/BIOS with GRUB2. Real hardware support is experimental; hardware-specific drivers (AHCI, XHCI) may need additional work.</p>
+
+<h3>How do I reboot or shut down?</h3>
+<p>Type <tt>reboot</tt> or <tt>shutdown</tt> at the shell prompt. <tt>reboot</tt> uses ACPI reset (0xCF9 port) with QEMU/Bochs fallbacks. <tt>shutdown</tt> writes to the QEMU exit port (0x604) and Bochs exit port (0xB004).</p>
 
 <h3>Why is malloc not implemented?</h3>
-<p><tt>malloc</tt> in zirvlibc is a stub returning NULL because the OS does not yet have a fully-featured heap for userspace. The <tt>brk</tt> and <tt>mmap</tt> syscalls are implemented and can be used directly. A proper <tt>malloc</tt> implementation is planned.</p>
+<p><tt>malloc</tt> in zirvlibc is a stub returning NULL because the OS does not yet have a fully-featured userspace heap. The <tt>brk</tt> and <tt>mmap</tt> syscalls can be used directly.</p>
 
-<h3>How do I exit the shell?</h3>
-<p>Type <tt>exit</tt>. This will cause the shell to return, and since there is no scheduler to start another process, the system will effectively stop.</p>
+<h3>Does the shell support pipes or redirection?</h3>
+<p>Not yet. The <tt>pipe</tt> syscall exists, but the shell does not yet implement <tt>|</tt> or <tt>&gt;</tt> syntax.</p>
 
 <h3>What is the licence?</h3>
-<p>Zirvium is licensed under the GNU General Public License v3.</p>
+<p>Zirvium is licensed under the GNU General Public License v3. Some driver code is derived from Linux and remains under GPL-2.0.</p>
 
 <hr>
 
-<h2 id="troubleshooting">10. Troubleshooting</h2>
+<h2 id="troubleshooting">12. Troubleshooting</h2>
 
 <h3>"Failed to load zirvinit.elf"</h3>
-<p>The ELF binary may be corrupted or missing. Rebuild with <tt>make -C zirvinit clean && make -C zirvinit</tt> then rebuild the kernel with <tt>make</tt>.</p>
+<p>The ELF binary may be corrupted. Rebuild with <tt>make -C zirvinit clean && make -C zirvinit</tt> then rebuild the kernel.</p>
 
 <h3>QEMU shows a black screen</h3>
-<p>Ensure you're using <tt>-serial stdio</tt> to see the serial output. The VGA display may not render if the framebuffer mode fails. Try <tt>-vga std</tt>.</p>
+<p>Use <tt>-serial stdio</tt> to see serial output. Try <tt>-vga std</tt> for Bochs-compatible VBE.</p>
+
+<h3>Keyboard input not working</h3>
+<p>Make sure the QEMU window has focus. The PS/2 driver requires the emulated PS/2 controller (enabled by default).</p>
 
 <h3>"mformat not found" when running make iso</h3>
 <p>Install mtools: <tt>sudo apt install mtools</tt> (Debian/Ubuntu) or <tt>sudo pacman -S mtools</tt> (Arch).</p>
@@ -437,13 +383,10 @@ make test     # runs unit tests</pre>
 <p>Install GRUB utilities: <tt>sudo apt install grub-pc-bin grub-common xorriso</tt>.</p>
 
 <h3>Cross-compiler not found</h3>
-<p>The build system falls back to the system gcc, which may produce incompatible code. Install or build an <tt>x86_64-elf-gcc</tt> cross-compiler (see the developer docs for instructions).</p>
+<p>The build falls back to system gcc. Install <tt>x86_64-elf-gcc</tt> for production builds.</p>
 
-<h3>No response to keyboard input in QEMU</h3>
-<p>Make sure the QEMU window has focus. The PS/2 keyboard driver requires the emulated PS/2 controller which is enabled by default in QEMU.</p>
-
-<h3>The shell command "cat" says "not yet implemented"</h3>
-<p>The <tt>cat</tt> command is a stub awaiting the VFS read implementation for regular files. Device node reads (e.g., <tt>/zirv/tty/virtual0</tt>) work through the console device.</p>
+<h3>How do I exit the shell?</h3>
+<p>Type <tt>exit</tt>. The shell will return and the system will effectively stop (no scheduler to restart).</p>
 
 <hr>
 
