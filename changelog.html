@@ -37,6 +37,8 @@
 
 <h3>May 2026</h3>
 
+<p><b>Audio Subsystem Fixes</b> &mdash; Resolved critical synchronization issues in the AC97 driver DMA ring-buffer management. Added missing hardware status tracking (CIV/LVI) and corrected buffer completion interrupt handling for stable 48 kHz stereo playback. Improved driver registration reliability across PCI devices.</p>
+
 <p><b>ZirvTK GUI Toolkit</b> &mdash; New MOSIX GUI toolkit written in Rust with C FFI. Provides widgets (Button, Label, Panel, Window, TileScroller, MediaTile), software Canvas renderer, 5x7 bitmap font, and platform abstraction over ZirvFlux. Builds as staticlib/cdylib/rlib. Includes Rust and C demo applications. (ZirvTK v0.1.0)</p>
 
 <p><b>ZirvFlux Display Framework</b> &mdash; New MOSIX display framework library providing a Mesa-like API for compositors. Abstracts the DisplayJet kernel driver behind a clean compositor-facing interface. (ZirvFlux v0.1.0)</p>
