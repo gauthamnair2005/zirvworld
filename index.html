@@ -39,7 +39,7 @@
 
 <p>The ecosystem spans fourteen projects: the kernel, a freestanding C library, an init system, an English-like shell, 18 utilities, an encrypted display driver (DisplayJet), a display framework library (ZirvFlux), a GUI toolkit (ZirvTK), a graphical desktop compositor (ZirvUI), and several hardware driver modules. Together they form a complete operating system capable of booting on bare metal and under QEMU.</p>
 
-<p>The <b><a href="zirvui.html">ZirvUI</a></b> compositor renders a full desktop with a procedural background gradient, 28-pixel top panel with hamburger menu and system tray (WiFi, Bluetooth, speaker, battery, user, power), and a live uptime clock in 5x7 bitmap font. A <b>3D rendering demo</b> showcases fixed-point rotation, perspective projection, and depth buffering. The <b><a href="zirvtk.html">ZirvTK</a></b> Rust GUI toolkit provides widgets (Button, Label, Panel, Window, TileScroller, MediaTile) with C FFI for building graphical applications.</p>
+<p>The <b><a href="zirvui.html">ZirvUI</a></b> compositor renders a full desktop with a procedural background gradient, 28-pixel top panel with hamburger menu and system tray (WiFi, Bluetooth, speaker, battery, user, power), and a live uptime clock in 5x7 bitmap font. The <b><a href="zirvtk.html">ZirvTK</a></b> Rust GUI toolkit provides widgets (Button, Label, Panel, Window, TileScroller, MediaTile) with C FFI for building graphical applications.</p>
 
 <p>But <b>Zirvium is just one MOSIX OS</b>. The MOSIX standard is designed to be implemented by anyone. You can build your own kernel, your own libc, your own shell &mdash; and as long as they follow the <a href="standard.html">MOSIX specification</a>, they are part of the MOSIX family. This website is the canonical reference for that specification.</p>
 
@@ -72,7 +72,7 @@
 </tr>
 <tr>
 <td><a href="zirvui.html">ZirvUI Desktop</a></td>
-<td>Graphical desktop compositor with panel, system tray, 3D demo</td>
+<td>Graphical desktop compositor with panel, system tray, app launcher, and shutdown dialog</td>
 </tr>
 <tr>
 <td><a href="zirvflux.html">ZirvFlux</a></td>

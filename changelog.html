@@ -41,8 +41,6 @@
 
 <p><b>ZirvFlux Display Framework</b> &mdash; New MOSIX display framework library providing a Mesa-like API for compositors. Abstracts the DisplayJet kernel driver behind a clean compositor-facing interface. (ZirvFlux v0.1.0)</p>
 
-<p><b>3D Rendering Demo</b> &mdash; Fixed-point 3D rendering demo added to ZirvUI compositor. Features rotation, perspective projection, and depth buffering, all computed in software on the compositor framebuffer.</p>
-
 <p><b>Desktop Improvements</b> &mdash; ZirvUI now displays a complete desktop with procedural background gradient, 28-pixel top panel, hamburger menu icon, "ZirvUI" branding, system tray (WiFi, Bluetooth, speaker, battery, user, power icons), and live uptime clock using 5x7 bitmap font.</p>
 
 <p><b>DisplayJet Encryption</b> &mdash; All compositor surfaces now encrypted at rest in kernel memory using ChaCha20 with per-surface keys derived via HKDF-SHA256. Hardware entropy via RDRAND with xorshift64+RDTSC fallback. 11 custom syscalls (110&ndash;120) for the compositor protocol.</p>
