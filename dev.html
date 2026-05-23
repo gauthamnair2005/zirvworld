@@ -630,6 +630,39 @@ int main(void) {
 
 <hr>
 
+<h2 id="audio">21. Audio Subsystem</h2>
+
+<p><b>Location:</b> <tt>kernel/audio/</tt> (core), <tt>drivers/zirv/audio/</tt> (drivers)</p>
+
+<p>Zirvium provides a PCM audio subsystem with driver registration, ring-buffer management, and syscall-based userspace access. The subsystem supports multiple output drivers and automatically selects the first available one.</p>
+
+<h3>Drivers</h3>
+
+<table>
+<tr><th>Driver</th><th>Hardware</th><th>Source</th></tr>
+<tr><td><b>Intel HDA</b></td><td>Intel HD Audio (Kaby Lake through Meteor Lake PCH)</td><td><tt>drivers/zirv/audio/hda/</tt></td></tr>
+<tr><td><b>Intel AC97</b></td><td>Intel ICH AC97 (widely emulated by QEMU/VirtualBox)</td><td><tt>drivers/zirv/audio/ac97/</tt></td></tr>
+</table>
+
+<h3>Syscalls</h3>
+<table>
+<tr><th>#</th><th>Name</th><th>Description</th></tr>
+<tr><td>126</td><td><tt>SYS_AUDIO_PLAY</tt></td><td>Submit 16-bit stereo PCM frames at 48 kHz</td></tr>
+<tr><td>127</td><td><tt>SYS_AUDIO_VOLUME</tt></td><td>Set output volume (0&ndash;255)</td></tr>
+</table>
+
+<p>The <tt>audio_play()</tt> libc wrapper submits PCM data to the kernel's ring buffer. The hardware driver feeds from this buffer via DMA, playing silence when the buffer is empty.</p>
+
+<h3>Nokia Composer</h3>
+<p><b>Location:</b> <tt>zirvutils/src/nokia.c</tt></p>
+<p>Command-line tool that generates music from note strings. Format: <tt>[duration][pitch][octave][.]</tt>. Examples:</p>
+<pre>nokia "4C4 4D4 4E4 4F4 4G4 4A4 4B4 4C5"
+nokia 180 "8E5 8D5 8C5 8D5 8E5 8E5 8E5"
+nokia "4C5 4C5 4G5 4G5 4A5 4A5 4G5"</pre>
+<p>Defaults to 120 BPM tempo. Uses a classic square-wave synthesis for the Nokia ringtone feel. Output plays through the first available audio driver at 48 kHz / 16-bit stereo.</p>
+
+<hr>
+
 <h2 id="zirvflux">23. ZirvFlux Library</h2>
 
 <p><a href="zirvflux.html">ZirvFlux</a> is the reference MOSIX display framework library. It provides a Mesa-like API for compositors, abstracting the DisplayJet kernel driver behind a clean C interface. Compositors call <tt>zf_connect()</tt>, <tt>zf_create_buffer()</tt>, <tt>zf_write_buffer()</tt>, and <tt>zf_present()</tt> instead of invoking DisplayJet syscalls directly.</p>
