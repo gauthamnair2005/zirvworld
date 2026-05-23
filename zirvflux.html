@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>ZirvFlux &mdash; MOSIX Display Framework</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1><span>ZirvFlux</span> &mdash; MOSIX Display Framework Library</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
+<a href="distributions.html">Distributions</a>
+<a href="download.html">Download</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
+</div>
+
+<hr>
+
+<p><b>ZirvFlux</b> is the reference MOSIX display framework library. It provides a compositor-facing API for display enumeration, buffer management, and presentation &mdash; analogous to Mesa for Linux. Compositors like <a href="zirvui.html">ZirvUI</a> link against <tt>libzirvflux.a</tt> instead of calling the kernel display driver directly.</p>
+
+<h2>API</h2>
+
+<p>The library exposes the following operations through a simple C API defined in <tt>&lt;zirvflux.h&gt;</tt>:</p>
+
+<table>
+<tr><td><tt>zf_connect()</tt></td><td>Open the display device and register as compositor</td></tr>
+<tr><td><tt>zf_disconnect()</tt></td><td>Unregister compositor, release all buffers</td></tr>
+<tr><td><tt>zf_get_info()</tt></td><td>Query display dimensions and connector name</td></tr>
+<tr><td><tt>zf_create_buffer()</tt></td><td>Allocate a GPU surface (up to 32)</td></tr>
+<tr><td><tt>zf_destroy_buffer()</tt></td><td>Release a GPU surface</td></tr>
+<tr><td><tt>zf_write_buffer()</tt></td><td>Write pixel data to a buffer</td></tr>
+<tr><td><tt>zf_present()</tt></td><td>Flip a buffer to the screen</td></tr>
+<tr><td><tt>zf_present_region()</tt></td><td>Present a sub-region of a buffer</td></tr>
+<tr><td><tt>zf_list_buffers()</tt></td><td>Enumerate all allocated buffers</td></tr>
+</table>
+
+<h2>Implementation</h2>
+
+<p>The library communicates with the kernel display driver (<a href="displayjet.html">DisplayJet</a>) via custom MOSIX syscalls (110&ndash;120). Each buffer is encrypted at rest in kernel memory using ChaCha20 with a per-surface key derived via HKDF-SHA256.</p>
+
+<p>Buffer size is 3 MB (<tt>ZF_BUFFER_SIZE_3MB</tt>), matching the 1024&times;768&times;32bpp framebuffer mode. The library handles the DisplayJet surface protocol, allowing compositors to work with a clean, Mesa-like API.</p>
+
+<h2>Build</h2>
+
+<pre>make</pre>
+
+<p>Produces <tt>libzirvflux.a</tt>. Requires a freestanding C compiler (<tt>x86_64-elf-gcc</tt> or <tt>gcc</tt>).</p>
+
+<h2>Usage</h2>
+
+<pre>#include &lt;zirvflux.h&gt;
+
+zf_connect();
+zf_display_info_t info;
+zf_get_info(&amp;info);
+// info.width, info.height, info.connector
+
+uint32_t buf_id;
+zf_create_buffer(info.width, info.height, &amp;buf_id);
+// render pixels into a local framebuffer
+zf_write_buffer(buf_id, pixel_data, size);
+zf_present(buf_id);</pre>
+
+<h2>Dependencies</h2>
+
+<ul>
+<li><a href="displayjet.html">zirvdisplayjet</a> &mdash; Kernel display driver (syscalls 110&ndash;120)</li>
+<li><a href="zirvlibc.html">zirvlibc</a> &mdash; C library for syscall wrappers</li>
+</ul>
+
+<h2>Source</h2>
+
+<p><a href="https://github.com/gauthamnair2005/zirvflux">github.com/gauthamnair2005/zirvflux &raquo;</a></p>
+
+<hr>
+
+<div class="footer">
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

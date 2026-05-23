@@ -19,21 +19,25 @@
 <a href="index.html">Home</a>
 <a href="projects.html">Projects</a>
 <a href="architecture.html">Architecture</a>
-<a href="standard.html">MOSIX</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
+<a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
-<a href="user.html">User Docs</a>
-<a href="dev.html">Dev Docs</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
 </div>
 
 <hr>
 
 <h2>Overview</h2>
 
-<p><b>ZirvUI</b> is the graphical desktop compositor / graphical shell for the Zirvium operating system. It connects to the <a href="displayjet.html">DisplayJet</a> kernel driver via syscalls 110&ndash;120 and renders a complete desktop environment into a MAEM-encrypted framebuffer surface. All pixel data is encrypted with ChaCha20 before being stored in kernel memory.</p>
+<p><b>ZirvUI</b> is the graphical desktop compositor / graphical shell for the Zirvium operating system. It connects to the <a href="displayjet.html">DisplayJet</a> kernel driver via syscalls 110&ndash;125 and renders a complete desktop environment into a MAEM-encrypted framebuffer surface. It supports <b>Performance Mode</b> to bypass encryption for a smoother experience, and <b>Smooth Font</b> rendering with anti-aliasing.</p>
 
-<p>The compositor is a user-space process compiled as a freestanding ELF binary (<tt>zirvui.elf</tt>) linked against <tt>zirvlibc</tt> and the DisplayJet API. It can be launched from ZirvShell via <tt>run /bin/zirvui</tt>.</p>
+<p>The compositor is a user-space process compiled as a freestanding ELF binary (<tt>zirvui.elf</tt>) linked against <tt>zirvlibc</tt> and the ZirvFlux API. It can be launched from ZirvShell via <tt>run /bin/zirvui</tt>.</p>
 
 <p><b>Source:</b> <a href="https://github.com/gauthamnair2005/zirvui">github.com/gauthamnair2005/zirvui</a></p>
 

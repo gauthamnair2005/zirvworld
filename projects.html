@@ -22,6 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
 <a href="user.html">User&nbsp;Docs</a>
@@ -50,6 +52,7 @@
 
 <h2>zirvlibc</h2>
 <p><tt>C11 &mdash; libzirvlibc.a</tt></p>
+<p><a href="zirvlibc.html">full documentation &raquo;</a></p>
 
 <p>The reference MOSIX C library &mdash; a freestanding libc for MOSIX userspace programs. Provides string.h, ctype.h, stdio.h (printf with %s%d%u%lu%llu%x%p%c%%, zero-padded width), stdlib.h (exit, atoi, atol), unistd.h (read, write, open, close, mmap, brk, execve, getpid, uptime, reboot, shutdown, gethostname, sethostname, getcwd, chdir, getdents), datetime.h, dirent.h, and zirv/syscall.h.</p>
 
@@ -61,6 +64,7 @@
 
 <h2>zirvinit</h2>
 <p><tt>C11 / ASM &mdash; MOSIX init system (PID 1)</tt></p>
+<p><a href="zirvinit.html">full documentation &raquo;</a></p>
 
 <p>First userspace process. 28 lines of C: prints MOSIX banner, calls <tt>execve("/bin/shell", ...)</tt>. Halts forever if execve fails. Linked against zirvlibc, compiled as static ELF64, embedded as <tt>/bin/init</tt>.</p>
 
@@ -71,7 +75,8 @@
 <hr>
 
 <h2>zirvshell</h2>
-<p><tt>C11 / ASM &mdash; MOSIX natural-language shell (666 lines)</tt></p>
+<p><tt>C11 / ASM &mdash; MOSIX natural-language shell</tt></p>
+<p><a href="zirvshell.html">full documentation &raquo;</a></p>
 
 <p>The reference MOSIX shell. English-like command syntax alongside standard POSIX aliases. Built-in commands: echo, pwd, uname, clear, whoami, ls, cat, date, settime, timezone, uptime, reboot, shutdown, poweroff, suspend, cd, mkdir, rm, rmdir, mv, cp, help, exit. External commands in <tt>/bin/</tt> are executed via <b>execve with automatic caller save/restore</b> &mdash; the shell process is preserved and returns to the prompt after every command. CWD-aware prompt, line editor with backspace, double-quoted argument parsing, multi-word natural language commands.</p>
 
@@ -82,7 +87,8 @@
 <hr>
 
 <h2>zirvutils</h2>
-<p><tt>C11 / ASM &mdash; 18 MOSIX embedded utilities + ifconfig</tt></p>
+<p><tt>C11 / ASM &mdash; 18 MOSIX embedded utilities</tt></p>
+<p><a href="zirvutils.html">full documentation &raquo;</a></p>
 
 <p>Standalone command-line utilities: hello, cat, sysinfo, clear, echo, reboot, shutdown, suspend, poweroff, ping, sleep, true, false, yes, uname, hostname, <b>ifconfig</b>, <b>lspci</b>. All statically linked against zirvlibc, compiled as standalone ELF64 binaries, and embedded into the kernel via <tt>init_bin.asm</tt>. External commands now run via the kernel's execve save/restore mechanism, so the shell prompt returns after every utility completes.</p>
 
@@ -107,6 +113,26 @@
 
 <p><a href="zirvui.html">full documentation &raquo;</a></p>
 <p><a href="https://github.com/gauthamnair2005/zirvui">source on github &raquo;</a></p>
+
+<hr>
+
+<h2>zirvflux</h2>
+<p><tt>C11 &mdash; libzirvflux.a</tt></p>
+
+<p>User-space display framework for MOSIX compositors. Provides a Mesa-like API for display enumeration, buffer management, and presentation. Communicates with the DisplayJet kernel driver via syscalls 110&ndash;120. All surfaces encrypted at rest.</p>
+
+<p><a href="zirvflux.html">full documentation &raquo;</a></p>
+<p><a href="https://github.com/gauthamnair2005/zirvflux">source on github &raquo;</a></p>
+
+<hr>
+
+<h2>zirvtk</h2>
+<p><tt>Rust / C &mdash; libzirvtk.a</tt></p>
+
+<p>MOSIX GUI toolkit &mdash; a Rust widget library with C FFI. Provides Button, Label, Panel, Window, TileScroller, MediaTile widgets, software Canvas renderer, and 5x7 bitmap font. Builds as staticlib/cdylib/rlib. Designed for compositors and graphical applications running on top of ZirvFlux.</p>
+
+<p><a href="zirvtk.html">full documentation &raquo;</a></p>
+<p><a href="https://github.com/gauthamnair2005/zirvtk">source on github &raquo;</a></p>
 
 <hr>
 

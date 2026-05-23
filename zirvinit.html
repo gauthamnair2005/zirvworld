@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>zirvinit &mdash; MOSIX PID 1</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1><span>zirvinit</span> &mdash; MOSIX PID 1 (Reference Init)</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
+<a href="distributions.html">Distributions</a>
+<a href="download.html">Download</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
+</div>
+
+<hr>
+
+<p><b>zirvinit</b> is the reference MOSIX init system &mdash; the first userspace process (PID&nbsp;1) launched by the kernel. It is deliberately minimal: 28 lines of C that print the MOSIX banner and spawn the shell via <tt>execve("/bin/shell")</tt>. If execve fails (no shell found), it halts forever.</p>
+
+<h2>Source</h2>
+
+<pre>src/crt0.asm     _start -&gt; main -&gt; SYS_EXIT
+src/main.c       Banner + execve("/bin/shell")</pre>
+
+<h2>Build</h2>
+
+<pre>make</pre>
+
+<p>Produces <tt>zirvinit.elf</tt> &mdash; static, freestanding, no-pie ELF64 linked against <a href="zirvlibc.html">zirvlibc</a>. Embedded into the kernel as <tt>/bin/init</tt>.</p>
+
+<h2>Design Philosophy</h2>
+
+<p>The init process follows the MOSIX philosophy of simplicity and correctness. It does not attempt to manage services, supervise processes, or handle complex boot scenarios. Those responsibilities belong to the shell and userspace tools. Init's sole job is to bring up the shell and keep the system alive as PID&nbsp;1.</p>
+
+<p>The kernel reaps orphaned processes by reparenting them to init, which automatically collects their exit status via the kernel's wait4 mechanism.</p>
+
+<h2>Source</h2>
+
+<p><a href="https://github.com/gauthamnair2005/zirvinit">github.com/gauthamnair2005/zirvinit &raquo;</a></p>
+
+<hr>
+
+<div class="footer">
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

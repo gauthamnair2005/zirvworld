@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>zirvshell &mdash; MOSIX Interactive Shell</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1><span>zirvshell</span> &mdash; MOSIX Interactive Shell (Reference Shell)</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
+<a href="distributions.html">Distributions</a>
+<a href="download.html">Download</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
+</div>
+
+<hr>
+
+<p><b>zirvshell</b> is the reference MOSIX interactive shell. It supports English-like natural language syntax alongside standard POSIX command names, making it accessible to new users while remaining familiar to Unix veterans.</p>
+
+<h2>Built-in Commands (20 total)</h2>
+
+<table>
+<tr><th>Command</th><th>Aliases</th><th>Description</th></tr>
+<tr><td><tt>help</tt></td><td>help me please</td><td>Show help text</td></tr>
+<tr><td><tt>echo</tt></td><td>say</td><td>Print text</td></tr>
+<tr><td><tt>pwd</tt></td><td>where</td><td>Print working directory</td></tr>
+<tr><td><tt>uname</tt></td><td></td><td>Print kernel name</td></tr>
+<tr><td><tt>whoami</tt></td><td></td><td>Show current user</td></tr>
+<tr><td><tt>clear</tt></td><td>clear the screen</td><td>Clear screen</td></tr>
+<tr><td><tt>ls</tt></td><td>list, show files</td><td>Directory listing via getdents</td></tr>
+<tr><td><tt>cat</tt></td><td>display</td><td>Display file contents</td></tr>
+<tr><td><tt>run</tt></td><td>exec</td><td>Execute a binary via execve</td></tr>
+<tr><td><tt>cd</tt></td><td>go to</td><td>Change directory</td></tr>
+<tr><td><tt>date</tt></td><td></td><td>Print date/time</td></tr>
+<tr><td><tt>settime</tt></td><td></td><td>Set date/time</td></tr>
+<tr><td><tt>timezone</tt></td><td></td><td>Show/set timezone</td></tr>
+<tr><td><tt>uptime</tt></td><td></td><td>System uptime</td></tr>
+<tr><td><tt>reboot</tt></td><td></td><td>Reboot via SYS_REBOOT</td></tr>
+<tr><td><tt>shutdown</tt></td><td>poweroff</td><td>Shutdown via SYS_SHUTDOWN</td></tr>
+<tr><td><tt>suspend</tt></td><td></td><td>Suspend (stub)</td></tr>
+<tr><td><tt>mkdir</tt></td><td></td><td>Create directory</td></tr>
+<tr><td><tt>rm</tt></td><td></td><td>Remove file</td></tr>
+<tr><td><tt>exit</tt></td><td></td><td>Exit shell</td></tr>
+</table>
+
+<h2>Features</h2>
+
+<ul>
+<li>CWD-aware prompt (<tt>/ $</tt>)</li>
+<li>Line editor with backspace</li>
+<li>Double-quoted argument parsing</li>
+<li>Multi-word natural language: <tt>help me please</tt>, <tt>clear the screen</tt></li>
+<li>External commands in <tt>/bin/</tt> via <b>execve save/restore</b> &mdash; the shell process is preserved and returns to the prompt after every command</li>
+</ul>
+
+<h2>Build</h2>
+
+<pre>make</pre>
+
+<p>Produces <tt>zirvshell.elf</tt> &mdash; static, freestanding, no-pie ELF64 linked against <a href="zirvlibc.html">zirvlibc</a>.</p>
+
+<h2>Source</h2>
+
+<p><a href="https://github.com/gauthamnair2005/zirvshell">github.com/gauthamnair2005/zirvshell &raquo;</a></p>
+
+<hr>
+
+<div class="footer">
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

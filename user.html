@@ -28,6 +28,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
 <a href="user.html">User&nbsp;Docs</a>
@@ -61,7 +63,7 @@
 
 <p><b>Zirvium</b> is the reference implementation of the <b><a href="standard.html">MOSIX</a></b> standard. This guide covers building and using Zirvium itself, but the same principles apply to any MOSIX-compliant OS.</p>
 
-<p>The user-facing system: <b>Kernel</b> (zirvium) &rarr; <b>Init</b> (zirvinit, PID 1) &rarr; <b>Shell</b> (zirvshell, 19 commands) &rarr; <b>Utilities</b> (zirvutils, 17 programs). Optional: <b>DisplayJet</b> (encrypted display driver) + <b>ZirvUI</b> (desktop compositor).</p>
+<p>The user-facing system: <b>Kernel</b> (zirvium) &rarr; <b>Init</b> (zirvinit, PID 1) &rarr; <b>Shell</b> (zirvshell, 20 commands) &rarr; <b>Utilities</b> (zirvutils, 18 programs). Optional: <b>DisplayJet</b> (encrypted display driver), <b>ZirvFlux</b> (display framework), <b>ZirvTK</b> (GUI toolkit), <b>ZirvUI</b> (desktop compositor).</p>
 
 <hr>
 
@@ -80,7 +82,7 @@ make run</pre>
 
 <h2 id="shell">5. Using ZirvShell</h2>
 
-<p>ZirvShell (the reference MOSIX shell) supports 19 commands with English-like syntax:</p>
+<p>ZirvShell (the reference MOSIX shell) supports 20 commands with English-like syntax:</p>
 
 <table>
 <tr><td><tt>help</tt> / <tt>help me please</tt></td><td>Display command list</td></tr>
@@ -100,6 +102,8 @@ make run</pre>
 <tr><td><tt>run &lt;binary&gt;</tt> / <tt>exec &lt;binary&gt;</tt></td><td>Execute program</td></tr>
 <tr><td><tt>reboot</tt></td><td>Reboot system</td></tr>
 <tr><td><tt>shutdown</tt> / <tt>poweroff</tt></td><td>Shut down system</td></tr>
+<tr><td><tt>mkdir</tt></td><td>Create directory</td></tr>
+<tr><td><tt>rm</tt></td><td>Remove file</td></tr>
 <tr><td><tt>exit</tt></td><td>Exit shell</td></tr>
 </table>
 
@@ -107,7 +111,7 @@ make run</pre>
 
 <h2 id="utilities">6. Embedded Utilities</h2>
 
-<p>17 utilities accessible via <tt>run /bin/&lt;name&gt;</tt>:</p>
+<p>18 utilities accessible via <tt>run /bin/&lt;name&gt;</tt>:</p>
 
 <table>
 <tr><td><tt>hello</tt></td><td>Hello-world test and PID</td></tr>
@@ -125,6 +129,8 @@ make run</pre>
 <tr><td><tt>yes</tt></td><td>Print "y" forever</td></tr>
 <tr><td><tt>uname -a</tt></td><td>System information</td></tr>
 <tr><td><tt>hostname</tt></td><td>Get/set hostname</td></tr>
+<tr><td><tt>ifconfig</tt></td><td>Network interface configuration</td></tr>
+<tr><td><tt>lspci</tt></td><td>List PCI devices</td></tr>
 </table>
 
 <hr>
@@ -138,7 +144,7 @@ make run</pre>
 <p>Yes. The <a href="standard.html">MOSIX standard</a> is an open specification. You can write your own kernel, libc, and userspace &mdash; as long as they follow the filesystem hierarchy, /zirv namespace, and syscall ABI. See the <a href="distributions.html">Distributions</a> page for details.</p>
 
 <h3>What hardware does Zirvium support?</h3>
-<p>x86-64 CPUs with long mode, PCI bus, SATA (ATA PIO), NVMe, PS/2 keyboard, Synaptics touchpad, serial UART, VGA text mode, pixel framebuffer, Bochs VGA, VMware SVGA, Intel i915 UHD (Gen 9.5-14), NVIDIA GPUs (stub), HDA audio, Intel e1000, VirtIO net/block, Realtek RTL8139, Realtek RTL8723DE WiFi, Realtek Bluetooth, TPM 2.0.</p>
+<p>x86-64 CPUs with long mode, PCI bus, SATA (ATA PIO), NVMe, USB mass storage, PS/2 keyboard, Synaptics touchpad, serial UART, VGA text mode, pixel framebuffer, Bochs VGA, VMware SVGA, Intel i915 UHD (Gen 9.5-14), NVIDIA GPUs (Enveediya, nouveau port RTX/B-series), Intel Arc GPU (A/B/C-series), AMD Radeon GPU (GCN/RDNA 1&ndash;3.5), HDA audio, Intel e1000, VirtIO net/block, RTL8139, Realtek RTL8723DE WiFi, Realtek Bluetooth, TPM 2.0, xHCI USB 3.0, Thunderbolt 3/4 &amp; USB4, WiFi 7 802.11be (Intel BE200, MediaTek MT7927, Qualcomm QCNCM865, Broadcom BCM4389).</p>
 
 <h3>How do I reboot or shut down?</h3>
 <p>Type <tt>reboot</tt> (ACPI reset via 0xCF9) or <tt>shutdown</tt> (QEMU exit port 0x604 / Bochs 0xB004) at the shell prompt.</p>

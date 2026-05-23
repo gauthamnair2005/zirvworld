@@ -28,6 +28,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
 <a href="user.html">User&nbsp;Docs</a>
@@ -62,9 +64,11 @@
 <li><a href="#porting">20. Porting Guide</a></li>
 <li><a href="#debugging">21. Debugging</a></li>
 <li><a href="#userspace">22. Writing MOSIX Userspace Programs</a></li>
-<li><a href="#displayjet-api">23. DisplayJet API</a></li>
-<li><a href="#zirvui">24. ZirvUI Compositor</a></li>
-<li><a href="#distribution">25. Creating a MOSIX Distribution</a></li>
+<li><a href="#zirvflux">23. ZirvFlux Library</a></li>
+<li><a href="#displayjet-api">24. DisplayJet API</a></li>
+<li><a href="#zirvtk">25. ZirvTK GUI Toolkit</a></li>
+<li><a href="#zirvui">26. ZirvUI Compositor</a></li>
+<li><a href="#distribution">27. Creating a MOSIX Distribution</a></li>
 </ul>
 </div>
 
@@ -100,19 +104,41 @@
 
 <hr>
 
-<h2 id="displayjet-api">23. DisplayJet API</h2>
+<h2 id="zirvflux">23. ZirvFlux Library</h2>
+
+<p><a href="zirvflux.html">ZirvFlux</a> is the reference MOSIX display framework library. It provides a Mesa-like API for compositors, abstracting the DisplayJet kernel driver behind a clean C interface. Compositors call <tt>zf_connect()</tt>, <tt>zf_create_buffer()</tt>, <tt>zf_write_buffer()</tt>, and <tt>zf_present()</tt> instead of invoking DisplayJet syscalls directly.</p>
+
+<p>The library handles buffer management (up to 32 GPU surfaces), display enumeration, and region-based presentation. All data written through ZirvFlux is encrypted at rest by the underlying DisplayJet driver using ChaCha20 with per-surface HKDF-SHA256 keys.</p>
+
+<p>Full documentation on the <a href="zirvflux.html">ZirvFlux page</a>.</p>
+
+<hr>
+
+<h2 id="displayjet-api">24. DisplayJet API</h2>
 
 <p>11 custom syscalls (110-120) for a compositor-based display protocol. Drives Bochs VBE at 1024x768x32bpp. All surfaces encrypted with ChaCha20 (MAEM). Full documentation on the <a href="displayjet.html">DisplayJet page</a>.</p>
 
 <hr>
 
-<h2 id="zirvui">24. ZirvUI Compositor</h2>
+<h2 id="zirvtk">25. ZirvTK GUI Toolkit</h2>
 
-<p>User-space graphical compositor connecting to DisplayJet. Freestanding ELF64 binary. Renders procedural background, 28-pixel top panel, system tray, uptime clock in 5x7 bitmap font. Full documentation on the <a href="zirvui.html">ZirvUI page</a>.</p>
+<p><a href="zirvtk.html">ZirvTK</a> is a Rust GUI toolkit with C FFI for building MOSIX graphical applications. Provides a complete widget tree (Button, Label, Panel, Window, TileScroller, MediaTile), software Canvas renderer with 5x7 bitmap font, and platform abstraction over ZirvFlux.</p>
+
+<p>Written in <tt>no_std</tt> Rust with a custom arena allocator for freestanding environments. Builds as staticlib, cdylib, and rlib. The C FFI layer (<tt>include/zirvtk.h</tt>) allows C/C++ compositors to create and manage widgets through a stable ABI.</p>
+
+<p>Full documentation on the <a href="zirvtk.html">ZirvTK page</a>.</p>
 
 <hr>
 
-<h2 id="distribution">25. Creating a MOSIX Distribution</h2>
+<h2 id="zirvui">26. ZirvUI Compositor</h2>
+
+<p>User-space graphical compositor connecting to DisplayJet via ZirvFlux. Freestanding ELF64 binary. Renders procedural background gradient, 28-pixel top panel with hamburger menu and "ZirvUI" branding, system tray (WiFi, Bluetooth, speaker, battery, user, power icons), and live uptime clock in 5x7 bitmap font. Includes a fixed-point 3D rendering demo with rotation, perspective projection, and depth buffering.</p>
+
+<p>Full documentation on the <a href="zirvui.html">ZirvUI page</a>.</p>
+
+<hr>
+
+<h2 id="distribution">27. Creating a MOSIX Distribution</h2>
 
 <p>A MOSIX distribution is any operating system that implements the <a href="standard.html">MOSIX standard</a>. To create one:</p>
 <ol>

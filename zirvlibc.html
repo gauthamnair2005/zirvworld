@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>zirvlibc &mdash; MOSIX C Library</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1><span>zirvlibc</span> &mdash; Reference MOSIX C Library</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
+<a href="distributions.html">Distributions</a>
+<a href="download.html">Download</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
+</div>
+
+<hr>
+
+<p><b>zirvlibc</b> is the reference MOSIX C library &mdash; a freestanding libc providing the standard C functions and syscall wrappers needed by all MOSIX userspace programs. Any MOSIX-compliant kernel can run programs built against zirvlibc.</p>
+
+<p>The library is designed specifically for the MOSIX x86-64 ABI. All syscall wrappers use the <tt>SYSCALL</tt> instruction with the convention: <tt>RAX</tt> = syscall number, <tt>RDI</tt>&ndash;<tt>R9</tt> = arguments, return in <tt>RAX</tt> (negative errno on error).</p>
+
+<h2>Headers</h2>
+
+<table>
+<tr><th>Header</th><th>Contents</th></tr>
+<tr><td><tt>string.h</tt></td><td>memcpy, memset, memmove, memcmp, strlen, strnlen, strcmp, strncmp, strcpy, strncpy, strcat, strchr, strrchr, strstr</td></tr>
+<tr><td><tt>ctype.h</tt></td><td>isalpha, isdigit, isalnum, isspace, isupper, islower, toupper, tolower</td></tr>
+<tr><td><tt>stdio.h</tt></td><td>printf, snprintf, vsnprintf, vprintf, puts, putchar &mdash; supports %s %d %u %lu %llu %x %p %c %% with zero-padded width</td></tr>
+<tr><td><tt>stdlib.h</tt></td><td>exit, abort, atoi, atol (malloc/free are stubs returning NULL)</td></tr>
+<tr><td><tt>unistd.h</tt></td><td>read, write, open, close, _exit, getpid, brk, sbrk, execve, getcwd, chdir, mmap, munmap, uptime, reboot, shutdown, gethostname, sethostname</td></tr>
+<tr><td><tt>datetime.h</tt></td><td>getdatetime, setdatetime, gettz, settz with struct datetime</td></tr>
+<tr><td><tt>dirent.h</tt></td><td>struct dirent (ino + name[256]), getdents</td></tr>
+<tr><td><tt>zirv/syscall.h</tt></td><td>Syscall number definitions (0&ndash;101), FD constants, error codes</td></tr>
+</table>
+
+<h2>Syscall Wrappers</h2>
+
+<p>Wrappers provided: <tt>_syscall0</tt> through <tt>_syscall6</tt> via inline assembly.</p>
+
+<table>
+<tr><th>#</th><th>Name</th><th>#</th><th>Name</th><th>#</th><th>Name</th></tr>
+<tr><td>0</td><td>SYS_READ</td><td>13</td><td>SYS_UPTIME</td><td>89</td><td>SYS_GETHOSTNAME</td></tr>
+<tr><td>1</td><td>SYS_WRITE</td><td>22</td><td>SYS_PIPE</td><td>90</td><td>SYS_SETHOSTNAME</td></tr>
+<tr><td>2</td><td>SYS_OPEN</td><td>39</td><td>SYS_GETPID</td><td>96</td><td>SYS_GETDATETIME</td></tr>
+<tr><td>3</td><td>SYS_CLOSE</td><td>59</td><td>SYS_EXECVE</td><td>97</td><td>SYS_SETDATETIME</td></tr>
+<tr><td>9</td><td>SYS_MMAP</td><td>60</td><td>SYS_EXIT</td><td>98</td><td>SYS_GETTZ</td></tr>
+<tr><td>11</td><td>SYS_MUNMAP</td><td>61</td><td>SYS_WAIT4</td><td>99</td><td>SYS_SETTZ</td></tr>
+<tr><td>12</td><td>SYS_BRK</td><td>78</td><td>SYS_GETDENTS</td><td>100</td><td>SYS_REBOOT</td></tr>
+<tr><td></td><td></td><td>79</td><td>SYS_GETCWD</td><td>101</td><td>SYS_SHUTDOWN</td></tr>
+<tr><td></td><td></td><td>80</td><td>SYS_CHDIR</td><td></td><td></td></tr>
+</table>
+
+<h2>Build</h2>
+
+<pre>make          # produces libzirvlibc.a
+make test     # builds and runs unit tests</pre>
+
+<p>The test suite verifies string operations (memcpy, memmove, memset, strcmp, strstr), character classification, and printf formatting.</p>
+
+<h2>Source</h2>
+
+<p><a href="https://github.com/gauthamnair2005/zirvlibc">github.com/gauthamnair2005/zirvlibc &raquo;</a></p>
+
+<hr>
+
+<div class="footer">
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

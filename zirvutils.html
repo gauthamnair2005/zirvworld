@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>zirvutils &mdash; MOSIX Utilities</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1><span>zirvutils</span> &mdash; MOSIX System Utilities</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
+<a href="distributions.html">Distributions</a>
+<a href="download.html">Download</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
+</div>
+
+<hr>
+
+<p><b>zirvutils</b> provides the standard MOSIX system utilities &mdash; standalone command-line programs that ship with every MOSIX distribution. Each is a statically linked, freestanding, no-pie ELF64 binary embedded into the kernel and launched via <tt>execve()</tt>.</p>
+
+<h2>Utilities (18 programs)</h2>
+
+<table>
+<tr><th>Binary</th><th>Description</th></tr>
+<tr><td><tt>hello</tt></td><td>Prints "Hello from ZirvUtils!" and PID</td></tr>
+<tr><td><tt>cat</tt></td><td>Reads files via open()/read(), writes to stdout</td></tr>
+<tr><td><tt>sysinfo</tt></td><td>Shows PID, CWD, kernel name, hostname</td></tr>
+<tr><td><tt>clear</tt></td><td>ANSI escape clear screen</td></tr>
+<tr><td><tt>echo</tt></td><td>Prints arguments to stdout</td></tr>
+<tr><td><tt>reboot</tt></td><td>System reboot via SYS_REBOOT</td></tr>
+<tr><td><tt>shutdown</tt></td><td>System shutdown via SYS_SHUTDOWN</td></tr>
+<tr><td><tt>poweroff</tt></td><td>Alias for shutdown</td></tr>
+<tr><td><tt>suspend</tt></td><td>Stub (not supported)</td></tr>
+<tr><td><tt>ping</tt></td><td>Check VFS path reachability via open()</td></tr>
+<tr><td><tt>sleep</tt></td><td>Busy-wait using uptime()</td></tr>
+<tr><td><tt>true</tt></td><td>Return exit code 0</td></tr>
+<tr><td><tt>false</tt></td><td>Return exit code 1</td></tr>
+<tr><td><tt>yes</tt></td><td>Infinite "y" output</td></tr>
+<tr><td><tt>uname</tt></td><td>System information (-a flag)</td></tr>
+<tr><td><tt>hostname</tt></td><td>Get or set system hostname</td></tr>
+<tr><td><tt>ifconfig</tt></td><td>Network interface configuration</td></tr>
+<tr><td><tt>lspci</tt></td><td>List PCI devices (reads from kernel-exposed PCI enumeration)</td></tr>
+</table>
+
+<h2>Build</h2>
+
+<pre>make</pre>
+
+<p>Produces 18 <tt>.elf</tt> binaries. All linked against <a href="zirvlibc.html">zirvlibc</a>. Embedded into the kernel via <tt>init_bin.asm</tt> and executed through the kernel's execve save/restore mechanism.</p>
+
+<h2>Source</h2>
+
+<p><a href="https://github.com/gauthamnair2005/zirvutils">github.com/gauthamnair2005/zirvutils &raquo;</a></p>
+
+<hr>
+
+<div class="footer">
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/svg+xml" href="logo.svg">
+<link rel="stylesheet" href="style.css">
+<title>Zirvium &mdash; Changelog</title>
+</head>
+<body>
+
+<div class="container">
+
+<div class="logo-row">
+<img src="logo.svg" alt="">
+<h1><span>Zirvium</span> &mdash; Changelog</h1>
+</div>
+
+<div class="header-links">
+<a href="index.html">Home</a>
+<a href="projects.html">Projects</a>
+<a href="architecture.html">Architecture</a>
+<a href="standard.html">MOSIX&nbsp;Standard</a>
+<a href="displayjet.html">DisplayJet</a>
+<a href="zirvui.html">ZirvUI</a>
+<a href="screenshots.html">Screenshots</a>
+<a href="changelog.html">Changelog</a>
+<a href="distributions.html">Distributions</a>
+<a href="download.html">Download</a>
+<a href="user.html">User&nbsp;Docs</a>
+<a href="dev.html">Dev&nbsp;Docs</a>
+<a href="contributing.html">Contributing</a>
+</div>
+
+<hr>
+
+<h2>2026</h2>
+
+<h3>May 2026</h3>
+
+<p><b>ZirvTK GUI Toolkit</b> &mdash; New MOSIX GUI toolkit written in Rust with C FFI. Provides widgets (Button, Label, Panel, Window, TileScroller, MediaTile), software Canvas renderer, 5x7 bitmap font, and platform abstraction over ZirvFlux. Builds as staticlib/cdylib/rlib. Includes Rust and C demo applications. (ZirvTK v0.1.0)</p>
+
+<p><b>ZirvFlux Display Framework</b> &mdash; New MOSIX display framework library providing a Mesa-like API for compositors. Abstracts the DisplayJet kernel driver behind a clean compositor-facing interface. (ZirvFlux v0.1.0)</p>
+
+<p><b>3D Rendering Demo</b> &mdash; Fixed-point 3D rendering demo added to ZirvUI compositor. Features rotation, perspective projection, and depth buffering, all computed in software on the compositor framebuffer.</p>
+
+<p><b>Desktop Improvements</b> &mdash; ZirvUI now displays a complete desktop with procedural background gradient, 28-pixel top panel, hamburger menu icon, "ZirvUI" branding, system tray (WiFi, Bluetooth, speaker, battery, user, power icons), and live uptime clock using 5x7 bitmap font.</p>
+
+<p><b>DisplayJet Encryption</b> &mdash; All compositor surfaces now encrypted at rest in kernel memory using ChaCha20 with per-surface keys derived via HKDF-SHA256. Hardware entropy via RDRAND with xorshift64+RDTSC fallback. 11 custom syscalls (110&ndash;120) for the compositor protocol.</p>
+
+<p><b>execve Save/Restore</b> &mdash; Kernel now supports automatic caller save/restore during execve, allowing the shell to survive after running external commands. The shell process image is preserved and returns to the prompt after every command.</p>
+
+<p><b>PCI Enumeration for Userspace</b> &mdash; New syscall 103 exposes PCI device enumeration to userspace, enabling the <tt>lspci</tt> utility. The kernel probes PCI buses during boot and exposes the device tree.</p>
+
+<p><b>Network Utilities</b> &mdash; New <tt>ifconfig</tt> utility for network interface configuration. Added to zirvutils as the 17th embedded utility.</p>
+
+<h3>Earlier 2026</h3>
+
+<p><b>Linux Compat Layer</b> &mdash; New <tt>linux_compat.h</tt> compatibility layer enabling direct porting of Linux kernel drivers to MOSIX. Drivers ported: NVIDIA GPU (Enveediya), Intel Arc GPU, AMD Radeon GPU, VirtIO block/net, RTL8139 NIC, xHCI USB 3.0, Thunderbolt 3/4 &amp; USB4, WiFi 7 (BE200, MT7927, QCNCM865, BCM4389).</p>
+
+<p><b>DNS Resolver</b> &mdash; New syscall 102 provides kernel-level DNS resolution. The kernel performs DNS lookups and returns IP addresses to userspace.</p>
+
+<p><b>Extended Drivers</b> &mdash; Intel i915 UHD display driver (Gen 9.5&ndash;14), Enveediya GPU (nouveau port, RTX/B-series), Intel Arc GPU (A/B/C-series), AMD Radeon GPU (GCN/RDNA 1&ndash;3.5), Realtek RTL8723DE WiFi, Realtek Bluetooth, TPM 2.0.</p>
+
+<p><b>USB &amp; Thunderbolt</b> &mdash; xHCI USB 3.0/2.0 driver with polling enumeration. Thunderbolt 3/4 &amp; USB4 driver (all Intel/AMD gens).</p>
+
+<p><b>WiFi 7 Support</b> &mdash; 802.11be WiFi 7 driver supporting Intel BE200, MediaTek MT7927, Qualcomm QCNCM865, Broadcom BCM4389.</p>
+
+<h2>2025</h2>
+
+<h3>Late 2025</h3>
+
+<p><b>Initial Public Release</b> &mdash; First public release of Zirvium (v0.1.0) as the reference MOSIX implementation. Kernel boots on bare metal and under QEMU with GRUB2 (Multiboot2) or Limine. Freestanding C library (zirvlibc), init system (zirvinit), interactive shell (zirvshell), 16 system utilities (zirvutils), encrypted display driver (zirvdisplayjet), desktop compositor (zirvui). Website (zirvworld) published with MOSIX standard specification.</p>
+
+<hr>
+
+<div class="footer">
+MOSIX is a standard &mdash; Zirvium is a reference implementation &bull; GPLv3 &bull; <a href="https://github.com/gauthamnair2005/zirvium">github</a>
+</div>
+
+</div>
+
+</body>
+</html>
