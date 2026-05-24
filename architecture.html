@@ -80,12 +80,16 @@
 <hr>
 
 <h2>System Calls</h2>
-<p>25 syscalls (0&ndash;103), dispatched via SYSCALL/SYSRETQ. Notable additions: <b>SYS_EXECVE (59)</b> implements save/restore semantics — the caller's address space is preserved and restored when the child exits, enabling the shell to run external commands without forking. <b>SYS_PCI_READ (103)</b> exposes PCI device info to userspace. <b>SYS_DNS_LOOKUP (102)</b> provides kernel-level DNS resolution. Full table in the <a href="standard.html">MOSIX standard specification</a>.</p>
+<p>36 syscalls (0&ndash;150), dispatched via SYSCALL/SYSRETQ. Notable additions: <b>SYS_EXECVE (59)</b> implements save/restore semantics — the caller's address space is preserved and restored when the child exits, enabling the shell to run external commands without forking. <b>SYS_MQ_CREATE/SEND/RECV/DESTROY (140&ndash;143)</b> provide kernel message queues for inter-process communication. <b>SYS_HPC_RANK/SIZE/BARRIER/SEND/RECV/BCAST/REDUCE (144&ndash;150)</b> provide HPC/MPI primitives (ranks, barrier synchronisation, tagged send/recv, broadcast, reduction). <b>SYS_DNS_LOOKUP (102)</b> provides kernel-level DNS resolution. Full table in the <a href="standard.html">MOSIX standard specification</a>.</p>
 
 <hr>
 
 <h2>Drivers</h2>
 <p>Display: Bochs VGA, VMware SVGA II, Intel i915 (Gen 9.5-14, 70 PCI IDs, 352 lines), Enveediya GPU (Linux compat, nouveau port — RTX/B-series), Intel Arc GPU (Linux compat, A/B/C-series), AMD Radeon GPU (Linux compat, GCN/RDNA 1-3.5), DisplayJet (MAEM encrypted, 515 lines). Storage: SATA (ATA PIO), NVMe, USB mass storage, VirtIO block (Linux compat). Networking: Intel e1000, VirtIO net (Linux compat), RTL8139 (Linux compat), Realtek RTL8723DE WiFi (355 lines, PCIe, DMA rings, efuse MAC, packet TX), WiFi&nbsp;7 802.11be (Linux compat, Intel BE200, MediaTek MT7927, Qualcomm QCNCM865). USB: xHCI USB 3.0/2.0 (Linux compat, polling mode, device enumeration). Bus: Thunderbolt 3/4, USB4 (Linux compat, Intel/AMD). Input: PS/2 i8042, keyboard (scancode to ASCII), Synaptics touchpad. Other: HDA audio, Realtek Bluetooth (UART HCI), TPM 2.0, serial 16550 UART, Linux compat driver bridge.</p>
+
+<p><b>IPC.</b> Ring-buffer message queues (<tt>kernel/ipc/mqueue.c</tt>): 256 messages &times; 64 bytes per queue, blocking receive with process-blocking support. Used as the transport for the HPC subsystem.</p>
+
+<p><b>HPC.</b> Message-passing primitives (<tt>kernel/hpc/hpc.c</tt>): auto-assigned process ranks, <tt>hpc_barrier</tt> (barrier synchronisation via shared MQ), <tt>hpc_send</tt>/<tt>hpc_recv</tt> (tagged per-rank communication), <tt>hpc_bcast</tt>, <tt>hpc_reduce</tt> (SUM/MAX/MIN).</p>
 
 <p><b>Linux Compat Driver Porting.</b> The <tt>linux_compat.h</tt> header provides a 610-line compatibility layer that lets Linux kernel source compile under the MOSIX kernel with minimal changes. Currently ported drivers: Enveediya GPU (drivers/gpu/enveediya/), Intel Arc GPU (drivers/gpu/arc/), AMD Radeon GPU (drivers/gpu/radeon/), VirtIO block (drivers/virtio/), VirtIO net (drivers/virtio/), RTL8139 (drivers/net/rtl8139/), xHCI USB 3.0 (drivers/usb/xhci/), Thunderbolt/USB4 (drivers/thunderbolt/), WiFi 7 (drivers/net/wifi7/). These include ring management, PCI transport, device enumeration, and device-specific logic sourced from the latest Linux kernel tree.</p>
 

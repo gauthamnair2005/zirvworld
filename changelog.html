@@ -37,6 +37,12 @@
 
 <h3>May 2026</h3>
 
+<p><b>Multi-Window Compositor</b> &mdash; ZirvUI rewritten from a single-app full-screen compositor to a multi-window desktop with a Metro-style tile start screen. Tile click triggers a flip+expand animation (vertical squeeze followed by ease-out expansion to full screen). Each app opens in its own window with a 28-pixel title bar featuring close button (X) with red hover, drag-to-move, window snapping (drag to left/right screen edge for half-screen snap), and chrome auto-hide (Zirvium heading, exit/power buttons hide automatically when a title bar overlaps them).</p>
+
+<p><b>IPC Message Queues</b> &mdash; New kernel IPC subsystem (<tt>kernel/ipc/mqueue.c</tt>) providing ring-buffer message queues (256 messages &times; 64 bytes each). Four new syscalls: <tt>SYS_MQ_CREATE</tt> (140), <tt>SYS_MQ_SEND</tt> (141), <tt>SYS_MQ_RECV</tt> (142), <tt>SYS_MQ_DESTROY</tt> (143). <tt>mq_recv</tt> blocks the calling process (<tt>PROC_STATE_BLOCKED</tt>) when the queue is empty; the scheduler skips blocked processes and <tt>mq_wake_waiters</tt> unblocks them when data arrives.</p>
+
+<p><b>HPC / MPI Subsystem</b> &mdash; New kernel HPC subsystem (<tt>kernel/hpc/hpc.c</tt>) for inter-process communication and synchronisation. Auto-assigns process ranks on registration. Seven syscalls: <tt>SYS_HPC_RANK</tt> (144), <tt>SYS_HPC_SIZE</tt> (145), <tt>SYS_HPC_BARRIER</tt> (146), <tt>SYS_HPC_SEND</tt> (147), <tt>SYS_HPC_RECV</tt> (148), <tt>SYS_HPC_BCAST</tt> (149), <tt>SYS_HPC_REDUCE</tt> (150). Barrier synchronisation uses a shared message queue; reduction supports SUM, MAX, and MIN operations.</p>
+
 <p><b>Audio Subsystem Fixes</b> &mdash; Resolved critical synchronization issues in the AC97 driver DMA ring-buffer management. Added missing hardware status tracking (CIV/LVI) and corrected buffer completion interrupt handling for stable 48 kHz stereo playback. Improved driver registration reliability across PCI devices.</p>
 
 <p><b>ZirvTK GUI Toolkit</b> &mdash; New MOSIX GUI toolkit written in Rust with C FFI. Provides widgets (Button, Label, Panel, Window, TileScroller, MediaTile), software Canvas renderer, 5x7 bitmap font, and platform abstraction over ZirvFlux. Builds as staticlib/cdylib/rlib. Includes Rust and C demo applications. (ZirvTK v0.1.0)</p>

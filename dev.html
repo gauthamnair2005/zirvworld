@@ -294,7 +294,7 @@ make run</pre>
 
 <p><b>Location:</b> <tt>kernel/syscall/syscall.c</tt></p>
 
-<p>25 syscalls (numbers 0&ndash;103) dispatched via the SYSCALL/SYSRETQ mechanism. Entry is handled in <tt>arch/x64/syscall_entry.asm</tt>, which saves registers, switches to the kernel stack, and calls the C dispatch table.</p>
+<p>36 syscalls (numbers 0&ndash;150) dispatched via the SYSCALL/SYSRETQ mechanism. Entry is handled in <tt>arch/x64/syscall_entry.asm</tt>, which saves registers, switches to the kernel stack, and calls the C dispatch table.</p>
 
 <table>
 <tr><th>#</th><th>Name</th><th>Description</th></tr>
@@ -324,6 +324,17 @@ make run</pre>
 <tr><td>101</td><td>SYS_SHUTDOWN</td><td>Shut down system</td></tr>
 <tr><td>102</td><td>SYS_DNS_LOOKUP</td><td>Kernel-level DNS resolution</td></tr>
 <tr><td>103</td><td>SYS_PCI_READ</td><td>Read PCI device info</td></tr>
+<tr><td>140</td><td>SYS_MQ_CREATE</td><td>Create message queue</td></tr>
+<tr><td>141</td><td>SYS_MQ_SEND</td><td>Send message to queue</td></tr>
+<tr><td>142</td><td>SYS_MQ_RECV</td><td>Receive message from queue (blocks if empty)</td></tr>
+<tr><td>143</td><td>SYS_MQ_DESTROY</td><td>Destroy message queue</td></tr>
+<tr><td>144</td><td>SYS_HPC_RANK</td><td>Get process HPC rank</td></tr>
+<tr><td>145</td><td>SYS_HPC_SIZE</td><td>Get number of HPC processes</td></tr>
+<tr><td>146</td><td>SYS_HPC_BARRIER</td><td>Barrier synchronisation</td></tr>
+<tr><td>147</td><td>SYS_HPC_SEND</td><td>Send message to rank</td></tr>
+<tr><td>148</td><td>SYS_HPC_RECV</td><td>Receive message from rank</td></tr>
+<tr><td>149</td><td>SYS_HPC_BCAST</td><td>Broadcast message</td></tr>
+<tr><td>150</td><td>SYS_HPC_REDUCE</td><td>Reduce values (SUM/MAX/MIN)</td></tr>
 </table>
 
 <p>Syscall convention (x86-64 ABI): <tt>RAX</tt> = syscall number, <tt>RDI</tt>, <tt>RSI</tt>, <tt>RDX</tt>, <tt>R10</tt>, <tt>R8</tt>, <tt>R9</tt> = arguments. Return value in <tt>RAX</tt> (negative errno on error).</p>
@@ -397,9 +408,12 @@ make run</pre>
 
 <h2 id="ipc">12. IPC</h2>
 
-<p><b>Location:</b> <tt>kernel/ipc/pipe.c</tt></p>
+<p><b>Location:</b> <tt>kernel/ipc/pipe.c</tt>, <tt>kernel/ipc/mqueue.c</tt></p>
 
-<p>Inter-process communication is provided by ring-buffer pipes created via the SYS_PIPE syscall. Pipes are unidirectional and support read/write with blocking semantics.</p>
+<p>Two IPC primitives are provided:</p>
+
+<h3>Pipes</h3>
+<p>Ring-buffer pipes created via the SYS_PIPE syscall. Pipes are unidirectional and support read/write with blocking semantics.</p>
 
 <table>
 <tr><th>Function</th><th>Description</th></tr>
@@ -410,6 +424,35 @@ make run</pre>
 </table>
 
 <p>The pipe buffer is a fixed-size ring buffer allocated in kernel memory. Pipes are identified by file descriptors and follow the standard MOSIX read/write model.</p>
+
+<h3>Message Queues</h3>
+<p>Ring-buffer message queues (<tt>kernel/ipc/mqueue.c</tt>) with 256 message slots of 64 bytes each. Queues are identified by integer IDs and support multipoint communication (any process with the ID can send/receive).</p>
+
+<table>
+<tr><th>Syscall</th><th>Function</th><th>Description</th></tr>
+<tr><td>140</td><td><tt>mq_create()</tt></td><td>Allocate a new message queue, return its ID</td></tr>
+<tr><td>141</td><td><tt>mq_send(qid, msg, len)</tt></td><td>Send a message (returns -1 if full)</td></tr>
+<tr><td>142</td><td><tt>mq_recv(qid, buf, len)</tt></td><td>Receive a message (blocks caller if empty using <tt>PROC_STATE_BLOCKED</tt>)</td></tr>
+<tr><td>143</td><td><tt>mq_destroy(qid)</tt></td><td>Free a message queue</td></tr>
+</table>
+
+<p>The scheduler supports a BLOCKED process state: blocked processes are skipped in the scheduling loop. When a message arrives, <tt>mq_wake_waiters</tt> transitions waiting processes back to RUNNING. Message queues serve as the transport layer for the HPC subsystem.</p>
+
+<h3>HPC / MPI Primitives</h3>
+<p>Built on top of message queues, the HPC subsystem (<tt>kernel/hpc/hpc.c</tt>) provides distributed-computing primitives for multi-process workloads:</p>
+
+<table>
+<tr><th>Syscall</th><th>Function</th><th>Description</th></tr>
+<tr><td>144</td><td><tt>hpc_get_rank()</tt></td><td>Return this process's auto-assigned rank (0&ndash;N&minus;1)</td></tr>
+<tr><td>145</td><td><tt>hpc_get_size()</tt></td><td>Return the total number of HPC-registered processes</td></tr>
+<tr><td>146</td><td><tt>hpc_barrier()</tt></td><td>Block until all processes reach this call (shared-MQ synchronisation)</td></tr>
+<tr><td>147</td><td><tt>hpc_send(rank, tag, data, len)</tt></td><td>Send a tagged message to a specific rank</td></tr>
+<tr><td>148</td><td><tt>hpc_recv(rank, tag, buf, len)</tt></td><td>Receive a tagged message from a specific rank</td></tr>
+<tr><td>149</td><td><tt>hpc_bcast(root, data, len)</tt></td><td>Broadcast data from root rank to all others</td></tr>
+<tr><td>150</td><td><tt>hpc_reduce(op, data, len, result)</tt></td><td>Reduce values across all ranks (SUM, MAX, MIN)</td></tr>
+</table>
+
+<p>On a single-CPU system, barrier synchronisation is synchronous by nature (only one process runs at a time) but provides correct ordering. All HPC communication uses tagged message queues per rank.</p>
 
 <hr>
 

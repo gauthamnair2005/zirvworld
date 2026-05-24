@@ -125,6 +125,8 @@ Instruction: SYSCALL (enters ring 0), SYSRETQ (returns to ring 3)</pre>
 <tr><td>MOSIX extensions</td><td>96-99</td><td>SYS_GETDATETIME, SYS_SETDATETIME, SYS_GETTZ, SYS_SETTZ</td></tr>
 <tr><td>MOSIX extensions</td><td>100-101</td><td>SYS_REBOOT, SYS_SHUTDOWN</td></tr>
 <tr><td>DisplayJet (optional)</td><td>110-120</td><td>Display compositor protocol</td></tr>
+<tr><td>IPC Message Queues</td><td>140-143</td><td>MQ_CREATE, MQ_SEND, MQ_RECV, MQ_DESTROY &mdash; ring-buffer message passing</td></tr>
+<tr><td>HPC / MPI</td><td>144-150</td><td>HPC_RANK, HPC_SIZE, HPC_BARRIER, HPC_SEND, HPC_RECV, HPC_BCAST, HPC_REDUCE &mdash; distributed computing primitives</td></tr>
 </table>
 
 <h3>Error convention</h3>

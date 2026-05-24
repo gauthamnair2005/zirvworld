@@ -35,9 +35,7 @@
 
 <h2>Overview</h2>
 
-<p><b>ZirvUI</b> is the graphical desktop compositor / graphical shell for the Zirvium operating system. It connects to the <a href="displayjet.html">DisplayJet</a> kernel driver via syscalls 110&ndash;125 and renders a complete desktop environment into a MAEM-encrypted framebuffer surface. It supports <b>Performance Mode</b> to bypass encryption for a smoother experience, and <b>Smooth Font</b> rendering with anti-aliasing.</p>
-
-<p>The compositor is a user-space process compiled as a freestanding ELF binary (<tt>zirvui.elf</tt>) linked against <tt>zirvlibc</tt> and the ZirvFlux API. It can be launched from ZirvShell via <tt>run /bin/zirvui</tt>.</p>
+<p><b>ZirvUI</b> is the graphical desktop compositor / graphical shell for the Zirvium operating system. It connects to the <a href="displayjet.html">DisplayJet</a> kernel driver via syscalls 110&ndash;125 and renders a complete multi-window desktop environment into a software framebuffer. It is a single-threaded user-space process compiled as a freestanding ELF binary (<tt>zirvui.elf</tt>) linked against <tt>zirvlibc</tt> and the ZirvFlux API.</p>
 
 <p><b>Source:</b> <a href="https://github.com/gauthamnair2005/zirvui">github.com/gauthamnair2005/zirvui</a></p>
 
@@ -46,137 +44,167 @@
 <h2>Desktop Layout</h2>
 
 <pre>  ┌──────────────────────────────────────────────────────────────┐
-  │ ☰ ZirvUI          [ 12:34 ]  ⏻  👤  🔋  🔊  📶  ⌨ │  ← 28px panel
+  │   Zirvium       window1  window2           ⏻  ✕ [clock]  │  ← Chrome
   │                                                              │
+  │  ┌──────┐ ┌──────────────┐                                   │
+  │  │Term  │ │  Calculator  │                                   │
+  │  │      │ │              │                                   │
+  │  │      │ │              │                                   │
+  │  │      │ └──────────────┘                                   │
+  │  │      │                                                    │
+  │  └──────┘              ┌────────────┐                       │
+  │                        │  Settings  │                       │
+  │                        │            │                       │
+  │                        └────────────┘                       │
   │                                                              │
-  │              Procedural background gradient                  │
-  │                                                              │
-  │         (smooth transition from deep purple                  │
-  │          to warm orange tones)                               │
-  │                                                              │
-  │                                                              │
-  │                                                              │
-  └──────────────────────────────────────────────────────────────┘
-  └──────────── 1024 px ────────────┘</pre>
+  │     Metro-style tile grid (background)                       │
+  │  [Term] [Calc] [Files] [Settings] [About] [Clock]           │
+  │  [Wthr] [Music] [Mail] [Photos] [Store] [Maps]              │
+  └──────────────────────────────────────────────────────────────┘</pre>
 
-<h3>Elements</h3>
+<p>The display is 1920&times;1080 pixels. All rendering is procedural bitmap drawing directly into the software framebuffer &mdash; no GPU acceleration, no hardware overlays.</p>
+
+<h3>Screen Layers (back to front)</h3>
+<ol>
+<li><b>Background</b>: Procedural per-pixel gradient (deep purple to warm tones)</li>
+<li><b>Metro tile grid</b>: 6&times;2 grid of coloured app tiles (140&times;140 px each, 16 px gap, 60 px margin). Clicking a tile launches the app with a flip+expand animation.</li>
+<li><b>Windows</b>: Multiple floating windows with title bars, close buttons, drag-to-move, and snap-to-edges</li>
+<li><b>Chrome</b>: "Zirvium" heading (top-left), exit and power buttons (top-right), date and clock (bottom-right). Chrome elements auto-hide when overlapped by a window title bar.</li>
+<li><b>Shutdown dialog</b>: Modal confirmation overlay with animation</li>
+</ol>
+
+<hr>
+
+<h2>Window Management</h2>
+
+<h3>Opening an app</h3>
+<p>Click a tile on the start screen. A two-phase animation plays:</p>
 <ul>
-<li><b>Background</b>: Procedural per-pixel gradient (horizontal red + vertical green + inverted-horizontal blue channels)</li>
-<li><b>Top panel</b>: 28-pixel dark navy bar (<tt>0xFF1A1A2E</tt>) with 1-pixel accent line</li>
-<li><b>Hamburger menu</b>: 3 horizontal lines at top-left (14 px wide)</li>
-<li><b>"ZirvUI" branding</b>: Text label next to the hamburger menu</li>
-<li><b>System tray</b> (right-aligned): uptime clock, power button, user icon, battery, speaker, WiFi, Bluetooth</li>
-<li><b>Uptime clock</b>: MM:SS format rendered with 5x7 bitmap font</li>
+<li><b>Flip</b> (8 frames, ~130 ms): The tile compresses vertically, simulating a card flip</li>
+<li><b>Expand</b> (16 frames, ~270 ms): A coloured rect eases out (2nd-order ease-out: <tt>t&middot;(2&minus;t)</tt>) from the tile position to full screen, displaying the app icon and name</li>
 </ul>
+<p>After the animation, the window opens in full-screen mode (<tt>w = screen width</tt>, <tt>h = screen height</tt>).</p>
+
+<h3>Window chrome</h3>
+<ul>
+<li><b>Title bar</b>: 28-pixel dark bar at the top of each window with the app name</li>
+<li><b>Close button</b>: Red square with an &times; at the top-right of the title bar (red hover highlight)</li>
+<li><b>Drag</b>: Click and hold the title bar to move the window freely. The window is constrained to the screen bounds.</li>
+<li><b>Snap</b>: Drag a window to the left or right screen edge (&lt; 40 px threshold) &rarr; it snaps to half-screen width, full height. A coloured accent bar (3 px) appears on the snapped edge.</li>
+<li><b>Bring to front</b>: Clicking any window brings it to the front (Z-order is managed by reordering the array).</li>
+</ul>
+
+<h3>Chrome auto-hide</h3>
+<p>The "Zirvium" heading and the exit/power buttons in the top corners are only drawn when <b>no window title bar overlaps them</b>. A rect-overlap test runs for each chrome element against all active window title bars before drawing. The bottom-right date/clock are always visible (no title bar reaches that area).</p>
 
 <hr>
 
 <h2>Compositor Flow</h2>
 
 <ol>
-<li><b>Connect</b>: Call <tt>dj_connect()</tt> (syscall 110) to register as compositor</li>
-<li><b>Query mode</b>: Call <tt>dj_get_mode(&amp;mode)</tt> (syscall 115) to get display resolution (1024x768)</li>
-<li><b>Create surface</b>: Call <tt>dj_create_surface(w, h, &amp;surf_id)</tt> (syscall 112) &mdash; kernel allocates encrypted DMA buffer</li>
-<li><b>Render</b>: Software-render the full desktop into a local 3 MB framebuffer:
+<li><b>Connect</b>: Call <tt>zf_connect()</tt> &rarr; DisplayJet syscall 110</li>
+<li><b>Query mode</b>: Call <tt>zf_get_info(&amp;info)</tt> &rarr; syscall 115 (get display resolution)</li>
+<li><b>Create buffer</b>: Call <tt>zf_create_buffer(w, h, &amp;buf)</tt> &rarr; syscall 112 (kernel allocates encrypted DMA buffer)</li>
+<li><b>Render</b>: Software-render the full 1920&times;1080 frame into a local framebuffer:
   <ul>
-  <li>Pixel-by-pixel background gradient</li>
-  <li>Dark navy panel with all system tray icons</li>
-  <li>Uptime clock string rendered via 5x7 bitmap font</li>
+  <li>Draw background gradient</li>
+  <li>Draw Metro tile start screen (12 app tiles in a scrollable 6&times;2 grid)</li>
+  <li>Draw all active windows (title bar, close button, snap indicator, client content)</li>
+  <li>Draw chrome overlay (heading, buttons, clock)</li>
+  <li>Draw animation overlay if an app is launching (flip + expand)</li>
+  <li>Draw shutdown confirmation dialog if active</li>
   </ul>
 </li>
-<li><b>Upload</b>: Call <tt>dj_surface_write(surf_id, compositor_fb, size)</tt> (syscall 116) &mdash; kernel encrypts with ChaCha20, stores in GPU surface</li>
-<li><b>Present</b>: Call <tt>dj_present(surf_id)</tt> (syscall 114) &mdash; kernel decrypts surface to scanout framebuffer</li>
-<li><b>Loop</b>: Repeat rendering and presentation every ~1 second (busy-wait on <tt>uptime()</tt>)</li>
+<li><b>Upload</b>: Call <tt>zf_write_buffer(buf, compositor_fb, size)</tt> &rarr; syscall 116 (kernel encrypts with ChaCha20)</li>
+<li><b>Present</b>: Call <tt>zf_present(buf)</tt> &rarr; syscall 114 (kernel decrypts to scanout framebuffer)</li>
+<li><b>Loop</b>: 60 FPS paced via <tt>msleep(16)</tt>. Dirty-tracked &mdash; only re-renders when something changes (mouse movement, keyboard input, clock tick, animation frame).</li>
 </ol>
 
 <hr>
 
-<h2>5x7 Bitmap Font</h2>
+<h2>Drawing Primitives</h2>
 
-<p>The font is a 96-glyph ASCII set (characters 32&ndash;127) stored as a static array:</p>
+<p>All rendering uses a global draw offset (<tt>g_draw_off_x</tt>, <tt>g_draw_off_y</tt>) added to every <tt>fill_rect</tt>, <tt>draw_char</tt>, and <tt>draw_line</tt> call. The offset is set per-window before calling the app's draw function, so each app draws in its own coordinate system (0,0 = top-left of the client area).</p>
 
-<pre>static const uint8_t font5x7[96][5];</pre>
+<h3>Font</h3>
+<p>8&times;13 pixel bitmap font (95 glyphs, ASCII 32&ndash;126) stored as a static array <tt>font_8x13[95][13]</tt> in <tt>main.c</tt>. Anti-aliased rendering via alpha blending with neighbouring-pixel tests. Optional 2&times; scaling in the Clock and Weather apps.</p>
 
-<p>Each glyph is 5 columns wide x 7 rows tall, packed as 5 bytes (one byte per column, bits 0&ndash;6 are the rows). Characters are rendered with 1-pixel inter-character spacing (6 px total width).</p>
-
-<h4>Rendering logic</h4>
-<pre>static void draw_char(void *fb, uint32_t x, uint32_t y,
-                      char c, uint32_t color) {
-    if (c < 32 || c > 126) c = '?';
-    int idx = c - 32;
-    for (int row = 0; row < 7; row++)
-        for (int col = 0; col < 5; col++)
-            if (font5x7[idx][col] & (1u << row))
-                put_pixel(fb, x + col, y + row, color);
-}</pre>
-
-<h4>Text rendering functions</h4>
-<table>
-<tr><td><tt>draw_char()</tt></td><td>Render single glyph at (x, y) position</td></tr>
-<tr><td><tt>draw_str()</tt></td><td>Iterate over string, calling draw_char for each character</td></tr>
-<tr><td><tt>draw_int()</tt></td><td>Convert integer to decimal ASCII and render</td></tr>
-</table>
-
-<hr>
-
-<h2>Icon Rendering</h2>
-
-<p>All system tray icons are rendered procedurally using pixel-level drawing primitives:</p>
-
-<table>
-<tr><th>Icon</th><th>Drawing method</th><th>Colour</th></tr>
-<tr><td>Power button</td><td>Circle with vertical line (cos/sin lookup)</td><td><tt>0xFFE74C3C</tt> (red)</td></tr>
-<tr><td>User</td><td>Small circle (head) + arc (shoulders)</td><td><tt>PANEL_BLUE</tt></td></tr>
-<tr><td>Battery</td><td>Rectangular outline with fill level (67% hardcoded)</td><td>Green (&gt;20%) / red (&le;20%)</td></tr>
-<tr><td>Speaker</td><td>Rectangle + triangle + sound wave arcs</td><td>White</td></tr>
-<tr><td>WiFi</td><td>3 concentric arc curves at different radii</td><td>Cyan</td></tr>
-<tr><td>Bluetooth</td><td>Pixel-art "B" rune</td><td>Dimmed (<tt>0xFF555555</tt>, disconnected)</td></tr>
-</table>
-
-<p>Circular icons use 256-entry fixed-point cosine and sine lookup tables (scale factor 100) since there is no libm in the freestanding environment:</p>
-
-<pre>static int cos_lookup(int deg) {
-    // wraps to 0-359, indexes cos_tab[256]
-}
-static int sin_lookup(int deg) {
-    return cos_lookup(deg - 90);
-}</pre>
+<h3>Icons</h3>
+<p>All app icons are rendered procedurally (coloured geometric shapes). Each app tile on the start screen draws its icon centred in the tile using the same <tt>draw_icon</tt> function with app-specific colours.</p>
 
 <hr>
 
 <h2>Source Structure</h2>
 
 <pre>zirvui/
-  Makefile                Build system (x86_64-elf cross-compiler)
+  Makefile                Build system (freestanding ELF)
   src/
-    main.c                Compositor main loop, rendering, DisplayJet protocol
+    main.c                Entire compositor (~1600 lines)
     crt0.asm              Entry point (_start &rarr; main &rarr; SYS_EXIT)</pre>
+
+<p>Everything is in a single <tt>main.c</tt> file: rendering primitives, bitmap font, icon drawing, 12 app draw functions, Metro tile start screen, window management, flip+expand animation, mouse/keyboard input processing, calculator logic, and the main loop.</p>
+
+<h3>App Draw Functions</h3>
+<p>Each app implements <tt>void draw_xxx(uint32_t *fb, uint32_t w, uint32_t h, int client_w, int client_h)</tt>. The compositor calls the appropriate function with the window's client area dimensions set as the draw offset:</p>
+<table>
+<tr><th>App</th><th>Drawing</th></tr>
+<tr><td>Terminal</td><td>Scrolling green-on-black terminal emulator with shell integration</td></tr>
+<tr><td>Calculator</td><td>19-button grid with display, hit-testing per button</td></tr>
+<tr><td>Files</td><td>Directory listing with colour-coded entries</td></tr>
+<tr><td>Settings</td><td>Font size toggle, frame rate display</td></tr>
+<tr><td>About</td><td>Zirvium logo bars, version info</td></tr>
+<tr><td>Clock</td><td>Large digital time (3&times; scaled font), date</td></tr>
+<tr><td>Weather</td><td>Temperature, condition text</td></tr>
+<tr><td>Music</td><td>Now-playing display with progress bar and controls</td></tr>
+<tr><td>Mail</td><td>Sample inbox listing</td></tr>
+<tr><td>Photos</td><td>3&times;4 grid of coloured photo placeholders</td></tr>
+<tr><td>Store</td><td>App list with coloured headers</td></tr>
+<tr><td>Maps</td><td>5&times;7 checkerboard grid with route line</td></tr>
+</table>
 
 <h3>Build</h3>
 <pre>make    # Produces zirvui.elf
 
 # Flags:
-CC=x86_64-elf-gcc -std=c11 -ffreestanding -fno-stack-protector
+gcc -std=c11 -ffreestanding -fno-stack-protector
     -fno-pic -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -O2
-LD=x86_64-elf-ld -nostdlib -static -no-pie -z max-page-size=0x1000
-AS=nasm -f elf64</pre>
+ld -nostdlib -static -no-pie -z max-page-size=0x1000
+as=nasm -f elf64</pre>
 
 <h3>Dependencies</h3>
 <ul>
 <li><b>zirvlibc</b> (string, ctype, stdio, stdlib, unistd, syscall, datetime)</li>
-<li><b>DisplayJet userspace API</b> (<tt>displayjet.h</tt>)</li>
+<li><b>ZirvFlux</b> (<tt>libzirvflux.a</tt> &mdash; display framework library)</li>
 </ul>
+
+<hr>
+
+<h2>Animation System</h2>
+
+<p>App launch uses a two-phase animation based on the tile position:</p>
+
+<table>
+<tr><th>Phase</th><th>Frames</th><th>Effect</th></tr>
+<tr><td>Flip</td><td>8</td><td>Tile height scales linearly from <tt>from_h</tt> to 0 (vertical squeeze)</td></tr>
+<tr><td>Expand</td><td>16</td><td>Rect eases out from tile position/size to full screen using <tt>et = t&middot;(2&minus;t)</tt> with integer arithmetic (<tt>et_num / et_den</tt>)</td></tr>
+</table>
+
+<p>During the animation, mouse interaction, window drawing, and chrome rendering are suspended. The animation state is checked in the main loop and advances one frame per iteration (~16 ms per frame).</p>
 
 <hr>
 
 <h2>Git History</h2>
 
 <table>
-<tr><td><tt>bf004ac</tt></td><td>Clean up compositor: remove unused functions, fix row buffer (fake pointer &rarr; global 3 MB framebuffer)</td></tr>
-<tr><td><tt>74787d9</tt></td><td>Fix compositor crash: use global framebuffer instead of fake 0xBAAAAAAD pointer; write full frame at once</td></tr>
-<tr><td><tt>b4bfce6</tt></td><td>Fix: add forward declarations for cos_lookup/sin_lookup</td></tr>
-<tr><td><tt>b6b0f8d</tt></td><td>Full ZirvUI compositor: 5x7 font, top panel, all icons, background gradient, uptime clock, encrypted writes</td></tr>
-<tr><td><tt>7ad609f</tt></td><td>Initial ZirvUI compositor &mdash; DisplayJet protocol compositor for Zirvium</td></tr>
+<tr><td><tt>6d7b797</tt></td><td>Multi-window compositor, IPC MQ, HPC/MPI, chrome auto-hide, flip+expand animation</td></tr>
+<tr><td><tt>cdb2f86</tt></td><td>Add GPLv3 LICENSE</td></tr>
+<tr><td><tt>a7a5d8b</tt></td><td>Improve ZirvUI desktop rendering</td></tr>
+<tr><td><tt>6168001</tt></td><td>Clean desktop with peek button, tray icons, open-app-only taskbar</td></tr>
+<tr><td><tt>9640cf3</tt></td><td>XP-style taskbar, colour scheme, Bliss background</td></tr>
+<tr><td><tt>171ad37</tt></td><td>Window dragging, font scaling, interactive Settings, frame-rate config</td></tr>
+<tr><td><tt>bf004ac</tt></td><td>Clean up compositor: remove unused functions, fix row buffer</td></tr>
+<tr><td><tt>b6b0f8d</tt></td><td>Full ZirvUI compositor: 5x7 font, top panel, icons, gradient, clock</td></tr>
+<tr><td><tt>7ad609f</tt></td><td>Initial ZirvUI compositor &mdash; DisplayJet protocol compositor</td></tr>
 </table>
 
 <hr>
@@ -184,12 +212,13 @@ AS=nasm -f elf64</pre>
 <h2>Future Work</h2>
 
 <ul>
-<li><b>Window management</b>: Support for multiple application windows within the compositor</li>
-<li><b>Cursor rendering</b>: Software-rendered mouse cursor with Synaptics touchpad input</li>
-<li><b>TrueType font rendering</b>: Replace 5x7 bitmap font with scalable font support</li>
-<li><b>Hardware acceleration</b>: Use Intel i915 or NVIDIA GPU for composition, not just pixel pushing</li>
-<li><b>VSync synchronisation</b>: Replace busy-wait timing with interrupt-driven page flip</li>
-<li><b>Multiple compositors</b>: Support for compositor handover and hotplug displays</li>
+<li><b>True multi-process</b>: Spawn apps as separate processes via <tt>SYS_SPAWN</tt>/<tt>SYS_FORK</tt> instead of calling draw functions in the compositor process</li>
+<li><b>Window resize</b>: Drag-to-resize from window edges and corners</li>
+<li><b>Title bar minimize / maximise</b>: Standard window control buttons</li>
+<li><b>TrueType font rendering</b>: Replace 8&times;13 bitmap font with scalable font support</li>
+<li><b>Cursor rendering</b>: Software-rendered mouse cursor with proper compositing</li>
+<li><b>Hardware acceleration</b>: Use GPU for composition</li>
+<li><b>VSync synchronisation</b>: Interrupt-driven page flip instead of polling</li>
 </ul>
 
 <hr>
