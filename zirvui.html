@@ -126,23 +126,29 @@
 
 <p>All rendering uses a global draw offset (<tt>g_draw_off_x</tt>, <tt>g_draw_off_y</tt>) added to every <tt>fill_rect</tt>, <tt>draw_char</tt>, and <tt>draw_line</tt> call. The offset is set per-window before calling the app's draw function, so each app draws in its own coordinate system (0,0 = top-left of the client area).</p>
 
+<h3>Drawing Primitives (ZirvTK)</h3>
+<p>All pixel-level drawing operations now come from the <a href="zirvtk.html">ZirvTK</a> GUI toolkit's raw-framebuffer module (<tt>rawfb.rs</tt>), exposed via C FFI as <tt>ztk_fb_*</tt> functions. The compositor calls <tt>ztk_fb_blend</tt>, <tt>ztk_fb_fill_rect</tt>, <tt>ztk_fb_hline</tt>, <tt>ztk_fb_draw_line</tt>, <tt>ztk_fb_draw_char_scaled</tt>, and <tt>ztk_draw_icon</tt> rather than using local C helpers. The 16 icon types (Terminal, Calculator, Files, Clock, Settings, Weather, Photos, Editor, Snake, Pong, Tetris, Music, Mail, Store, Maps, About) are rendered procedurally by <tt>ztk_draw_icon</tt> inside the toolkit. Anti-aliased character drawing remains local in the compositor for title-bar text and splash subtitle rendering.</p>
+
+<p>The toolkit library <tt>libzirvtk.a</tt> is built via Cargo with <tt>--no-default-features</tt> (no <tt>std</tt>, no <tt>alloc</tt>) and linked into the compositor alongside <tt>libzirvflux.a</tt>. The compositor's <tt>Makefile</tt> compiles the Rust project, then the linker resolves all symbols, including freestanding stubs (<tt>bcmp</tt>, <tt>rust_eh_personality</tt>) in <tt>stubs.c</tt> that the precompiled Rust <tt>core</tt> library requires.</p>
+
 <h3>Font</h3>
-<p>8&times;13 pixel bitmap font (95 glyphs, ASCII 32&ndash;126) stored as a static array <tt>font_8x13[95][13]</tt> in <tt>main.c</tt>. Anti-aliased rendering via alpha blending with neighbouring-pixel tests. Optional 2&times; scaling in the Clock and Weather apps.</p>
+<p>8&times;13 pixel bitmap font (95 glyphs, ASCII 32&ndash;126) from the toolkit's <tt>font.rs</tt> (upstream of the ZirvTK static library). Anti-aliased rendering via alpha blending with neighbouring-pixel tests. Optional 2&times; scaling via <tt>ztk_fb_draw_char_scaled</tt>.</p>
 
 <h3>Icons</h3>
-<p>All app icons are rendered procedurally (coloured geometric shapes). Each app tile on the start screen draws its icon centred in the tile using the same <tt>draw_icon</tt> function with app-specific colours.</p>
+<p>All app icons are rendered procedurally (coloured geometric shapes) by the toolkit's <tt>ztk_draw_icon</tt>. Each app tile on the start screen draws its icon centred in the tile at its app-specific colour.</p>
 
 <hr>
 
 <h2>Source Structure</h2>
 
 <pre>zirvui/
-  Makefile                Build system (freestanding ELF)
+  Makefile                Build system (freestanding ELF, builds libzirvtk.a)
   src/
-    main.c                Entire compositor (~1600 lines)
-    crt0.asm              Entry point (_start &rarr; main &rarr; SYS_EXIT)</pre>
+    main.c                Compositor (~2250 lines)
+    crt0.asm              Entry point (_start &rarr; main &rarr; SYS_EXIT)
+    stubs.c               Freestanding stubs for Rust core (bcmp, eh_personality)</pre>
 
-<p>Everything is in a single <tt>main.c</tt> file: rendering primitives, bitmap font, icon drawing, 12 app draw functions, Metro tile start screen, window management, flip+expand animation, mouse/keyboard input processing, calculator logic, and the main loop.</p>
+<p>The compositor integrates the <a href="zirvtk.html">ZirvTK</a> Rust GUI toolkit via C FFI. The <tt>Makefile</tt> builds <tt>libzirvtk.a</tt> with <tt>cargo build --release --no-default-features</tt> and links it into the ELF. <tt>stubs.c</tt> provides symbols (<tt>bcmp</tt>, <tt>rust_eh_personality</tt>) that Rust's precompiled <tt>core</tt> library requires in a freestanding context. The toolkit supplies raw-framebuffer drawing primitives (<tt>ztk_fb_*</tt>), procedural icons (<tt>ztk_draw_icon</tt>), and the 8&times;13 bitmap font. The compositor retains around 2250 lines of C for window management, chrome rendering, boot splash, app drawing, animations, and input handling.</p>
 
 <h3>App Draw Functions</h3>
 <p>Each app implements <tt>void draw_xxx(uint32_t *fb, uint32_t w, uint32_t h, int client_w, int client_h)</tt>. The compositor calls the appropriate function with the window's client area dimensions set as the draw offset:</p>
@@ -163,18 +169,26 @@
 </table>
 
 <h3>Build</h3>
-<pre>make    # Produces zirvui.elf
+<pre>make    # Builds libzirvtk.a via Cargo, then links zirvui.elf
 
-# Flags:
-gcc -std=c11 -ffreestanding -fno-stack-protector
-    -fno-pic -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -O2
-ld -nostdlib -static -no-pie -z max-page-size=0x1000
-as=nasm -f elf64</pre>
+# C flags:
+gcc -std=c11 -ffreestanding -fno-stack-protector -fno-pic
+    -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -O2
+    -I../zirvtk/include
+
+# Link:
+ld -nostdlib -static -no-pie -z max-page-size=0x1000 \
+    main.o crt0.o stubs.o libc/*.o libzirvtk.a libzirvflux.a
+
+# Rust library (ZirvTK):
+ZIRVFLUX_DIR=../zirvflux RUSTFLAGS="-C panic=abort" \
+  cargo build --release --no-default-features --manifest-path ../zirvtk/Cargo.toml</pre>
 
 <h3>Dependencies</h3>
 <ul>
 <li><b>zirvlibc</b> (string, ctype, stdio, stdlib, unistd, syscall, datetime)</li>
 <li><b>ZirvFlux</b> (<tt>libzirvflux.a</tt> &mdash; display framework library)</li>
+<li><b>ZirvTK</b> (<tt>libzirvtk.a</tt> &mdash; Rust GUI toolkit with raw-framebuffer drawing primitives)</li>
 </ul>
 
 <hr>
@@ -196,7 +210,9 @@ as=nasm -f elf64</pre>
 <h2>Git History</h2>
 
 <table>
+<tr><td><tt>148a054</tt></td><td>Kernel SSE enable (CR4.OSFXSR+OSXMMEXCPT), ELF loader page_off fix</td></tr>
 <tr><td><tt>6d7b797</tt></td><td>Multi-window compositor, IPC MQ, HPC/MPI, chrome auto-hide, flip+expand animation</td></tr>
+<tr><td><tt>740bd16</tt></td><td>Toolkit integration: ZirvTK raw-framebuffer FFI, Makefile, stubs</td></tr>
 <tr><td><tt>cdb2f86</tt></td><td>Add GPLv3 LICENSE</td></tr>
 <tr><td><tt>a7a5d8b</tt></td><td>Improve ZirvUI desktop rendering</td></tr>
 <tr><td><tt>6168001</tt></td><td>Clean desktop with peek button, tray icons, open-app-only taskbar</td></tr>

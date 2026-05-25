@@ -536,7 +536,7 @@ make run</pre>
 <tr><td><tt>elf_load_process(proc, elf_start)</tt></td><td>Load ELF into a process address space</td></tr>
 </table>
 
-<p>The loader processes <tt>PT_LOAD</tt> segments, allocating pages via the PMM and mapping them into the process's VMM address space. It does not support shared libraries, dynamic linking, or PIE executables. All userspace binaries are statically linked and embedded into the kernel via <tt>incbin</tt>.</p>
+<p>The loader processes <tt>PT_LOAD</tt> segments, allocating pages via the PMM and mapping them into the process's VMM address space. For segments with non-page-aligned <tt>p_vaddr</tt>, the loader computes <tt>page_off = vaddr &amp; 0xFFF</tt> and copies the file data starting at that offset within the first page rather than at offset 0, matching the ELF specification's requirement that <tt>p_offset</tt> and <tt>p_vaddr</tt> are congruent modulo the page size. It does not support shared libraries, dynamic linking, or PIE executables. All userspace binaries are statically linked and embedded into the kernel via <tt>incbin</tt>.</p>
 
 <h3>Embedded Binaries</h3>
 
