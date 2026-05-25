@@ -66,36 +66,24 @@
 
 <h3>Screen Layers (back to front)</h3>
 <ol>
-<li><b>Background</b>: Procedural per-pixel gradient (deep purple to warm tones)</li>
-<li><b>Metro tile grid</b>: 6&times;2 grid of coloured app tiles (140&times;140 px each, 16 px gap, 60 px margin). Clicking a tile launches the app with a flip+expand animation.</li>
-<li><b>Windows</b>: Multiple floating windows with title bars, close buttons, drag-to-move, and snap-to-edges</li>
-<li><b>Chrome</b>: "Zirvium" heading (top-left), exit and power buttons (top-right), date and clock (bottom-right). Chrome elements auto-hide when overlapped by a window title bar.</li>
+<li><b>Background</b>: Procedural per-pixel vertical gradient. 6 wallpaper presets (Deep Blue, Twilight, Forest, Sunset, Ocean, Midnight) selectable from Settings &rarr; Display.</li>
+<li><b>Accent color</b>: 8 accent color presets (Teal, Blue, Red, Green, Orange, Purple, Mint, Pink) applied to taskbar branding, clock text, settings headers, and demo app 3D canvas. Configurable from Settings &rarr; Display.</li>
+<li><b>Metro tile grid</b>: 6&times;2 grid of coloured app tiles (120&times;120 px each, 16 px gap, 48 px margin). Clicking a tile launches the app with a smooth expand animation.</li>
+<li><b>Title bar</b>: 36-pixel dark bar with back button and app name.</li>
+<li><b>Taskbar</b>: 40-pixel bottom bar with "Zirvium" heading (accent-coloured), clock, exit and power buttons.</li>
 <li><b>Shutdown dialog</b>: Modal confirmation overlay with animation</li>
 </ol>
 
 <hr>
 
-<h2>Window Management</h2>
+<h2>App Launch &amp; Navigation</h2>
 
 <h3>Opening an app</h3>
-<p>Click a tile on the start screen. A two-phase animation plays:</p>
-<ul>
-<li><b>Flip</b> (8 frames, ~130 ms): The tile compresses vertically, simulating a card flip</li>
-<li><b>Expand</b> (16 frames, ~270 ms): A coloured rect eases out (2nd-order ease-out: <tt>t&middot;(2&minus;t)</tt>) from the tile position to full screen, displaying the app icon and name</li>
-</ul>
-<p>After the animation, the window opens in full-screen mode (<tt>w = screen width</tt>, <tt>h = screen height</tt>).</p>
+<p>Click a tile on the start screen. A smooth ease-out animation plays: a coloured rect expands from the tile position to full screen, displaying the app icon and name. The animation speed is configurable in Settings &rarr; Display (Fast / Medium / Smooth).</p>
+<p>After the animation, the app opens in full-screen mode. A 36-pixel title bar at the top shows the app name and a "&lt; Back" button to return to the start screen (animated close).</p>
 
-<h3>Window chrome</h3>
-<ul>
-<li><b>Title bar</b>: 28-pixel dark bar at the top of each window with the app name</li>
-<li><b>Close button</b>: Red square with an &times; at the top-right of the title bar (red hover highlight)</li>
-<li><b>Drag</b>: Click and hold the title bar to move the window freely. The window is constrained to the screen bounds.</li>
-<li><b>Snap</b>: Drag a window to the left or right screen edge (&lt; 40 px threshold) &rarr; it snaps to half-screen width, full height. A coloured accent bar (3 px) appears on the snapped edge.</li>
-<li><b>Bring to front</b>: Clicking any window brings it to the front (Z-order is managed by reordering the array).</li>
-</ul>
-
-<h3>Chrome auto-hide</h3>
-<p>The "Zirvium" heading and the exit/power buttons in the top corners are only drawn when <b>no window title bar overlaps them</b>. A rect-overlap test runs for each chrome element against all active window title bars before drawing. The bottom-right date/clock are always visible (no title bar reaches that area).</p>
+<h3>App content</h3>
+<p>Each app draws its full UI into the client area below the title bar. Apps are single-process &mdash; they run as draw functions called from the compositor's main loop, not as separate processes.</p>
 
 <hr>
 
@@ -107,11 +95,11 @@
 <li><b>Create buffer</b>: Call <tt>zf_create_buffer(w, h, &amp;buf)</tt> &rarr; syscall 112 (kernel allocates encrypted DMA buffer)</li>
 <li><b>Render</b>: Software-render the full 1920&times;1080 frame into a local framebuffer:
   <ul>
-  <li>Draw background gradient</li>
-  <li>Draw Metro tile start screen (12 app tiles in a scrollable 6&times;2 grid)</li>
-  <li>Draw all active windows (title bar, close button, snap indicator, client content)</li>
-  <li>Draw chrome overlay (heading, buttons, clock)</li>
-  <li>Draw animation overlay if an app is launching (flip + expand)</li>
+  <li>Draw background gradient (6 wallpaper presets, selected via Settings)</li>
+  <li>Draw Metro tile start screen (9 app tiles in a 6&times;2 grid)</li>
+  <li>Draw taskbar with accent-coloured "Zirvium" heading, clock, exit/power buttons</li>
+  <li>If an app is active: draw title bar (with back button), then dispatch to app draw function</li>
+  <li>Draw animation overlay if an app is launching (smooth expand from tile)</li>
   <li>Draw shutdown confirmation dialog if active</li>
   </ul>
 </li>
@@ -132,7 +120,7 @@
 <p>The toolkit library <tt>libzirvtk.a</tt> is built via Cargo with <tt>--no-default-features</tt> (no <tt>std</tt>, no <tt>alloc</tt>) and linked into the compositor alongside <tt>libzirvflux.a</tt>. The compositor's <tt>Makefile</tt> compiles the Rust project, then the linker resolves all symbols, including freestanding stubs (<tt>bcmp</tt>, <tt>rust_eh_personality</tt>) in <tt>stubs.c</tt> that the precompiled Rust <tt>core</tt> library requires.</p>
 
 <h3>Font</h3>
-<p>8&times;13 pixel bitmap font (95 glyphs, ASCII 32&ndash;126) from the toolkit's <tt>font.rs</tt> (upstream of the ZirvTK static library). Anti-aliased rendering via alpha blending with neighbouring-pixel tests. Optional 2&times; scaling via <tt>ztk_fb_draw_char_scaled</tt>.</p>
+<p>8&times;13 pixel bitmap font (95 glyphs, ASCII 32&ndash;126) generated by <tt>tools/genfont.py</tt> and shared between the C compositor (<tt>font_8x13.h</tt>) and the ZirvTK Rust toolkit (<tt>font.rs</tt>). Anti-aliased rendering via alpha blending with 4-neighbour edge detection (edge pixels blend at alpha=180). Two font styles: <b>Regular</b> and <b>Bold</b> (computed at runtime by thickening strokes). Optional 2&times; scaling via <tt>ztk_fb_draw_char_scaled</tt>. All configurable from Settings &rarr; Display (Font Style, Font Size).</p>
 
 <h3>Icons</h3>
 <p>All app icons are rendered procedurally (coloured geometric shapes) by the toolkit's <tt>ztk_draw_icon</tt>. Each app tile on the start screen draws its icon centred in the tile at its app-specific colour.</p>
@@ -144,28 +132,27 @@
 <pre>zirvui/
   Makefile                Build system (freestanding ELF, builds libzirvtk.a)
   src/
-    main.c                Compositor (~2250 lines)
+    main.c                Compositor (~2120 lines)
+    demoapp.c             Demo app (4 tabs: Shapes/3D/Widgets/Icons, ~405 lines)
+    font_8x13.h           95&times;13 bitmap font data (C header, generated by genfont.py)
     crt0.asm              Entry point (_start &rarr; main &rarr; SYS_EXIT)
     stubs.c               Freestanding stubs for Rust core (bcmp, eh_personality)</pre>
 
-<p>The compositor integrates the <a href="zirvtk.html">ZirvTK</a> Rust GUI toolkit via C FFI. The <tt>Makefile</tt> builds <tt>libzirvtk.a</tt> with <tt>cargo build --release --no-default-features</tt> and links it into the ELF. <tt>stubs.c</tt> provides symbols (<tt>bcmp</tt>, <tt>rust_eh_personality</tt>) that Rust's precompiled <tt>core</tt> library requires in a freestanding context. The toolkit supplies raw-framebuffer drawing primitives (<tt>ztk_fb_*</tt>), procedural icons (<tt>ztk_draw_icon</tt>), and the 8&times;13 bitmap font. The compositor retains around 2250 lines of C for window management, chrome rendering, boot splash, app drawing, animations, and input handling.</p>
+<p>The compositor integrates the <a href="zirvtk.html">ZirvTK</a> Rust GUI toolkit via C FFI. The <tt>Makefile</tt> builds <tt>libzirvtk.a</tt> with <tt>cargo build --release --no-default-features</tt> and links it into the ELF. <tt>stubs.c</tt> provides symbols (<tt>bcmp</tt>, <tt>rust_eh_personality</tt>) that Rust's precompiled <tt>core</tt> library requires in a freestanding context. The toolkit supplies raw-framebuffer drawing primitives (<tt>ztk_fb_*</tt>), procedural icons (<tt>ztk_draw_icon</tt>), and the 8&times;13 bitmap font. The compositor retains around 2120 lines of C for start screen, app drawing, title bar, taskbar, boot splash, animations, and input handling. Font data is generated by a Python script (<tt>tools/genfont.py</tt>) shared with the toolkit.</p>
 
 <h3>App Draw Functions</h3>
-<p>Each app implements <tt>void draw_xxx(uint32_t *fb, uint32_t w, uint32_t h, int client_w, int client_h)</tt>. The compositor calls the appropriate function with the window's client area dimensions set as the draw offset:</p>
+<p>Each app implements <tt>void draw_xxx(uint32_t *fb, uint32_t w, uint32_t h)</tt>. The compositor dispatches from a function pointer table:</p>
 <table>
 <tr><th>App</th><th>Drawing</th></tr>
 <tr><td>Terminal</td><td>Scrolling green-on-black terminal emulator with shell integration</td></tr>
 <tr><td>Calculator</td><td>19-button grid with display, hit-testing per button</td></tr>
-<tr><td>Files</td><td>Directory listing with colour-coded entries</td></tr>
-<tr><td>Settings</td><td>Font size toggle, frame rate display</td></tr>
-<tr><td>About</td><td>Zirvium logo bars, version info</td></tr>
-<tr><td>Clock</td><td>Large digital time (3&times; scaled font), date</td></tr>
-<tr><td>Weather</td><td>Temperature, condition text</td></tr>
-<tr><td>Music</td><td>Now-playing display with progress bar and controls</td></tr>
-<tr><td>Mail</td><td>Sample inbox listing</td></tr>
-<tr><td>Photos</td><td>3&times;4 grid of coloured photo placeholders</td></tr>
-<tr><td>Store</td><td>App list with coloured headers</td></tr>
-<tr><td>Maps</td><td>5&times;7 checkerboard grid with route line</td></tr>
+<tr><td>Settings</td><td>Tab-based (Display/Network/Audio/About). Wallpaper presets (6), accent color picker (8), animation speed (Fast/Medium/Smooth), font style (Regular/Bold), font size, dark theme, brightness slider, frame rate, Wi-Fi, Bluetooth, volume slider, about info.</td></tr>
+<tr><td>Clock</td><td>Large digital time (4&times; scaled font), date</td></tr>
+<tr><td>Editor</td><td>Multi-line text editor with arrow keys and line navigation</td></tr>
+<tr><td>Snake</td><td>Classic snake game with W/A/S/D controls, score tracking</td></tr>
+<tr><td>Pong</td><td>Pong game with AI opponent, W/S paddle control, scoring</td></tr>
+<tr><td>Tetris</td><td>Full Tetris with 7 piece types, rotation, line clearing, preview</td></tr>
+<tr><td>Demo</td><td>4-tab demo showing all ZirvTK primitives: 2D shapes, 3D wireframe (fixed-point pipeline with accent-coloured canvas), interactive widgets (toggles, buttons, slider), all 16 procedural icons</td></tr>
 </table>
 
 <h3>Build</h3>
@@ -195,21 +182,25 @@ ZIRVFLUX_DIR=../zirvflux RUSTFLAGS="-C panic=abort" \
 
 <h2>Animation System</h2>
 
-<p>App launch uses a two-phase animation based on the tile position:</p>
+<p>App launch uses a smooth ease-out animation (smoothstep curve). The animation speed is configurable:</p>
 
 <table>
-<tr><th>Phase</th><th>Frames</th><th>Effect</th></tr>
-<tr><td>Flip</td><td>8</td><td>Tile height scales linearly from <tt>from_h</tt> to 0 (vertical squeeze)</td></tr>
-<tr><td>Expand</td><td>16</td><td>Rect eases out from tile position/size to full screen using <tt>et = t&middot;(2&minus;t)</tt> with integer arithmetic (<tt>et_num / et_den</tt>)</td></tr>
+<tr><th>Setting</th><th>Frames</th><th>Duration (~60 FPS)</th></tr>
+<tr><td>Fast</td><td>5</td><td>~83 ms</td></tr>
+<tr><td>Medium (default)</td><td>10</td><td>~167 ms</td></tr>
+<tr><td>Smooth</td><td>20</td><td>~333 ms</td></tr>
 </table>
 
-<p>During the animation, mouse interaction, window drawing, and chrome rendering are suspended. The animation state is checked in the main loop and advances one frame per iteration (~16 ms per frame).</p>
+<p>The animation runs as a smoothstep interpolation (<tt>t&sup2;&middot;(3&minus;2t)</tt>), expanding from the tile position to full screen. During the animation, mouse interaction and app drawing are suspended. The animation state advances one frame per iteration (~16 ms per frame at 60 FPS).</p>
 
 <hr>
 
 <h2>Git History</h2>
 
 <table>
+<tr><td><tt>22ac3c1</tt></td><td>Tab-based Settings (Display/Network/Audio/About), Bold font toggle, 3D accent canvas in demo app</td></tr>
+<tr><td><tt>b23d353</tt></td><td>Demo app (4 tabs), improved font data, wallpaper presets (6), accent color picker (8), animation speed selector</td></tr>
+<tr><td><tt>6f86c50</tt></td><td>Remove 8 placeholder apps, enhance Settings (font scale, theme, brightness, FPS, Wi-Fi, BT, volume, about)</td></tr>
 <tr><td><tt>148a054</tt></td><td>Kernel SSE enable (CR4.OSFXSR+OSXMMEXCPT), ELF loader page_off fix</td></tr>
 <tr><td><tt>6d7b797</tt></td><td>Multi-window compositor, IPC MQ, HPC/MPI, chrome auto-hide, flip+expand animation</td></tr>
 <tr><td><tt>740bd16</tt></td><td>Toolkit integration: ZirvTK raw-framebuffer FFI, Makefile, stubs</td></tr>
@@ -229,9 +220,8 @@ ZIRVFLUX_DIR=../zirvflux RUSTFLAGS="-C panic=abort" \
 
 <ul>
 <li><b>True multi-process</b>: Spawn apps as separate processes via <tt>SYS_SPAWN</tt>/<tt>SYS_FORK</tt> instead of calling draw functions in the compositor process</li>
-<li><b>Window resize</b>: Drag-to-resize from window edges and corners</li>
-<li><b>Title bar minimize / maximise</b>: Standard window control buttons</li>
-<li><b>TrueType font rendering</b>: Replace 8&times;13 bitmap font with scalable font support</li>
+<li><b>TrueType font rendering</b>: Render the generated TTF (<tt>zirvium_system.ttf</tt>) at runtime instead of the 8&times;13 bitmap</li>
+<li><b>New app: Files</b>: Directory browser with file manager UI</li>
 <li><b>Cursor rendering</b>: Software-rendered mouse cursor with proper compositing</li>
 <li><b>Hardware acceleration</b>: Use GPU for composition</li>
 <li><b>VSync synchronisation</b>: Interrupt-driven page flip instead of polling</li>
