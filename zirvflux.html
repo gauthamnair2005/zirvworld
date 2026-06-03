@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -33,7 +34,7 @@
 
 <hr>
 
-<p><b>ZirvFlux</b> is the reference MOSIX display framework library. It provides a compositor-facing API for display enumeration, buffer management, and presentation &mdash; analogous to Mesa for Linux. Compositors like <a href="zirvui.html">ZirvUI</a> link against <tt>libzirvflux.a</tt> instead of calling the kernel display driver directly.</p>
+<p><b>ZirvFlux</b> is the reference MOSIX display framework library. It provides a compositor-facing API for display enumeration, buffer management, presentation, and mouse input &mdash; analogous to Mesa for Linux. Compositors like <a href="zirvui.html">ZirvUI</a> (via <a href="zirvtk.html">ZirvTK</a>) link against <tt>libzirvflux.a</tt> instead of calling the kernel display driver directly.</p>
 
 <h2>API</h2>
 
@@ -47,7 +48,7 @@
 <tr><td><tt>zf_destroy_buffer()</tt></td><td>Release a GPU surface</td></tr>
 <tr><td><tt>zf_write_buffer()</tt></td><td>Write pixel data to a buffer</td></tr>
 <tr><td><tt>zf_present()</tt></td><td>Flip a buffer to the screen</td></tr>
-<tr><td><tt>zf_present_region()</tt></td><td>Present a sub-region of a buffer</td></tr>
+<tr><td><tt>zf_read_mouse()</tt></td><td>Read mouse position and button state</td></tr>
 <tr><td><tt>zf_list_buffers()</tt></td><td>Enumerate all allocated buffers</td></tr>
 </table>
 
@@ -70,13 +71,17 @@
 zf_connect();
 zf_display_info_t info;
 zf_get_info(&amp;info);
-// info.width, info.height, info.connector
 
 uint32_t buf_id;
 zf_create_buffer(info.width, info.height, &amp;buf_id);
 // render pixels into a local framebuffer
 zf_write_buffer(buf_id, pixel_data, size);
-zf_present(buf_id);</pre>
+zf_present(buf_id);
+
+// Poll mouse in render loop
+zf_mouse_state_t mouse;
+zf_read_mouse(&amp;mouse);
+// mouse.x, mouse.y, mouse.buttons</pre>
 
 <h2>Dependencies</h2>
 

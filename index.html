@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -37,9 +38,9 @@
 
 <p><b>Zirvium</b> is the reference implementation of the <b><a href="standard.html">MOSIX</a></b> (Modern OSIX) operating system standard. Just as GNU/Linux implements POSIX, Zirvium implements the MOSIX specification. It is a from-scratch x86-64 kernel written in C11 and assembly, and serves as both a functional OS and a proving ground for the MOSIX design.</p>
 
-<p>The ecosystem spans fourteen projects: the kernel, a freestanding C library, an init system, an English-like shell, 18 utilities, an encrypted display driver (DisplayJet), a display framework library (ZirvFlux), a GUI toolkit (ZirvTK), a graphical desktop compositor (ZirvUI), an audio subsystem with HDA and AC97 drivers, and several hardware driver modules. Together they form a complete operating system capable of booting on bare metal and under QEMU.</p>
+<p>The ecosystem spans fourteen projects: the kernel, a freestanding C library, an init system, an English-like shell, 18 utilities, an encrypted display driver (DisplayJet), a display framework library (ZirvFlux), a Rust desktop toolkit (ZirvTK) with full compositor, a graphical desktop compositor (ZirvUI) that delegates to ZirvTK, an audio subsystem with HDA and AC97 drivers, and several hardware driver modules. Together they form a complete operating system capable of booting on bare metal and under QEMU.</p>
 
-<p>The <b><a href="zirvui.html">ZirvUI</a></b> compositor renders a full desktop with a procedural background gradient, 28-pixel top panel with hamburger menu and system tray (WiFi, Bluetooth, speaker, battery, user, power), and a live uptime clock in 5x7 bitmap font. Drawing primitives (<tt>fill_rect</tt>, <tt>draw_char_scaled</tt>, <tt>draw_line</tt>, <tt>draw_icon</tt>) are now provided by the <b><a href="zirvtk.html">ZirvTK</a></b> Rust GUI toolkit via C FFI (<tt>ztk_fb_*</tt> functions), deployed as a system-level submodule so future UI updates only need toolkit changes. The kernel enables SSE/SSE2 for userspace and the ELF loader correctly handles non-page-aligned segments, enabling the Rust <tt>core</tt> library to link cleanly in the freestanding compositor.</p>
+<p>The desktop environment is implemented entirely by the <b><a href="zirvtk.html">ZirvTK</a></b> Rust library, which provides a complete compositor (<tt>ztk_desktop_run</tt>) rendering at 1024x768 with a dark/neon/glass aesthetic &mdash; gradient background, real-time RTC-driven clock with anti-aliased scaled digits, taskbar with launcher dot button, grid-based app launcher with SVG vector path icons and animated hover pulse (sinusoidal glow), semi-transparent glass panels, ambient floating particles with per-particle colour cycling, and tear-free VBE page-flipped rendering. The <b><a href="zirvui.html">ZirvUI</a></b> compositor is a thin C stub that initialises ZirvFlux and enters the ZirvTK desktop loop. Drawing primitives are scanline-optimised for efficiency. All display surfaces are encrypted at rest in kernel memory via the <b><a href="displayjet.html">DisplayJet</a></b> MAEM security layer. The kernel enables SSE/SSE2 for userspace and the ELF loader correctly handles non-page-aligned segments, enabling the Rust <tt>core</tt> library to link cleanly in the freestanding compositor.</p>
 
 <p>But <b>Zirvium is just one MOSIX OS</b>. The MOSIX standard is designed to be implemented by anyone. You can build your own kernel, your own libc, your own shell &mdash; and as long as they follow the <a href="standard.html">MOSIX specification</a>, they are part of the MOSIX family. This website is the canonical reference for that specification.</p>
 
@@ -55,10 +56,6 @@
 <td>All Zirvium components and their source code</td>
 </tr>
 <tr>
-<td><a href="screenshots.html">Screenshots &amp; Gallery</a></td>
-<td>Gallery of Zirvium in action</td>
-</tr>
-<tr>
 <td><a href="changelog.html">Changelog</a></td>
 <td>Release history and latest updates</td>
 </tr>
@@ -72,7 +69,7 @@
 </tr>
 <tr>
 <td><a href="zirvui.html">ZirvUI Desktop</a></td>
-<td>Graphical desktop compositor with panel, system tray, app launcher, and shutdown dialog</td>
+<td>Graphical desktop compositor (thin C stub, delegates to ZirvTK)</td>
 </tr>
 <tr>
 <td><a href="zirvflux.html">ZirvFlux</a></td>
@@ -80,15 +77,7 @@
 </tr>
 <tr>
 <td><a href="zirvtk.html">ZirvTK</a></td>
-<td>Rust GUI toolkit with C FFI (widgets, canvas, font)</td>
-</tr>
-<tr>
-<td><a href="screenshots.html">Screenshots &amp; Gallery</a></td>
-<td>Gallery of Zirvium in action</td>
-</tr>
-<tr>
-<td><a href="changelog.html">Changelog</a></td>
-<td>Release history and latest updates</td>
+<td>Rust desktop toolkit with C FFI (full compositor, widgets, canvas, font)</td>
 </tr>
 <tr>
 <td><a href="download.html">Download &amp; Build</a></td>
@@ -96,7 +85,7 @@
 </tr>
 <tr>
 <td><a href="user.html">User Documentation</a></td>
-<td>Building, running, shell usage, utilities reference, FAQ</td>
+<td>Building, running, shell usage, utilities reference, desktop guide, FAQ</td>
 </tr>
 <tr>
 <td><a href="dev.html">Developer Documentation</a></td>

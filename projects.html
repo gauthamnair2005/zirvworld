@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -38,11 +39,11 @@
 <h2>zirvium</h2>
 <p><tt>C11 / ASM &mdash; GPLv3</tt></p>
 
-<p>The core x86-64 kernel &mdash; the reference MOSIX kernel implementation. Implements 4-level paging, bitmap PMM (1 TiB max), higher-half VMM, ELF64 loading, MOSIX VFS, PCI enumeration, and dynamic driver framework. Boots via GRUB2 (Multiboot2) or Limine. 25 syscalls covering file I/O, memory management, process control, time, hostname, system power, and DNS resolution.</p>
+<p>The core x86-64 kernel &mdash; the reference MOSIX kernel implementation. Implements 4-level paging, bitmap PMM (1 TiB max), higher-half VMM, ELF64 loading, MOSIX VFS, PCI enumeration, and dynamic driver framework. Boots via GRUB2 (Multiboot2) or Limine. 36 syscalls covering file I/O, memory management, process control, time, hostname, system power, IPC, HPC, and DNS resolution.</p>
 
-<p>Key subsystems: PMM, VMM, kernel heap, process management (create, fork-like save/restore execve, wait4, zombie reaping), ring-buffer IPC, CMOS RTC + TSC uptime, triple console (serial + VGA + framebuffer), ELF loader with 19 embedded binaries, <b>execve save/restore</b> (shell survives after running external commands), DNS resolver (kernel-level, syscall&nbsp;102), <b>PCI device enumeration exposed to userspace</b> (syscall&nbsp;103, <tt>lspci</tt> utility), Linux compat layer (<tt>linux_compat.h</tt>).</p>
+<p>Key subsystems: PMM, VMM, kernel heap, process management (create, execve save/restore, wait4, zombie reaping), ring-buffer IPC message queues, HPC/MPI primitives (barrier, send/recv, broadcast, reduce), CMOS RTC + TSC uptime, triple console (serial + VGA + framebuffer), ELF loader with 19 embedded binaries, <b>execve save/restore</b> (shell survives after running external commands), DNS resolver (syscall&nbsp;102), PCI device enumeration exposed to userspace (syscall&nbsp;103, <tt>lspci</tt> utility), Linux compat layer (<tt>linux_compat.h</tt>).</p>
 
-<p>Drivers ported from Linux kernel source via <tt>linux_compat.h</tt>: NVIDIA GPU (Enveediya), Intel Arc GPU, AMD Radeon GPU, VirtIO block, VirtIO net, RTL8139 NIC, xHCI USB&nbsp;3.0, Thunderbolt&nbsp;3/4 &amp; USB4, WiFi&nbsp;7 (BE200, MT7927, QCNCM865, BCM4389). These drivers are sourced from the latest Linux kernel tree and adapted to the MOSIX device model with minimal changes.</p>
+<p>Drivers ported from Linux kernel source via <tt>linux_compat.h</tt>: NVIDIA GPU (Enveediya), Intel Arc GPU, AMD Radeon GPU, VirtIO block, VirtIO net, RTL8139 NIC, xHCI USB&nbsp;3.0, Thunderbolt&nbsp;3/4 &amp; USB4, WiFi&nbsp;7 (BE200, MT7927, QCNCM865, BCM4389).</p>
 
 <p>Build targets: <tt>make</tt> (kernel ELF), <tt>make iso</tt> (bootable ISO), <tt>make run</tt> (QEMU), <tt>make vmzirv</tt> (kernel-only), <tt>make debug</tt> (GDB stub).</p>
 
@@ -52,7 +53,6 @@
 
 <h2>zirvlibc</h2>
 <p><tt>C11 &mdash; libzirvlibc.a</tt></p>
-<p><a href="zirvlibc.html">full documentation &raquo;</a></p>
 
 <p>The reference MOSIX C library &mdash; a freestanding libc for MOSIX userspace programs. Provides string.h, ctype.h, stdio.h (printf with %s%d%u%lu%llu%x%p%c%%, zero-padded width), stdlib.h (exit, atoi, atol), unistd.h (read, write, open, close, mmap, brk, execve, getpid, uptime, reboot, shutdown, gethostname, sethostname, getcwd, chdir, getdents), datetime.h, dirent.h, and zirv/syscall.h.</p>
 
@@ -64,7 +64,6 @@
 
 <h2>zirvinit</h2>
 <p><tt>C11 / ASM &mdash; MOSIX init system (PID 1)</tt></p>
-<p><a href="zirvinit.html">full documentation &raquo;</a></p>
 
 <p>First userspace process. 28 lines of C: prints MOSIX banner, calls <tt>execve("/bin/shell", ...)</tt>. Halts forever if execve fails. Linked against zirvlibc, compiled as static ELF64, embedded as <tt>/bin/init</tt>.</p>
 
@@ -76,7 +75,6 @@
 
 <h2>zirvshell</h2>
 <p><tt>C11 / ASM &mdash; MOSIX natural-language shell</tt></p>
-<p><a href="zirvshell.html">full documentation &raquo;</a></p>
 
 <p>The reference MOSIX shell. English-like command syntax alongside standard POSIX aliases. Built-in commands: echo, pwd, uname, clear, whoami, ls, cat, date, settime, timezone, uptime, reboot, shutdown, poweroff, suspend, cd, mkdir, rm, rmdir, mv, cp, help, exit. External commands in <tt>/bin/</tt> are executed via <b>execve with automatic caller save/restore</b> &mdash; the shell process is preserved and returns to the prompt after every command. CWD-aware prompt, line editor with backspace, double-quoted argument parsing, multi-word natural language commands.</p>
 
@@ -88,9 +86,8 @@
 
 <h2>zirvutils</h2>
 <p><tt>C11 / ASM &mdash; 18 MOSIX embedded utilities</tt></p>
-<p><a href="zirvutils.html">full documentation &raquo;</a></p>
 
-<p>Standalone command-line utilities: hello, cat, sysinfo, clear, echo, reboot, shutdown, suspend, poweroff, ping, sleep, true, false, yes, uname, hostname, <b>ifconfig</b>, <b>lspci</b>. All statically linked against zirvlibc, compiled as standalone ELF64 binaries, and embedded into the kernel via <tt>init_bin.asm</tt>. External commands now run via the kernel's execve save/restore mechanism, so the shell prompt returns after every utility completes.</p>
+<p>Standalone command-line utilities: hello, cat, sysinfo, clear, echo, reboot, shutdown, suspend, poweroff, ping, sleep, true, false, yes, uname, hostname, <b>ifconfig</b>, <b>lspci</b>. All statically linked against zirvlibc, compiled as standalone ELF64 binaries, and embedded into the kernel via <tt>init_bin.asm</tt>.</p>
 
 <p><a href="https://github.com/gauthamnair2005/zirvutils">source on github &raquo;</a></p>
 
@@ -99,7 +96,7 @@
 <h2>zirvdisplayjet</h2>
 <p><tt>C11 &mdash; MAEM-encrypted display driver (515 lines)</tt></p>
 
-<p>A MOSIX reference implementation of the MAEM security standard. In-kernel display driver with 11 custom syscalls (110-120): compositor management, surface creation/destruction with ChaCha20 encryption, HKDF-SHA256 key derivation, hardware entropy, crypto wipe, access grants. Drives Bochs VBE at 1024x768x32bpp. All surfaces encrypted at rest.</p>
+<p>Reference implementation of the MAEM security standard. In-kernel display driver with 11 syscalls (110-120): compositor management, surface creation/destruction with ChaCha20 encryption, HKDF-SHA256 key derivation, hardware entropy, crypto wipe, access grants. Drives Bochs VBE at 1024x768x32bpp. All surfaces encrypted at rest.</p>
 
 <p><a href="displayjet.html">full documentation &raquo;</a></p>
 <p><a href="https://github.com/gauthamnair2005/zirvdisplayjet">source on github &raquo;</a></p>
@@ -107,9 +104,9 @@
 <hr>
 
 <h2>zirvui</h2>
-<p><tt>C11 &mdash; MOSIX graphical desktop compositor</tt></p>
+<p><tt>C11 &mdash; MOSIX graphical desktop compositor (thin stub)</tt></p>
 
-<p>Reference MOSIX desktop compositor. Connects to DisplayJet for a full desktop: procedural background gradient, 28-pixel top panel (hamburger menu, "ZirvUI" branding), system tray (WiFi, Bluetooth, speaker, battery, user, power icons), live uptime clock in 5x7 bitmap font. Compiled as freestanding ELF64.</p>
+<p>Reference MOSIX desktop compositor. A thin C stub that initialises ZirvFlux, calls <tt>ztk_desktop_run()</tt> from the <a href="zirvtk.html">ZirvTK</a> Rust toolkit, and blocks. All desktop rendering, widgets, input handling, and the compositor loop are provided by ZirvTK. This allows UI updates to land with only toolkit changes.</p>
 
 <p><a href="zirvui.html">full documentation &raquo;</a></p>
 <p><a href="https://github.com/gauthamnair2005/zirvui">source on github &raquo;</a></p>
@@ -119,7 +116,7 @@
 <h2>zirvflux</h2>
 <p><tt>C11 &mdash; libzirvflux.a</tt></p>
 
-<p>User-space display framework for MOSIX compositors. Provides a Mesa-like API for display enumeration, buffer management, and presentation. Communicates with the DisplayJet kernel driver via syscalls 110&ndash;120. All surfaces encrypted at rest.</p>
+<p>User-space display framework for MOSIX compositors. Provides a Mesa-like API for display enumeration, buffer management, and presentation. Communicates with DisplayJet via syscalls 110&ndash;120. All surfaces encrypted at rest.</p>
 
 <p><a href="zirvflux.html">full documentation &raquo;</a></p>
 <p><a href="https://github.com/gauthamnair2005/zirvflux">source on github &raquo;</a></p>
@@ -129,7 +126,7 @@
 <h2>zirvtk</h2>
 <p><tt>Rust / C &mdash; libzirvtk.a</tt></p>
 
-<p>MOSIX GUI toolkit &mdash; a Rust widget library with C FFI. Provides Button, Label, Panel, Window, TileScroller, MediaTile widgets, software Canvas renderer, and 5x7 bitmap font. Builds as staticlib/cdylib/rlib. Designed for compositors and graphical applications running on top of ZirvFlux.</p>
+<p>MOSIX GUI toolkit &mdash; a Rust library with C FFI providing a complete desktop compositor, widget set, and software canvas renderer. Includes full compositor loop (<tt>Desktop</tt>), app launcher, taskbar, anti-aliased clock, particle system, scanline-optimised drawing primitives, glass panels, SVG vector path icons, and 8x13 bitmap font. Builds as <tt>libzirvtk.a</tt> for freestanding environments.</p>
 
 <p><a href="zirvtk.html">full documentation &raquo;</a></p>
 <p><a href="https://github.com/gauthamnair2005/zirvtk">source on github &raquo;</a></p>
@@ -139,7 +136,7 @@
 <h2>zirvworld</h2>
 <p><tt>HTML/CSS &mdash; MOSIX website and specification</tt></p>
 
-<p>This website. The canonical reference for the MOSIX standard, its specification, and the Zirvium reference implementation. Flat HTML with shared CSS, 90s kernel.org aesthetic.</p>
+<p>This website. The canonical reference for the MOSIX standard, its specification, and the Zirvium reference implementation. Flat HTML with shared CSS.</p>
 
 <p><a href="https://github.com/gauthamnair2005/zirvworld">source on github &raquo;</a></p>
 

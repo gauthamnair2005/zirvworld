@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -39,7 +40,7 @@
 <ul>
 <li>The <b>filesystem hierarchy</b> (/bin, /lib, /user, /boot, /config, /zirv, /mounts, /tmp)</li>
 <li>The <b>/zirv device namespace</b> (unified device tree replacing /dev, /sys, /proc, /run)</li>
-<li>The <b>syscall ABI</b> (24 syscalls, x86-64 SYSCALL instruction)</li>
+<li>The <b>syscall ABI</b> (core Linux-compatible set + MOSIX extensions, x86-64 SYSCALL instruction)</li>
 <li>The <b>MAEM security model</b> (optional, for in-memory encryption)</li>
 </ul>
 
@@ -79,7 +80,7 @@ make run</pre>
 <p>Implement the MOSIX standard in your own kernel. You need:</p>
 
 <h3>1. Syscall ABI</h3>
-<p>Implement the 24 MOSIX syscalls at the assigned numbers using the x86-64 SYSCALL/SYSRETQ mechanism. See the <a href="standard.html">MOSIX standard</a> for the full table.</p>
+<p>Implement the MOSIX syscalls at the assigned numbers using the x86-64 SYSCALL/SYSRETQ mechanism. The core set covers file I/O, memory management, process control, time, and system power. See the <a href="standard.html">MOSIX standard</a> for the full table.</p>
 
 <h3>2. Filesystem Hierarchy</h3>
 <p>Create an in-memory or disk-backed filesystem with the standard MOSIX directories: /bin, /lib, /user, /boot, /config, /zirv (with sata, pata, nvme, usb, net, input, display, tty, audio subdirectories), /mounts, /tmp.</p>
@@ -104,7 +105,7 @@ make run</pre>
 <tr><td>1</td><td>MOSIX filesystem hierarchy</td><td>/bin, /lib, /user, /boot, /config, /zirv, /mounts, /tmp exist</td></tr>
 <tr><td>2</td><td>/zirv device namespace</td><td>Devices appear under /zirv/&lt;bus&gt;/&lt;type&gt;&lt;index&gt;</td></tr>
 <tr><td>3</td><td>Console device</td><td>/zirv/tty/virtual0 exists and supports read/write</td></tr>
-<tr><td>4</td><td>Syscall ABI</td><td>24 syscalls at correct numbers, x86-64 SYSCALL convention</td></tr>
+<tr><td>4</td><td>Syscall ABI</td><td>MOSIX syscalls at correct numbers, x86-64 SYSCALL convention</td></tr>
 <tr><td>5</td><td>ELF64 loading</td><td>Static no-pie ELF64 binaries load and execute</td></tr>
 <tr><td>6</td><td>libc compatibility</td><td>zirvlibc programs compile and run without modification</td></tr>
 <tr><td>7</td><td>zirvinit boots</td><td>PID 1 is zirvinit (or compatible), launches shell</td></tr>

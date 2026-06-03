@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -38,11 +39,15 @@
 <h2>Source Code</h2>
 
 <table>
-<tr><td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td><td>Reference MOSIX kernel and full OS (includes init, shell, utils as submodules)</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvium">zirvium</a></td><td>Reference MOSIX kernel and full OS (submodules: init, shell, utils, ui, flux, displayjet, tk)</td></tr>
 <tr><td><a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></td><td>Reference MOSIX C library</td></tr>
-<tr><td><a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a></td><td>17 command-line utilities</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvinit">zirvinit</a></td><td>MOSIX init system (PID 1)</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvshell">zirvshell</a></td><td>MOSIX natural-language shell</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvutils">zirvutils</a></td><td>18 command-line utilities</td></tr>
 <tr><td><a href="https://github.com/gauthamnair2005/zirvdisplayjet">zirvdisplayjet</a></td><td>MAEM-encrypted display driver</td></tr>
-<tr><td><a href="https://github.com/gauthamnair2005/zirvui">zirvui</a></td><td>Graphical desktop compositor</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvflux">zirvflux</a></td><td>Display framework library (Mesa-like API)</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvtk">zirvtk</a></td><td>Rust GUI toolkit with desktop compositor</td></tr>
+<tr><td><a href="https://github.com/gauthamnair2005/zirvui">zirvui</a></td><td>Desktop compositor (thin C stub, delegates to ZirvTK)</td></tr>
 <tr><td><a href="https://github.com/gauthamnair2005/zirvworld">zirvworld</a></td><td>Website and MOSIX specification</td></tr>
 </table>
 
@@ -82,13 +87,17 @@ make run</pre>
 
 <pre>zirvium/
   arch/x64/          Architecture-specific (boot, GDT, IDT, syscall)
-  kernel/            Core kernel (mm, proc, syscall, ipc, irq, loader, time)
+  kernel/            Core kernel (mm, proc, syscall, ipc, hpc, irq, loader, time, audio)
   fs/                MOSIX Virtual Filesystem
-  drivers/           Device drivers (PCI, serial, VGA, native, compat)
+  drivers/           Device drivers (PCI, serial, display, storage, net, input, audio, USB, bus)
   libs/zirvlibc/     Freestanding C library (submodule)
   zirvinit/          Init system (submodule)
   zirvshell/         Shell (submodule)
-  zirvutils/         17 utilities (submodule)</pre>
+  zirvutils/         18 utilities (submodule)
+  zirvui/            Desktop compositor (submodule, delegates to ZirvTK)
+  zirvflux/          Display framework library (submodule)
+  zirvdisplayjet/    Encrypted display driver (submodule)
+  zirvtk/            Rust GUI toolkit (submodule, includes compositor)</pre>
 
 <hr>
 

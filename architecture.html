@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -37,13 +38,13 @@
 
 <pre>  +----------------------------------+
   | Desktop Compositor               |
-  | (zirvui &mdash; MOSIX reference GUI)  |
+  | (ZirvTK Rust toolkit, ZirvUI stub)|
   +----------------------------------+
-  | Display Driver                   |
+  | Display / ZirvFlux               |
   | (zirvdisplayjet &mdash; MAEM-encrypted)|
   +----------------------------------+
   | User Programs                    |
-  | (zirvinit, zirvshell, 17 utils)  |
+  | (zirvinit, zirvshell, 18 utils)  |
   +----------------------------------+
             | syscall interface
   +----------------------------------+
@@ -85,7 +86,7 @@
 <hr>
 
 <h2>Drivers</h2>
-<p>Display: Bochs VGA, VMware SVGA II, Intel i915 (Gen 9.5-14, 70 PCI IDs, 352 lines), Enveediya GPU (Linux compat, nouveau port — RTX/B-series), Intel Arc GPU (Linux compat, A/B/C-series), AMD Radeon GPU (Linux compat, GCN/RDNA 1-3.5), DisplayJet (MAEM encrypted, 515 lines). Storage: SATA (ATA PIO), NVMe, USB mass storage, VirtIO block (Linux compat). Networking: Intel e1000, VirtIO net (Linux compat), RTL8139 (Linux compat), Realtek RTL8723DE WiFi (355 lines, PCIe, DMA rings, efuse MAC, packet TX), WiFi&nbsp;7 802.11be (Linux compat, Intel BE200, MediaTek MT7927, Qualcomm QCNCM865). USB: xHCI USB 3.0/2.0 (Linux compat, polling mode, device enumeration). Bus: Thunderbolt 3/4, USB4 (Linux compat, Intel/AMD). Input: PS/2 i8042, keyboard (scancode to ASCII), Synaptics touchpad. Other: HDA audio, Realtek Bluetooth (UART HCI), TPM 2.0, serial 16550 UART, Linux compat driver bridge.</p>
+<p>Display: Bochs VBE (1024x768x32bpp), VMware SVGA II, Intel i915 (Gen 9.5-14), Enveediya GPU (nouveau port, RTX/B-series), Intel Arc GPU (A/B/C-series), AMD Radeon GPU (GCN/RDNA 1-3.5), DisplayJet (MAEM encrypted, 515 lines). Storage: SATA (ATA PIO), NVMe, USB mass storage, VirtIO block (Linux compat). Networking: Intel e1000, VirtIO net (Linux compat), RTL8139 (Linux compat), Realtek RTL8723DE WiFi, WiFi 7 802.11be (Intel BE200, MediaTek MT7927, Qualcomm QCNCM865). USB: xHCI USB 3.0/2.0 (Linux compat, polling enumeration). Bus: Thunderbolt 3/4, USB4 (all Intel/AMD gens). Input: PS/2 keyboard, Synaptics touchpad. Other: HDA audio, Realtek Bluetooth, TPM 2.0, serial 16550 UART, Linux compat driver bridge.</p>
 
 <p><b>IPC.</b> Ring-buffer message queues (<tt>kernel/ipc/mqueue.c</tt>): 256 messages &times; 64 bytes per queue, blocking receive with process-blocking support. Used as the transport for the HPC subsystem.</p>
 

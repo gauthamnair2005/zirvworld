@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -34,6 +35,18 @@
 <hr>
 
 <h2>2026</h2>
+
+<h3>June 2026</h3>
+
+<p><b>ZirvTK Desktop Compositor Overhaul</b> &mdash; The desktop compositor has been moved entirely into the <a href="zirvtk.html">ZirvTK</a> Rust toolkit. ZirvUI is now a thin C stub (~30 lines) that initialises ZirvFlux and calls <tt>ztk_desktop_run()</tt>. All rendering, widgets, input handling, and the compositor loop are in ZirvTK, allowing UI updates to land with only toolkit changes.</p>
+
+<p><b>Scanline-Optimised Rendering</b> &mdash; <tt>fill_round_rect</tt> and <tt>stroke_round_rect</tt> now use scanline span fills (O(h) per call) instead of per-pixel hit-testing (O(w&times;h)), dramatically improving glass panel performance. The <tt>glass_panel</tt> widget was rewritten to use the scanline API.</p>
+
+<p><b>Launcher Redesign</b> &mdash; Fixed launcher sizing (was too small, apps overflowed). Removed <tt>glow_rect</tt> from launcher for performance. Added animated hover colour (sinusoidal pulse via <tt>sin</tt>). Fixed vector path icon assignments with distinct per-app colours. Fixed <tt>on_launch</tt> callback wiring.</p>
+
+<p><b>Desktop Aesthetic</b> &mdash; New dark/neon/glass theme with gradient background (deep navy to near-black), 80 ambient floating particles with per-particle colour cycling and buoyancy physics, anti-aliased large-scale clock digits (2x bilinear-interpolated bitmap font) with RTC-driven formatted date, 44-pixel taskbar with 3-dot launcher button, and centered app launcher grid with SVG vector path icons.</p>
+
+<p><b>Performance &amp; Display</b> &mdash; Hardware cursor only (no software cursor overhead). VBE page flipping via DisplayJet Y_OFFSET for zero-tearing display. Removed particle glow for additional performance. All 7 ecosystem repos committed and pushed to GitHub.</p>
 
 <h3>May 2026</h3>
 

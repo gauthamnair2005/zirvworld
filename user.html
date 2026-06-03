@@ -28,7 +28,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -44,16 +45,10 @@
 <ul>
 <li><a href="#overview">1. Overview</a></li>
 <li><a href="#building">2. Building the OS</a></li>
-<li><a href="#running">3. Running in QEMU</a></li>
-<li><a href="#boot-process">4. Boot Process</a></li>
-<li><a href="#shell">5. Using ZirvShell</a></li>
-<li><a href="#utilities">6. Embedded Utilities</a></li>
-<li><a href="#filesystem">7. MOSIX Filesystem</a></li>
-<li><a href="#device-namespace">8. The /zirv Device Namespace</a></li>
-<li><a href="#building-libc">9. Building zirvlibc</a></li>
-<li><a href="#displayjet">10. DisplayJet &amp; ZirvUI</a></li>
-<li><a href="#distributions">11. Building Your Own Distribution</a></li>
-<li><a href="#faq">12. FAQ</a></li>
+<li><a href="#shell">3. Using ZirvShell</a></li>
+<li><a href="#utilities">4. Embedded Utilities</a></li>
+<li><a href="#desktop">5. Desktop Environment (ZirvTK)</a></li>
+<li><a href="#faq">6. FAQ</a></li>
 </ul>
 </div>
 
@@ -63,7 +58,7 @@
 
 <p><b>Zirvium</b> is the reference implementation of the <b><a href="standard.html">MOSIX</a></b> standard. This guide covers building and using Zirvium itself, but the same principles apply to any MOSIX-compliant OS.</p>
 
-<p>The user-facing system: <b>Kernel</b> (zirvium) &rarr; <b>Init</b> (zirvinit, PID 1) &rarr; <b>Shell</b> (zirvshell, 20 commands) &rarr; <b>Utilities</b> (zirvutils, 18 programs). Optional: <b>DisplayJet</b> (encrypted display driver), <b>ZirvFlux</b> (display framework), <b>ZirvTK</b> (GUI toolkit), <b>ZirvUI</b> (desktop compositor).</p>
+<p>The user-facing system: <b>Kernel</b> (zirvium) &rarr; <b>Init</b> (zirvinit, PID 1) &rarr; <b>Shell</b> (zirvshell, 20+ commands) &rarr; <b>Utilities</b> (zirvutils, 18 programs). Optional: <b>DisplayJet</b> (encrypted display driver), <b>ZirvFlux</b> (display framework), <b>ZirvTK</b> (GUI toolkit with full desktop compositor), <b>ZirvUI</b> (thin compositor stub that runs ZirvTK desktop).</p>
 
 <hr>
 
@@ -80,9 +75,9 @@ make run</pre>
 
 <hr>
 
-<h2 id="shell">5. Using ZirvShell</h2>
+<h2 id="shell">3. Using ZirvShell</h2>
 
-<p>ZirvShell (the reference MOSIX shell) supports 20 commands with English-like syntax:</p>
+<p>ZirvShell (the reference MOSIX shell) supports 20+ commands with English-like syntax:</p>
 
 <table>
 <tr><td><tt>help</tt> / <tt>help me please</tt></td><td>Display command list</td></tr>
@@ -109,9 +104,9 @@ make run</pre>
 
 <hr>
 
-<h2 id="utilities">6. Embedded Utilities</h2>
+<h2 id="utilities">4. Embedded Utilities</h2>
 
-<p>18 utilities accessible via <tt>run /bin/&lt;name&gt;</tt>:</p>
+<p>18 utilities accessible via <tt>run /bin/&lt;name&gt;</tt> or by typing the name directly:</p>
 
 <table>
 <tr><td><tt>hello</tt></td><td>Hello-world test and PID</td></tr>
@@ -135,16 +130,54 @@ make run</pre>
 
 <hr>
 
-<h2 id="faq">12. FAQ</h2>
+<h2 id="desktop">5. Desktop Environment (ZirvTK)</h2>
+
+<p>Zirvium features a graphical desktop rendered by the <b><a href="zirvtk.html">ZirvTK</a></b> Rust toolkit. When ZirvUI is included in the build, the compositor starts after the shell and presents a dark/neon/glass desktop at 1024x768 resolution.</p>
+
+<h3>Desktop layout</h3>
+
+<ul>
+<li><b>Background</b>: Vertical gradient (deep navy to near-black) with ambient floating dots</li>
+<li><b>Particles</b>: 80 floating ambient particles with per-particle colour cycling and buoyancy physics</li>
+<li><b>Clock</b>: Anti-aliased large-scale clock digits (2x bilinear-interpolated bitmap font) with formatted date, powered by real RTC</li>
+<li><b>Taskbar</b>: 44-pixel panel at top with 3-dot launcher button and system time</li>
+<li><b>App Launcher</b>: Centered modal overlay with "Apps" title and 10 app icons in a 4-column grid. Each app has a unique colour, SVG vector path icon, and animated hover pulse (sinusoidal glow)</li>
+</ul>
+
+<h3>Navigation</h3>
+<p>Click the launcher dot (3-dot icon) in the taskbar to open the app grid. Hover over an icon to see the animated glow pulse. Click an icon to launch. The launcher closes automatically on launch. Currently, the compositor is single-app full-screen &mdash; the launcher closes when an app is opened. A "return to desktop" button is provided in-app.</p>
+
+<h3>Available Apps</h3>
+
+<table>
+<tr><th>App</th><th>Icon Colour</th><th>Description</th></tr>
+<tr><td>Terminal</td><td>Green (#00ff88)</td><td>Scrolling terminal with shell integration</td></tr>
+<tr><td>Calculator</td><td>Blue (#4488ff)</td><td>Basic calculator with number pad</td></tr>
+<tr><td>Settings</td><td>Orange (#ff8844)</td><td>Display/theme configuration</td></tr>
+<tr><td>Clock</td><td>Teal (#44ffcc)</td><td>Large digital clock display</td></tr>
+<tr><td>Files</td><td>Purple (#aa66ff)</td><td>File browser (stub)</td></tr>
+<tr><td>Snake</td><td>Yellow (#ffcc00)</td><td>Classic snake game with W/A/S/D</td></tr>
+<tr><td>Pong</td><td>Pink (#ff4488)</td><td>Pong vs AI paddle</td></tr>
+<tr><td>Tetris</td><td>Red (#ff4444)</td><td>Full Tetris with preview</td></tr>
+<tr><td>Editor</td><td>Cyan (#44ddff)</td><td>Multi-line text editor</td></tr>
+<tr><td>Demo</td><td>White (#cccccc)</td><td>4-tab demo (2D, 3D, widgets, icons)</td></tr>
+</table>
+
+<h3>Display Technology</h3>
+<p>All rendering is scanline-optimised software drawing into a framebuffer. VBE page flipping (Y_OFFSET method) provides tear-free display updates. Hardware cursor is used exclusively (no software cursor).</p>
+
+<hr>
+
+<h2 id="faq">6. FAQ</h2>
 
 <h3>Is MOSIX related to the historical MOSIX distributed OS?</h3>
 <p>No. The name is reused, but MOSIX (Modern OSIX) is a new operating system standard designed alongside the Zirvium kernel.</p>
 
 <h3>Can I build my own MOSIX OS?</h3>
-<p>Yes. The <a href="standard.html">MOSIX standard</a> is an open specification. You can write your own kernel, libc, and userspace &mdash; as long as they follow the filesystem hierarchy, /zirv namespace, and syscall ABI. See the <a href="distributions.html">Distributions</a> page for details.</p>
+<p>Yes. The <a href="standard.html">MOSIX standard</a> is an open specification. See the <a href="distributions.html">Distributions</a> page for details.</p>
 
 <h3>What hardware does Zirvium support?</h3>
-<p>x86-64 CPUs with long mode, PCI bus, SATA (ATA PIO), NVMe, USB mass storage, PS/2 keyboard, Synaptics touchpad, serial UART, VGA text mode, pixel framebuffer, Bochs VGA, VMware SVGA, Intel i915 UHD (Gen 9.5-14), NVIDIA GPUs (Enveediya, nouveau port RTX/B-series), Intel Arc GPU (A/B/C-series), AMD Radeon GPU (GCN/RDNA 1&ndash;3.5), HDA audio, Intel e1000, VirtIO net/block, RTL8139, Realtek RTL8723DE WiFi, Realtek Bluetooth, TPM 2.0, xHCI USB 3.0, Thunderbolt 3/4 &amp; USB4, WiFi 7 802.11be (Intel BE200, MediaTek MT7927, Qualcomm QCNCM865, Broadcom BCM4389).</p>
+<p>x86-64 CPUs with long mode, PCI bus, SATA (ATA PIO), NVMe, USB mass storage, PS/2 keyboard, Synaptics touchpad, serial UART, VGA text mode, pixel framebuffer, Bochs VGA, VMware SVGA, Intel i915 UHD (Gen 9.5-14), NVIDIA GPUs (Enveediya, RTX/B-series), Intel Arc GPU (A/B/C-series), AMD Radeon GPU (GCN/RDNA 1&ndash;3.5), HDA audio, Intel e1000, VirtIO net/block, RTL8139, Realtek RTL8723DE WiFi, Realtek Bluetooth, TPM 2.0, xHCI USB 3.0, Thunderbolt 3/4 &amp; USB4, WiFi 7 802.11be.</p>
 
 <h3>How do I reboot or shut down?</h3>
 <p>Type <tt>reboot</tt> (ACPI reset via 0xCF9) or <tt>shutdown</tt> (QEMU exit port 0x604 / Bochs 0xB004) at the shell prompt.</p>

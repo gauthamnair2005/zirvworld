@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -37,7 +38,7 @@
 
 <p><b>DisplayJet</b> is an in-kernel display driver for the Zirvium OS that provides a compositor-based display server protocol entirely in ring 0. It drives Bochs VBE-compatible display hardware (1024x768x32bpp) and implements the <b>MAEM</b> (Memory-Attested Encryption of Surfaces) security layer, encrypting every framebuffer surface at rest using ChaCha20 with per-surface keys derived via HKDF-SHA256.</p>
 
-<p>The driver exposes 13 custom syscalls (110&ndash;125) for compositor management, surface creation/destruction, encrypted reads and writes, display mode querying, performance mode toggling, and regional updates. A single compositor process connects at a time and manages up to 32 GPU surfaces.</p>
+<p>The driver exposes 11 custom syscalls (110&ndash;120) for compositor management, surface creation/destruction, encrypted reads and writes, display mode querying, and access grants. A single compositor process connects at a time and manages up to 32 GPU surfaces.</p>
 
 <p><b>Source:</b> <a href="https://github.com/gauthamnair2005/zirvdisplayjet">github.com/gauthamnair2005/zirvdisplayjet</a></p>
 
@@ -127,6 +128,8 @@
 <hr>
 
 <h2>Syscall API (110&ndash;120)</h2>
+
+<p>Note: the older DisplayJet documentation referenced syscalls up to 125, but the current implementation uses 110&ndash;120 (11 syscalls).</p>
 
 <h3>Userspace header: <tt>displayjet.h</tt></h3>
 

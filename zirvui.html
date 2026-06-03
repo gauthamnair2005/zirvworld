@@ -35,55 +35,46 @@
 
 <h2>Overview</h2>
 
-<p><b>ZirvUI</b> is the graphical desktop compositor / graphical shell for the Zirvium operating system. It connects to the <a href="displayjet.html">DisplayJet</a> kernel driver via syscalls 110&ndash;125 and renders a complete multi-window desktop environment into a software framebuffer. It is a single-threaded user-space process compiled as a freestanding ELF binary (<tt>zirvui.elf</tt>) linked against <tt>zirvlibc</tt> and the ZirvFlux API.</p>
+<p><b>ZirvUI</b> is the graphical desktop compositor / graphical shell for the Zirvium operating system. It connects to the <a href="displayjet.html">DisplayJet</a> kernel driver via syscalls 110&ndash;125 and renders a complete desktop environment. The compositor now delegates all rendering to the <b><a href="zirvtk.html">ZirvTK</a></b> Rust desktop toolkit via <tt>ztk_desktop_run()</tt>, making ZirvUI a thin C stub that initialises ZirvFlux and enters the Rust compositor loop.</p>
 
 <p><b>Source:</b> <a href="https://github.com/gauthamnair2005/zirvui">github.com/gauthamnair2005/zirvui</a></p>
 
 <hr>
 
-<h2>Desktop Layout</h2>
+<h2>Desktop Layout (ZirvTK)</h2>
 
 <pre>  ┌──────────────────────────────────────────────────────────────┐
-  │   Zirvium       window1  window2           ⏻  ✕ [clock]  │  ← Chrome
+  │                        ┌─────────────┐                       │
+  │                        │  Apps       │                       │
+  │                        │             │                       │
+  │                        │ [Term]      │                       │
+  │                        │ [Calc]      │                       │
+  │                        │ [Sett]      │                       │
+  │   ⋮ floating dots      │ [Clock]     │                       │
+  │   ⋮ ambient particles  │ [Files]     │                       │
+  │                        │ [Snake]     │                       │
+  │                        │ [Pong]      │                       │
+  │                        │ [Tetris]    │                       │
+  │                        │ [Editor]    │                       │
+  │                        │ [Demo]      │                       │
+  │                        └─────────────┘                       │
   │                                                              │
-  │  ┌──────┐ ┌──────────────┐                                   │
-  │  │Term  │ │  Calculator  │                                   │
-  │  │      │ │              │                                   │
-  │  │      │ │              │                                   │
-  │  │      │ └──────────────┘                                   │
-  │  │      │                                                    │
-  │  └──────┘              ┌────────────┐                       │
-  │                        │  Settings  │                       │
-  │                        │            │                       │
-  │                        └────────────┘                       │
+  │  00:00                                                     │
+  │  YYYY-MM-DD                                                  │
   │                                                              │
-  │     Metro-style tile grid (background)                       │
-  │  [Term] [Calc] [Files] [Settings] [About] [Clock]           │
-  │  [Wthr] [Music] [Mail] [Photos] [Store] [Maps]              │
+  │  ●●●  ────────────────────────────────────  00:00           │
   └──────────────────────────────────────────────────────────────┘</pre>
 
-<p>The display is 1920&times;1080 pixels. All rendering is procedural bitmap drawing directly into the software framebuffer &mdash; no GPU acceleration, no hardware overlays.</p>
+<p>The display is 1024&times;768 pixels at 32 bpp. All rendering is done by the ZirvTK Rust library into a software framebuffer with VBE page flipping for tear-free display.</p>
 
 <h3>Screen Layers (back to front)</h3>
 <ol>
-<li><b>Background</b>: Procedural per-pixel vertical gradient. 6 wallpaper presets (Deep Blue, Twilight, Forest, Sunset, Ocean, Midnight) selectable from Settings &rarr; Display.</li>
-<li><b>Accent color</b>: 8 accent color presets (Teal, Blue, Red, Green, Orange, Purple, Mint, Pink) applied to taskbar branding, clock text, settings headers, and demo app 3D canvas. Configurable from Settings &rarr; Display.</li>
-<li><b>Metro tile grid</b>: 6&times;2 grid of coloured app tiles (120&times;120 px each, 16 px gap, 48 px margin). Clicking a tile launches the app with a smooth expand animation.</li>
-<li><b>Title bar</b>: 36-pixel dark bar with back button and app name.</li>
-<li><b>Taskbar</b>: 40-pixel bottom bar with "Zirvium" heading (accent-coloured), clock, exit and power buttons.</li>
-<li><b>Shutdown dialog</b>: Modal confirmation overlay with animation</li>
+<li><b>Background</b>: Vertical gradient (deep navy to near-black). Floating ambient dots (40 points).</li>
+<li><b>Particle system</b>: 80 ambient floating particles with per-particle colour cycling and buoyancy physics.</li>
+<li><b>Clock</b>: Anti-aliased large-scale clock digits (2&times; bilinear-interpolated bitmap font) with formatted date. Powered by real RTC via <tt>getdatetime</tt> syscall.</li>
+<li><b>Taskbar</b>: 44-pixel panel at the top with launcher dot button (3-dot icon) and system time display.</li>
+<li><b>App Launcher</b>: Centered modal overlay with "Apps" title and 10 app icons in a 4-column grid. Each app has a unique colour, SVG vector path icon, and animated hover pulse.</li>
 </ol>
-
-<hr>
-
-<h2>App Launch &amp; Navigation</h2>
-
-<h3>Opening an app</h3>
-<p>Click a tile on the start screen. A smooth ease-out animation plays: a coloured rect expands from the tile position to full screen, displaying the app icon and name. The animation speed is configurable in Settings &rarr; Display (Fast / Medium / Smooth).</p>
-<p>After the animation, the app opens in full-screen mode. A 36-pixel title bar at the top shows the app name and a "&lt; Back" button to return to the start screen (animated close).</p>
-
-<h3>App content</h3>
-<p>Each app draws its full UI into the client area below the title bar. Apps are single-process &mdash; they run as draw functions called from the compositor's main loop, not as separate processes.</p>
 
 <hr>
 
@@ -91,21 +82,17 @@
 
 <ol>
 <li><b>Connect</b>: Call <tt>zf_connect()</tt> &rarr; DisplayJet syscall 110</li>
-<li><b>Query mode</b>: Call <tt>zf_get_info(&amp;info)</tt> &rarr; syscall 115 (get display resolution)</li>
-<li><b>Create buffer</b>: Call <tt>zf_create_buffer(w, h, &amp;buf)</tt> &rarr; syscall 112 (kernel allocates encrypted DMA buffer)</li>
-<li><b>Render</b>: Software-render the full 1920&times;1080 frame into a local framebuffer:
+<li><b>Query mode</b>: Call <tt>zf_get_info(&amp;info)</tt> &rarr; syscall 115</li>
+<li><b>Create buffer</b>: Call <tt>zf_create_buffer(w, h, &amp;buf)</tt> &rarr; syscall 112</li>
+<li><b>Enter ZirvTK desktop</b>: Call <tt>ztk_desktop_run()</tt> which owns the render loop:
   <ul>
-  <li>Draw background gradient (6 wallpaper presets, selected via Settings)</li>
-  <li>Draw Metro tile start screen (9 app tiles in a 6&times;2 grid)</li>
-  <li>Draw taskbar with accent-coloured "Zirvium" heading, clock, exit/power buttons</li>
-  <li>If an app is active: draw title bar (with back button), then dispatch to app draw function</li>
-  <li>Draw animation overlay if an app is launching (smooth expand from tile)</li>
-  <li>Draw shutdown confirmation dialog if active</li>
+  <li>Poll mouse events via <tt>zf_read_mouse()</tt></li>
+  <li>Update particle physics, clock, and hover states</li>
+  <li>Clear canvas gradient, draw dots, particles, clock, taskbar, and launcher (if open)</li>
+  <li>Write framebuffer via <tt>zf_write_buffer()</tt></li>
+  <li>Present via <tt>zf_present()</tt> (VBE page flip)</li>
   </ul>
 </li>
-<li><b>Upload</b>: Call <tt>zf_write_buffer(buf, compositor_fb, size)</tt> &rarr; syscall 116 (kernel encrypts with ChaCha20)</li>
-<li><b>Present</b>: Call <tt>zf_present(buf)</tt> &rarr; syscall 114 (kernel decrypts to scanout framebuffer)</li>
-<li><b>Loop</b>: 60 FPS paced via <tt>msleep(16)</tt>. Dirty-tracked &mdash; only re-renders when something changes (mouse movement, keyboard input, clock tick, animation frame).</li>
 </ol>
 
 <hr>
@@ -198,20 +185,14 @@ ZIRVFLUX_DIR=../zirvflux RUSTFLAGS="-C panic=abort" \
 <h2>Git History</h2>
 
 <table>
-<tr><td><tt>22ac3c1</tt></td><td>Tab-based Settings (Display/Network/Audio/About), Bold font toggle, 3D accent canvas in demo app</td></tr>
-<tr><td><tt>b23d353</tt></td><td>Demo app (4 tabs), improved font data, wallpaper presets (6), accent color picker (8), animation speed selector</td></tr>
-<tr><td><tt>6f86c50</tt></td><td>Remove 8 placeholder apps, enhance Settings (font scale, theme, brightness, FPS, Wi-Fi, BT, volume, about)</td></tr>
-<tr><td><tt>148a054</tt></td><td>Kernel SSE enable (CR4.OSFXSR+OSXMMEXCPT), ELF loader page_off fix</td></tr>
-<tr><td><tt>6d7b797</tt></td><td>Multi-window compositor, IPC MQ, HPC/MPI, chrome auto-hide, flip+expand animation</td></tr>
-<tr><td><tt>740bd16</tt></td><td>Toolkit integration: ZirvTK raw-framebuffer FFI, Makefile, stubs</td></tr>
+<tr><td><tt>HEAD</tt></td><td>ZirvUI becomes thin C stub, all compositor logic moves to ZirvTK Desktop</td></tr>
+<tr><td><tt>22ac3c1</tt></td><td>Tab-based Settings, Bold font toggle, 3D accent canvas</td></tr>
+<tr><td><tt>b23d353</tt></td><td>Demo app (4 tabs), 6 wallpaper presets, 8 accent colors</td></tr>
+<tr><td><tt>148a054</tt></td><td>Kernel SSE enable, ELF loader page_off fix</td></tr>
+<tr><td><tt>740bd16</tt></td><td>Toolkit integration: C FFI to ZirvTK, Makefile, stubs</td></tr>
 <tr><td><tt>cdb2f86</tt></td><td>Add GPLv3 LICENSE</td></tr>
-<tr><td><tt>a7a5d8b</tt></td><td>Improve ZirvUI desktop rendering</td></tr>
-<tr><td><tt>6168001</tt></td><td>Clean desktop with peek button, tray icons, open-app-only taskbar</td></tr>
-<tr><td><tt>9640cf3</tt></td><td>XP-style taskbar, colour scheme, Bliss background</td></tr>
-<tr><td><tt>171ad37</tt></td><td>Window dragging, font scaling, interactive Settings, frame-rate config</td></tr>
-<tr><td><tt>bf004ac</tt></td><td>Clean up compositor: remove unused functions, fix row buffer</td></tr>
-<tr><td><tt>b6b0f8d</tt></td><td>Full ZirvUI compositor: 5x7 font, top panel, icons, gradient, clock</td></tr>
-<tr><td><tt>7ad609f</tt></td><td>Initial ZirvUI compositor &mdash; DisplayJet protocol compositor</td></tr>
+<tr><td><tt>171ad37</tt></td><td>Window dragging, font scaling, interactive Settings</td></tr>
+<tr><td><tt>7ad609f</tt></td><td>Initial ZirvUI compositor &mdash; DisplayJet protocol</td></tr>
 </table>
 
 <hr>
@@ -219,12 +200,11 @@ ZIRVFLUX_DIR=../zirvflux RUSTFLAGS="-C panic=abort" \
 <h2>Future Work</h2>
 
 <ul>
-<li><b>True multi-process</b>: Spawn apps as separate processes via <tt>SYS_SPAWN</tt>/<tt>SYS_FORK</tt> instead of calling draw functions in the compositor process</li>
-<li><b>TrueType font rendering</b>: Render the generated TTF (<tt>zirvium_system.ttf</tt>) at runtime instead of the 8&times;13 bitmap</li>
-<li><b>New app: Files</b>: Directory browser with file manager UI</li>
-<li><b>Cursor rendering</b>: Software-rendered mouse cursor with proper compositing</li>
+<li><b>True multi-process</b>: Spawn apps as separate processes instead of draw-function dispatch</li>
+<li><b>TrueType font rendering</b>: Render the generated TTF at runtime</li>
+<li><b>Dirty-rect tracking</b>: Only re-render changed regions for performance</li>
+<li><b>Mouse cursor compositing</b>: Software cursor with proper layer blending</li>
 <li><b>Hardware acceleration</b>: Use GPU for composition</li>
-<li><b>VSync synchronisation</b>: Interrupt-driven page flip instead of polling</li>
 </ul>
 
 <hr>

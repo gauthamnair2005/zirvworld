@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/svg+xml" href="logo.svg">
 <link rel="stylesheet" href="style.css">
-<title>ZirvTK &mdash; MOSIX GUI Toolkit</title>
+<title>ZirvTK &mdash; MOSIX Desktop Toolkit &amp; Widget Library</title>
 </head>
 <body>
 
@@ -12,7 +12,7 @@
 
 <div class="logo-row">
 <img src="logo.svg" alt="">
-<h1><span>ZirvTK</span> &mdash; MOSIX GUI Toolkit (Reference Widget Library)</h1>
+<h1><span>ZirvTK</span> &mdash; MOSIX Desktop Toolkit &amp; Widget Library</h1>
 </div>
 
 <div class="header-links">
@@ -22,7 +22,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -33,76 +34,105 @@
 
 <hr>
 
-<p><b>ZirvTK</b> is the reference MOSIX GUI toolkit &mdash; a Rust widget library with C FFI for building graphical applications on top of the <a href="zirvflux.html">ZirvFlux</a> display framework. It provides a complete widget tree with event propagation and layout management.</p>
+<p><b>ZirvTK</b> is the reference MOSIX GUI toolkit &mdash; a Rust library with C FFI containing the complete desktop compositor (<b>ZirvTK Desktop</b>) for MOSIX operating systems. It runs on top of the <a href="zirvflux.html">ZirvFlux</a> display framework. The <a href="zirvui.html">ZirvUI</a> compositor is now a thin C stub that calls <tt>ztk_desktop_run()</tt> and blocks &mdash; all rendering, widgets, input handling, and the compositor loop live in ZirvTK.</p>
+
+<h2>Desktop Compositor</h2>
+
+<p>ZirvTK includes a full desktop compositor (<tt>Desktop</tt>) that renders a futuristic dark/neon/glass UI with:</p>
+
+<ul>
+<li><b>Real-time clock</b> &mdash; RTC-driven time display with anti-aliased scaled digits and formatted date (<tt>YYYY-MM-DD</tt>)</li>
+<li><b>Taskbar</b> &mdash; desktop panel with launcher dot button and system time</li>
+<li><b>App Launcher</b> &mdash; grid-based app menu with SVG vector path icons, animated hover pulse (sinusoidal glow), and app color assignments</li>
+<li><b>Glass panels</b> &mdash; semi-transparent UI panels with border stroke effects</li>
+<li><b>Particle system</b> &mdash; ambient floating particles with per-particle color cycling and velocity physics</li>
+<li><b>Hardware cursor</b> &mdash; DisplayJet hardware cursor only, no software cursor overhead</li>
+<li><b>Tear-free rendering</b> &mdash; VBE page flipping via DisplayJet Y_OFFSET flip for zero-tearing display updates</li>
+</ul>
 
 <h2>Widgets</h2>
 
 <table>
 <tr><th>Widget</th><th>Description</th></tr>
 <tr><td><tt>Widget</tt> (trait)</td><td>Base trait: event handling, layout, draw</td></tr>
-<tr><td><tt>Button</tt></td><td>Clickable button with label</td></tr>
-<tr><td><tt>Label</tt></td><td>Static text label</td></tr>
-<tr><td><tt>Panel</tt></td><td>Container for child widgets</td></tr>
-<tr><td><tt>Window</tt></td><td>Top-level window with title bar</td></tr>
-<tr><td><tt>TileScroller</tt></td><td>Scrollable grid of media tiles with physics-based scrolling</td></tr>
-<tr><td><tt>MediaTile</tt></td><td>Content tile with thumbnails, labels, and gradients</td></tr>
+<tr><td><tt>AppLauncher</tt></td><td>Grid-based app menu with styled icons and hover effects</td></tr>
+<tr><td><tt>TaskBar</tt></td><td>Desktop panel with launcher button and system clock</td></tr>
+<tr><td><tt>FuturisticClock</tt></td><td>Anti-aliased large-format clock with date</td></tr>
+<tr><td><tt>NeonButton</tt></td><td>Glowing neon-styled push button</td></tr>
+<tr><td><tt>GlassPanel</tt></td><td>Semi-transparent glass panel with border</td></tr>
+<tr><td><tt>GlowSlider</tt></td><td>Slider control with glow handle</td></tr>
+<tr><td><tt>AnimatedToggle</tt></td><td>Toggle switch with animated glow</td></tr>
 </table>
 
-<h2>Features</h2>
+<h2>Canvas Rendering</h2>
 
 <ul>
-<li>Canvas &mdash; software rendering surface with pixel, rect, text drawing</li>
-<li>5x7 bitmap font for all text rendering</li>
-<li>Color, Rect, Font primitives</li>
-<li>App &mdash; application scaffold with platform abstraction</li>
-<li>C FFI (<tt>zirvtk.h</tt>) for linking from C/C++ compositors</li>
-<li><tt>no_std</tt> compatible with custom arena allocator for freestanding environments</li>
-<li>Builds as staticlib, cdylib, and rlib</li>
+<li><b>Scanline-rounded rects</b> &mdash; <tt>fill_round_rect</tt> and <tt>stroke_round_rect</tt> use scanline span fills (O(h) per call) instead of per-pixel hit-testing (O(w&times;h))</li>
+<li><b>Gradient fills</b> &mdash; <tt>fill_gradient_v</tt> and <tt>clear_gradient</tt> for vertical color transitions</li>
+<li><b>Anti-aliased text</b> &mdash; <tt>draw_char_scaled</tt> uses bilinear interpolation between source pixels for smooth scaled glyphs</li>
+<li><b>Circle fill</b> &mdash; integer edge-finding slice fill avoids per-pixel sqrt</li>
+<li><b>Alpha blending</b> &mdash; full RGBA blend compositing pipeline</li>
+<li><b>Vector path icons</b> &mdash; SVG-style compact binary path definitions (MoveTo/LineTo) with anti-aliased polygon fill</li>
 </ul>
 
 <h2>Implementation</h2>
 
-<p>ZirvTK is written in Rust and compiled with <tt>#![no_std]</tt> for freestanding MOSIX environments. It uses a custom arena allocator when running without a kernel allocator. The library communicates with the display through the <a href="zirvflux.html">ZirvFlux</a> platform abstraction, which translates draw commands into buffer writes and presentation requests via the DisplayJet kernel driver.</p>
+<p>ZirvTK is written in Rust and compiled with <tt>#![no_std]</tt> for freestanding MOSIX environments. It uses a custom arena allocator (16&nbsp;MiB pool) when running outside a kernel allocator. The library communicates with the display through the <a href="zirvflux.html">ZirvFlux</a> platform abstraction, which translates draw commands into buffer writes and presentation requests via the DisplayJet kernel driver.</p>
 
-<p>The C FFI layer (<tt>c_api.rs</tt> + <tt>include/zirvtk.h</tt>) allows C/C++ compositors like <a href="zirvui.html">ZirvUI</a> to create and manage widgets through a stable C ABI.</p>
+<p>The C FFI layer (<tt>c_api.rs</tt> + <tt>include/zirvtk.h</tt>) allows C compositors like <a href="zirvui.html">ZirvUI</a> to call into the Rust desktop compositor via <tt>ztk_desktop_run()</tt> and access raw framebuffer drawing functions (<tt>ztk_fb_*</tt>), vector path icon rendering (<tt>ztk_draw_icon_path</tt>), and font rendering.</p>
+
+<p>Key design decisions:</p>
+<ul>
+<li>Desktop renders every frame unconditionally (no dirty-rect tracking yet)</li>
+<li>Event routing: taskbar click handled first; if handled, launcher toggled but not given the same MouseUp event (prevents immediate self-close)</li>
+<li>Clock uses real RTC via <tt>getdatetime</tt> syscall, polled every 10 frames</li>
+<li><tt>msleep(16)</tt> removed from render loop &mdash; FPS is CPU-limited for maximum smoothness</li>
+<li>VBE page flipping preferred over software double-buffer for zero-tearing display</li>
+</ul>
 
 <h2>Project Structure</h2>
 
 <pre>src/
   lib.rs           Crate root, no_std entry point
-  allocator.rs     Freestanding arena allocator
-  app.rs           Application scaffold
-  button.rs        Button widget
-  canvas.rs        Software renderer
+  allocator.rs     Freestanding arena allocator (16 MiB pool)
+  app_launcher.rs  App launcher widget with animated hover
+  canvas.rs        Software renderer (scanline-optimized)
   c_api.rs         C FFI exports
-  color.rs         Color types
-  ffi.rs           Internal FFI helpers
-  font.rs          5x7 bitmap font data
-  label.rs         Label widget
-  panel.rs         Panel container widget
+  color.rs         Color types (RGBA, blend, gradient)
+  desktop.rs       Desktop compositor
+  ffi.rs           ZirvFlux FFI bindings
+  font.rs          Bitmap font data (Inter glyphs)
+  futuristic_clock.rs Clock widget with anti-aliased scaled text
+  fx.rs            Visual effects (glow, glass panel, scanline)
+  glass_panel.rs   Glass panel widget
+  glow_slider.rs   Glow slider widget
+  neon_button.rs   Neon button widget
+  obj3d.rs         3D object utilities
+  particle.rs      Ambient particle system
   platform.rs      Platform abstraction (DisplayBuffer, events)
+  rawfb.rs         Raw framebuffer drawing + vector path icons
   rect.rs          Rectangle geometry
-  tile.rs          MediaTile widget
-  scroller.rs      TileScroller widget
+  taskbar.rs       Taskbar widget
   widget.rs        Widget trait + Event types
-  window.rs        Window widget
 include/
-  zirvtk.h         C header for FFI
-examples/
-  demo_rust.rs     GUI demo in Rust
-  demo_c.c         GUI demo in C (links via C FFI)</pre>
+  zirvtk.h         C header for FFI</pre>
 
 <h2>Build</h2>
 
-<pre>cargo build --release</pre>
+<pre># Standalone (with ZirvFlux dependency)
+ZIRVFLUX_DIR=../zirvflux cargo build --release --no-default-features --features alloc
 
-<p>Produces <tt>libzirvtk.a</tt>, <tt>libzirvtk.so</tt>, and <tt>libzirvtk.rlib</tt>.</p>
+# As submodule in Zirvium
+cd /path/to/zirvium/zirvtk
+ZIRVFLUX_DIR=../zirvflux cargo build --release --no-default-features --features alloc</pre>
+
+<p>Produces <tt>libzirvtk.a</tt> and <tt>libzirvtk.rlib</tt>.</p>
 
 <h2>Dependencies</h2>
 
 <ul>
 <li><a href="zirvflux.html">zirvflux</a> &mdash; Display framework</li>
-<li><a href="zirvlibc.html">zirvlibc</a> &mdash; C library</li>
+<li><tt>libm</tt> &mdash; Math library (sqrt, sin, cos for effects and rendering)</li>
 </ul>
 
 <h2>Source</h2>

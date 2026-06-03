@@ -28,7 +28,8 @@
 <a href="standard.html">MOSIX&nbsp;Standard</a>
 <a href="displayjet.html">DisplayJet</a>
 <a href="zirvui.html">ZirvUI</a>
-<a href="screenshots.html">Screenshots</a>
+<a href="zirvflux.html">ZirvFlux</a>
+<a href="zirvtk.html">ZirvTK</a>
 <a href="changelog.html">Changelog</a>
 <a href="distributions.html">Distributions</a>
 <a href="download.html">Download</a>
@@ -64,11 +65,12 @@
 <li><a href="#porting">20. Porting Guide</a></li>
 <li><a href="#debugging">21. Debugging</a></li>
 <li><a href="#userspace">22. Writing MOSIX Userspace Programs</a></li>
-<li><a href="#zirvflux">23. ZirvFlux Library</a></li>
-<li><a href="#displayjet-api">24. DisplayJet API</a></li>
-<li><a href="#zirvtk">25. ZirvTK GUI Toolkit</a></li>
-<li><a href="#zirvui">26. ZirvUI Compositor</a></li>
-<li><a href="#distribution">27. Creating a MOSIX Distribution</a></li>
+<li><a href="#audio">23. Audio Subsystem</a></li>
+<li><a href="#zirvflux">24. ZirvFlux Library</a></li>
+<li><a href="#displayjet-api">25. DisplayJet API</a></li>
+<li><a href="#zirvtk">26. ZirvTK GUI Toolkit</a></li>
+<li><a href="#zirvui">27. ZirvUI Compositor</a></li>
+<li><a href="#distribution">28. Creating a MOSIX Distribution</a></li>
 </ul>
 </div>
 
@@ -82,6 +84,7 @@
 <tr><th>Tool</th><th>Purpose</th><th>Install (Ubuntu/Debian)</th></tr>
 <tr><td><tt>x86_64-elf-gcc</tt></td><td>Freestanding C11 cross-compiler</td><td><tt>sudo apt install gcc-x86-64-elf</tt> (or use system <tt>gcc</tt>)</td></tr>
 <tr><td><tt>nasm &gt;= 2.14</tt></td><td>x86-64 assembler</td><td><tt>sudo apt install nasm</tt></td></tr>
+<tr><td><tt>cargo</tt> / <tt>rustc</tt></td><td>Rust toolchain for ZirvTK</td><td><tt>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</tt></td></tr>
 <tr><td><tt>grub-mkrescue</tt></td><td>GRUB2 bootable ISO creation</td><td><tt>sudo apt install grub-pc-bin grub-common xorriso</tt></td></tr>
 <tr><td><tt>mtools</tt></td><td>DOS filesystem tools for ISO build</td><td><tt>sudo apt install mtools</tt></td></tr>
 <tr><td><tt>qemu-system-x86_64</tt></td><td>Emulation and testing</td><td><tt>sudo apt install qemu-system-x86</tt></td></tr>
@@ -119,7 +122,6 @@ make run</pre>
 <pre>zirvium/
   arch/x64/            Architecture-specific code (x86-64)
     boot.asm           32-bit Multiboot2 stub &rarr; long mode transition
-    cpu.h              CPU helper macros/inline assembly
     gdt.c / gdt.h      GDT setup + TSS
     idt.c / idt.h      IDT setup + exception handlers
     isr_stubs.asm      ISR stubs (assembly wrappers)
@@ -129,16 +131,16 @@ make run</pre>
     console.c / .h     Kernel console (serial + VGA + framebuffer)
     shell.c / .h       Built-in debug shell
     kernel.ld          Linker script (physical + higher-half layout)
-    ipc/               Ring-buffer pipe IPC
+    ipc/               Ring-buffer pipe IPC + message queues
     irq/               8259A PIC + IRQ handler registration
     loader/            ELF loader + embedded binary table
     mm/                PMM (bitmap) + VMM (4-level paging) + heap
-    net/               Kernel networking stack
+    hpc/               HPC/MPI primitives (barrier, send/recv, bcast, reduce)
     proc/              Process management + usermode entry
-    syscall/           Syscall dispatch table (25 entries)
+    syscall/           Syscall dispatch table (36 entries)
     time/              CMOS RTC + TSC uptime + timezone
   fs/                  MOSIX VFS tree implementation
-  drivers/             Device drivers (storage, net, display, input, USB, bus)
+  drivers/             Device drivers (storage, net, display, input, USB, bus, audio)
   libs/zirvlibc/       Freestanding C library (submodule)
   zirv*                Userspace submodules (init, shell, utils, ui, flux, displayjet, tk)
   Makefile             Top-level build system
@@ -201,7 +203,7 @@ make run</pre>
 <tr><td><tt>pmm_free_multi(addr, count)</tt></td><td>Free contiguous frames</td></tr>
 </table>
 
-<p>Allocation is O(n) linear scan of the bitmap. Frames are marked as used or free by setting the corresponding bit.</p>
+<p>Allocation is O(n) linear scan of the bitmap.</p>
 
 <hr>
 
@@ -235,15 +237,13 @@ make run</pre>
 
 <p><b>Location:</b> <tt>kernel/mm/heap.c</tt></p>
 
-<p>The kernel heap is a simple bump allocator over a 4 MiB arena. It is used for temporary kernel allocations during boot and driver initialization.</p>
+<p>The kernel heap is a simple bump allocator over a 4 MiB arena. Used for temporary allocations during boot and driver initialization.</p>
 
 <table>
 <tr><th>Function</th><th>Description</th></tr>
 <tr><td><tt>kmalloc(size)</tt></td><td>Allocate from heap arena (returns virtual address)</td></tr>
 <tr><td><tt>kfree(ptr)</tt></td><td>Free (no-op; arena is reset on reboot)</td></tr>
 </table>
-
-<p>The heap is not designed for sustained use &mdash; long-lived allocations use the PMM/VMM directly. A full slab allocator is planned for future releases.</p>
 
 <hr>
 
@@ -253,8 +253,6 @@ make run</pre>
 
 <p>Process management covers creation, scheduling, memory management, and the kernel's execve save/restore mechanism.</p>
 
-<h3>Key Structures</h3>
-
 <pre>struct process {
     uint64_t pid;
     struct context ctx;       // Saved registers (RSP, RIP, RBP, RBX, R12-R15)
@@ -262,13 +260,13 @@ make run</pre>
     struct file *files[16];   // File descriptor table (16 FDs)
     uint64_t heap_brk;        // Program break for brk/sbrk
     uint64_t stack_phys;      // Physical address of user stack
-    int status;               // Running, zombie, etc.
+    int status;               // Running, zombie, blocked, etc.
     uint64_t wake_time;       // For timed waits
 };</pre>
 
 <h3>execve Save/Restore</h3>
 
-<p>The kernel implements a unique execve mechanism: instead of fork+exec, the caller's address space is saved before loading the new binary, and restored when the child exits. This allows the shell to run external commands and return to the prompt without needing fork(). The sequence is:</p>
+<p>The kernel implements a unique execve mechanism: instead of fork+exec, the caller's address space is saved before loading the new binary, and restored when the child exits. This allows the shell to run external commands and return to the prompt without needing fork().</p>
 
 <ol>
 <li>Save caller's page tables, stack pointer, and heap break</li>
@@ -276,17 +274,6 @@ make run</pre>
 <li>Switch to new process and enter user mode</li>
 <li>On exit, restore the saved context and resume the caller</li>
 </ol>
-
-<h3>Process Lifecycle</h3>
-
-<table>
-<tr><th>Function</th><th>Description</th></tr>
-<tr><td><tt>proc_create(parent_pid)</tt></td><td>Create a new process structure</td></tr>
-<tr><td><tt>proc_init_stdio(proc)</tt></td><td>Wire up stdin/stdout/stderr to console</td></tr>
-<tr><td><tt>proc_enter_usermode(proc)</tt></td><td>Switch to ring 3 via IRETQ</td></tr>
-<tr><td><tt>proc_exit(status)</tt></td><td>Mark process as zombie, wake parent</td></tr>
-<tr><td><tt>wait4(pid, &amp;status)</tt></td><td>Wait for child, reap zombie</td></tr>
-</table>
 
 <hr>
 
@@ -324,6 +311,8 @@ make run</pre>
 <tr><td>101</td><td>SYS_SHUTDOWN</td><td>Shut down system</td></tr>
 <tr><td>102</td><td>SYS_DNS_LOOKUP</td><td>Kernel-level DNS resolution</td></tr>
 <tr><td>103</td><td>SYS_PCI_READ</td><td>Read PCI device info</td></tr>
+<tr><td>110-120</td><td>DisplayJet syscalls</td><td>Compositor protocol (display driver)</td></tr>
+<tr><td>126-127</td><td>Audio syscalls</td><td>PCM playback, volume control</td></tr>
 <tr><td>140</td><td>SYS_MQ_CREATE</td><td>Create message queue</td></tr>
 <tr><td>141</td><td>SYS_MQ_SEND</td><td>Send message to queue</td></tr>
 <tr><td>142</td><td>SYS_MQ_RECV</td><td>Receive message from queue (blocks if empty)</td></tr>
@@ -337,7 +326,7 @@ make run</pre>
 <tr><td>150</td><td>SYS_HPC_REDUCE</td><td>Reduce values (SUM/MAX/MIN)</td></tr>
 </table>
 
-<p>Syscall convention (x86-64 ABI): <tt>RAX</tt> = syscall number, <tt>RDI</tt>, <tt>RSI</tt>, <tt>RDX</tt>, <tt>R10</tt>, <tt>R8</tt>, <tt>R9</tt> = arguments. Return value in <tt>RAX</tt> (negative errno on error).</p>
+<p>Syscall convention: <tt>RAX</tt> = syscall number, <tt>RDI</tt>, <tt>RSI</tt>, <tt>RDX</tt>, <tt>R10</tt>, <tt>R8</tt>, <tt>R9</tt> = arguments. Return value in <tt>RAX</tt> (negative errno on error).</p>
 
 <hr>
 
@@ -345,7 +334,7 @@ make run</pre>
 
 <p><b>Location:</b> <tt>kernel/time/time.c</tt></p>
 
-<p>Timekeeping is provided by two independent sources: CMOS RTC for absolute date/time and the TSC (timestamp counter) for uptime measurement.</p>
+<p>Timekeeping from CMOS RTC (absolute date/time) and TSC (uptime).</p>
 
 <table>
 <tr><th>Function</th><th>Description</th></tr>
@@ -356,17 +345,13 @@ make run</pre>
 <tr><td><tt>setdatetime(dt)</tt></td><td>Set CMOS RTC date/time</td></tr>
 </table>
 
-<p>The struct datetime contains year, month, day, hour, minute, second, and nanosecond fields. Timezone support allows UTC offset configuration via gettz/settz syscalls.</p>
-
 <hr>
 
 <h2 id="vfs">11. Virtual Filesystem</h2>
 
 <p><b>Location:</b> <tt>fs/</tt></p>
 
-<p>The MOSIX VFS implements a hierarchical filesystem tree rooted at <tt>/</tt>. It is designed to be simple and flat, with no support for mounting external filesystems (all files are in-memory).</p>
-
-<h3>Filesystem Hierarchy</h3>
+<p>The MOSIX VFS implements a hierarchical filesystem tree rooted at <tt>/</tt>. All files are in-memory (no external filesystem mounting yet).</p>
 
 <pre>/             Root
 /bin/         Embedded binaries (init, shell, utilities)
@@ -380,20 +365,6 @@ make run</pre>
   misc/       Miscellaneous devices
 /mounts/      Mount points (reserved)
 /tmp/         Temporary files</pre>
-
-<h3>Key Structures</h3>
-
-<pre>struct vfs_node {
-    char name[256];
-    uint64_t ino;
-    struct vfs_node *parent;
-    struct vfs_node *children;   // Linked list for directories
-    struct vfs_node *next;       // Sibling link
-    enum { VFS_FILE, VFS_DIR, VFS_DEVICE } type;
-    device_t *device;            // For device nodes
-    uint64_t size;
-    uint8_t *data;               // For regular files
-};</pre>
 
 <table>
 <tr><th>Function</th><th>Description</th></tr>
@@ -410,59 +381,15 @@ make run</pre>
 
 <p><b>Location:</b> <tt>kernel/ipc/pipe.c</tt>, <tt>kernel/ipc/mqueue.c</tt></p>
 
-<p>Two IPC primitives are provided:</p>
+<p>Two IPC primitives: ring-buffer pipes (unidirectional, FD-based) and message queues (256 slots &times; 64 bytes, integer ID). The scheduler supports a BLOCKED process state &mdash; blocked processes are skipped until woken by <tt>mq_wake_waiters</tt> when data arrives.</p>
 
-<h3>Pipes</h3>
-<p>Ring-buffer pipes created via the SYS_PIPE syscall. Pipes are unidirectional and support read/write with blocking semantics.</p>
-
-<table>
-<tr><th>Function</th><th>Description</th></tr>
-<tr><td><tt>pipe_create(pipefd)</tt></td><td>Create a pipe, return read and write FDs</td></tr>
-<tr><td><tt>pipe_read(pipe, buf, size)</tt></td><td>Read from pipe (blocks if empty)</td></tr>
-<tr><td><tt>pipe_write(pipe, buf, size)</tt></td><td>Write to pipe (blocks if full)</td></tr>
-<tr><td><tt>pipe_close(pipe)</tt></td><td>Close pipe endpoint</td></tr>
-</table>
-
-<p>The pipe buffer is a fixed-size ring buffer allocated in kernel memory. Pipes are identified by file descriptors and follow the standard MOSIX read/write model.</p>
-
-<h3>Message Queues</h3>
-<p>Ring-buffer message queues (<tt>kernel/ipc/mqueue.c</tt>) with 256 message slots of 64 bytes each. Queues are identified by integer IDs and support multipoint communication (any process with the ID can send/receive).</p>
-
-<table>
-<tr><th>Syscall</th><th>Function</th><th>Description</th></tr>
-<tr><td>140</td><td><tt>mq_create()</tt></td><td>Allocate a new message queue, return its ID</td></tr>
-<tr><td>141</td><td><tt>mq_send(qid, msg, len)</tt></td><td>Send a message (returns -1 if full)</td></tr>
-<tr><td>142</td><td><tt>mq_recv(qid, buf, len)</tt></td><td>Receive a message (blocks caller if empty using <tt>PROC_STATE_BLOCKED</tt>)</td></tr>
-<tr><td>143</td><td><tt>mq_destroy(qid)</tt></td><td>Free a message queue</td></tr>
-</table>
-
-<p>The scheduler supports a BLOCKED process state: blocked processes are skipped in the scheduling loop. When a message arrives, <tt>mq_wake_waiters</tt> transitions waiting processes back to RUNNING. Message queues serve as the transport layer for the HPC subsystem.</p>
-
-<h3>HPC / MPI Primitives</h3>
-<p>Built on top of message queues, the HPC subsystem (<tt>kernel/hpc/hpc.c</tt>) provides distributed-computing primitives for multi-process workloads:</p>
-
-<table>
-<tr><th>Syscall</th><th>Function</th><th>Description</th></tr>
-<tr><td>144</td><td><tt>hpc_get_rank()</tt></td><td>Return this process's auto-assigned rank (0&ndash;N&minus;1)</td></tr>
-<tr><td>145</td><td><tt>hpc_get_size()</tt></td><td>Return the total number of HPC-registered processes</td></tr>
-<tr><td>146</td><td><tt>hpc_barrier()</tt></td><td>Block until all processes reach this call (shared-MQ synchronisation)</td></tr>
-<tr><td>147</td><td><tt>hpc_send(rank, tag, data, len)</tt></td><td>Send a tagged message to a specific rank</td></tr>
-<tr><td>148</td><td><tt>hpc_recv(rank, tag, buf, len)</tt></td><td>Receive a tagged message from a specific rank</td></tr>
-<tr><td>149</td><td><tt>hpc_bcast(root, data, len)</tt></td><td>Broadcast data from root rank to all others</td></tr>
-<tr><td>150</td><td><tt>hpc_reduce(op, data, len, result)</tt></td><td>Reduce values across all ranks (SUM, MAX, MIN)</td></tr>
-</table>
-
-<p>On a single-CPU system, barrier synchronisation is synchronous by nature (only one process runs at a time) but provides correct ordering. All HPC communication uses tagged message queues per rank.</p>
+<p>HPC/MPI primitives (kernel/hpc/hpc.c) provide distributed-computing operations on top of message queues: auto-assigned ranks, barrier synchronisation, tagged send/recv, broadcast, and reduction (SUM/MAX/MIN).</p>
 
 <hr>
 
 <h2 id="irq">13. Interrupt Handling</h2>
 
 <p><b>Location:</b> <tt>kernel/irq/irq.c</tt>, <tt>arch/x64/idt.c</tt></p>
-
-<p>The interrupt system is built on three layers: IDT entry points in assembly, C exception handlers, and the 8259A PIC for hardware IRQs.</p>
-
-<h3>IDT Layout</h3>
 
 <table>
 <tr><th>Vector</th><th>Handler</th><th>Description</th></tr>
@@ -471,56 +398,15 @@ make run</pre>
 <tr><td>48 (0x30)</td><td>Syscall handler</td><td>SYSCALL entry point (via MSR LSTAR)</td></tr>
 </table>
 
-<table>
-<tr><th>Function</th><th>Description</th></tr>
-<tr><td><tt>idt_init()</tt></td><td>Set up IDT with exception and IRQ handlers</td></tr>
-<tr><td><tt>irq_init()</tt></td><td>Initialize 8259A PIC, remap IRQs 0&ndash;15 to vectors 32&ndash;47</td></tr>
-<tr><td><tt>irq_register(irq, handler)</tt></td><td>Register a handler for a hardware IRQ</td></tr>
-<tr><td><tt>syscall_init()</tt></td><td>Set MSR_LSTAR to syscall entry, configure STAR/SF_MASK</td></tr>
-</table>
-
-<p>Exception handlers print register state and halt the system. Page faults check for copy-on-write and demand paging before panicking.</p>
-
 <hr>
 
 <h2 id="drivers">14. Driver Framework</h2>
 
 <p><b>Location:</b> <tt>drivers/</tt></p>
 
-<p>The Zirvium driver framework uses a simple registration/probe model. Drivers register themselves with the kernel, and PCI enumeration triggers probing based on vendor/device IDs.</p>
+<p>The Zirvium driver framework uses a simple registration/probe model. Drivers register themselves with the kernel; PCI enumeration triggers probing based on vendor/device IDs. The <tt>linux_compat.h</tt> header (610 lines) allows Linux kernel source to compile under MOSIX with minimal changes.</p>
 
-<h3>Driver Model</h3>
-
-<pre>struct driver {
-    char name[64];
-    int (*init)(pci_device_t *dev);     // Initialize the device
-    int (*probe)(pci_device_t *dev);    // Check if device is supported
-    uint16_t vendor_id;                 // PCI vendor ID (0xFFFF = any)
-    uint16_t device_id;                 // PCI device ID (0xFFFF = any)
-    struct driver *next;                // Linked list
-};</pre>
-
-<table>
-<tr><th>Function</th><th>Description</th></tr>
-<tr><td><tt>driver_register(driver)</tt></td><td>Register a driver with the kernel</td></tr>
-<tr><td><tt>driver_probe_all()</tt></td><td>Probe all registered drivers against enumerated devices</td></tr>
-<tr><td><tt>pci_init()</tt></td><td>Scan PCI buses, enumerate devices</td></tr>
-</table>
-
-<h3>Linux Compat Layer</h3>
-
-<p>The <tt>linux_compat.h</tt> header (610 lines) provides a compatibility layer that allows Linux kernel source code to compile under MOSIX with minimal changes. Currently ported drivers include:</p>
-
-<ul>
-<li>Enveediya GPU (nouveau port, RTX/B-series)</li>
-<li>Intel Arc GPU (A/B/C-series)</li>
-<li>AMD Radeon GPU (GCN/RDNA 1&ndash;3.5)</li>
-<li>VirtIO block and net</li>
-<li>RTL8139 NIC</li>
-<li>xHCI USB 3.0/2.0 (polling enumeration)</li>
-<li>Thunderbolt 3/4 &amp; USB4</li>
-<li>WiFi 7 802.11be (Intel BE200, MediaTek MT7927, Qualcomm QCNCM865, Broadcom BCM4389)</li>
-</ul>
+<p>Ported drivers: Enveediya GPU (RTX/B-series), Intel Arc GPU (A/B/C-series), AMD Radeon GPU (GCN/RDNA 1&ndash;3.5), VirtIO block/net, RTL8139 NIC, xHCI USB 3.0/2.0, Thunderbolt 3/4 &amp; USB4, WiFi 7 802.11be (Intel BE200, MediaTek MT7927, Qualcomm QCNCM865, Broadcom BCM4389).</p>
 
 <hr>
 
@@ -528,19 +414,7 @@ make run</pre>
 
 <p><b>Location:</b> <tt>kernel/loader/elf.c</tt></p>
 
-<p>The ELF loader reads ELF64 binaries and maps them into a process address space. It supports static, no-pie executables compiled with <tt>-nostdlib -static -no-pie</tt>.</p>
-
-<table>
-<tr><th>Function</th><th>Description</th></tr>
-<tr><td><tt>elf_load(elf_data, size, &amp;entry)</tt></td><td>Parse ELF64 header, load segments, return entry point</td></tr>
-<tr><td><tt>elf_load_process(proc, elf_start)</tt></td><td>Load ELF into a process address space</td></tr>
-</table>
-
-<p>The loader processes <tt>PT_LOAD</tt> segments, allocating pages via the PMM and mapping them into the process's VMM address space. For segments with non-page-aligned <tt>p_vaddr</tt>, the loader computes <tt>page_off = vaddr &amp; 0xFFF</tt> and copies the file data starting at that offset within the first page rather than at offset 0, matching the ELF specification's requirement that <tt>p_offset</tt> and <tt>p_vaddr</tt> are congruent modulo the page size. It does not support shared libraries, dynamic linking, or PIE executables. All userspace binaries are statically linked and embedded into the kernel via <tt>incbin</tt>.</p>
-
-<h3>Embedded Binaries</h3>
-
-<p>The <tt>kernel/loader/init_bin.asm</tt> file uses NASM <tt>incbin</tt> directives to embed all userspace ELFs directly into the kernel image. The <tt>embedded.c</tt> module provides a table mapping binary names to their in-memory locations and sizes.</p>
+<p>Loads static no-pie ELF64 binaries. Processes PT_LOAD segments with correct non-page-aligned handling (<tt>page_off = vaddr &amp; 0xFFF</tt>). Does not support shared libraries or PIE. All userspace binaries are statically linked and embedded via <tt>incbin</tt> in <tt>kernel/loader/init_bin.asm</tt>.</p>
 
 <hr>
 
@@ -548,17 +422,7 @@ make run</pre>
 
 <p><b>Location:</b> <tt>kernel/console.c</tt></p>
 
-<p>The kernel console provides triple-output logging: serial (COM1), VGA text mode, and pixel framebuffer. The console subsystem initializes early in boot and remains active throughout system operation.</p>
-
-<table>
-<tr><th>Function</th><th>Description</th></tr>
-<tr><td><tt>console_init()</tt></td><td>Initialize console subsystem</td></tr>
-<tr><td><tt>console_enable_vga()</tt></td><td>Enable VGA text mode output</td></tr>
-<tr><td><tt>kputs(str)</tt></td><td>Print string to all active consoles</td></tr>
-<tr><td><tt>kprintf(fmt, ...)</tt></td><td>Formatted print (supports %s, %d, %x, %p)</td></tr>
-</table>
-
-<p>The console device is exposed to userspace as <tt>/zirv/tty/virtual0</tt>, which provides read (keyboard input) and write (display output) operations. The shell and utilities interact with the system through this device node.</p>
+<p>Triple-output console: serial (COM1), VGA text mode, and pixel framebuffer. Exposed to userspace as <tt>/zirv/tty/virtual0</tt> (read = keyboard, write = display).</p>
 
 <hr>
 
@@ -566,30 +430,7 @@ make run</pre>
 
 <p><b>Location:</b> <tt>libs/zirvlibc/</tt></p>
 
-<p>zirvlibc is the reference MOSIX C library &mdash; a freestanding libc providing all the functions needed by MOSIX userspace programs. It is compiled as a static library (<tt>libzirvlibc.a</tt>) and linked into every userspace binary.</p>
-
-<h3>Syscall Wrappers</h3>
-
-<p>All syscalls are wrapped via inline assembly (<tt>_syscall0</tt> through <tt>_syscall6</tt>) that issues the SYSCALL instruction:</p>
-
-<pre>static inline uint64_t _syscall1(uint64_t n, uint64_t a1) {
-    uint64_t ret;
-    asm volatile("syscall" : "=a"(ret) : "a"(n), "D"(a1) : "rcx", "r11", "memory");
-    return ret;
-}</pre>
-
-<h3>Library Structure</h3>
-
-<table>
-<tr><th>Source</th><th>Contents</th></tr>
-<tr><td><tt>string.c</tt></td><td>memcpy, memset, memmove, memcmp, strlen, strcmp, strcpy, strstr, etc.</td></tr>
-<tr><td><tt>stdio.c</tt></td><td>printf, snprintf, vsnprintf, puts, putchar (%s%d%u%lu%llu%x%p%c%%)</td></tr>
-<tr><td><tt>stdlib.c</tt></td><td>exit, abort, atoi, atol (malloc/kfree are stubs)</td></tr>
-<tr><td><tt>ctype.c</tt></td><td>isalpha, isdigit, isalnum, isspace, toupper, tolower, etc.</td></tr>
-<tr><td><tt>unistd.c</tt></td><td>read, write, open, close, mmap, brk, execve, getpid, etc.</td></tr>
-<tr><td><tt>datetime.c</tt></td><td>getdatetime, setdatetime, gettz, settz</td></tr>
-<tr><td><tt>syscall.c</tt></td><td>Generic syscall wrappers (0&ndash;6 argument versions)</td></tr>
-</table>
+<p>Freestanding C library. Syscall wrappers via inline assembly (<tt>_syscall0</tt> through <tt>_syscall6</tt>). Provides string.h, stdio.h (printf), stdlib.h, ctype.h, unistd.h, datetime.h, dirent.h.</p>
 
 <hr>
 
@@ -597,21 +438,7 @@ make run</pre>
 
 <p><b>Location:</b> <tt>zirvinit/</tt> (submodule)</p>
 
-<p>zirvinit is the first userspace process (PID 1). Its source is deliberately minimal &mdash; 28 lines of C:</p>
-
-<pre>#include &lt;stdio.h&gt;
-#include &lt;unistd.h&gt;
-
-int main(void) {
-    puts("MOSIX v0.1 — Zirvium Reference Kernel");
-    puts("init: starting shell...");
-    execve("/bin/shell", (char *[]){(char *)"/bin/shell", NULL}, NULL);
-    for (;;);  // halt if execve fails
-}</pre>
-
-<p>The kernel creates PID 1, loads <tt>zirvinit.elf</tt> from the embedded binary table, wires up the console as stdin/stdout/stderr, and enters user mode. zirvinit then execves into the shell, which becomes the primary user interface. If the shell binary is missing, init halts forever.</p>
-
-<p>As PID 1, zirvinit inherits orphaned processes. The kernel reparents children of exiting processes to PID 1, which collects their exit status via the wait4 mechanism.</p>
+<p>PID 1. 28 lines of C: prints banner, calls execve to start the shell.</p>
 
 <hr>
 
@@ -619,140 +446,82 @@ int main(void) {
 
 <p><b>Location:</b> <tt>zirvshell/</tt> (submodule)</p>
 
-<p>zirvshell is the reference MOSIX shell. It implements a command-line interface with English-like natural language syntax alongside standard POSIX aliases.</p>
-
-<h3>Command Loop</h3>
-
-<ol>
-<li>Print prompt (<tt>"/ $ "</tt> or <tt>"/dir $ "</tt>)</li>
-<li>Read a line from stdin (with backspace line editing)</li>
-<li>Parse into command and arguments (supports double-quoted strings)</li>
-<li>Match against built-in command list (including natural language aliases)</li>
-<li>If found, execute the built-in handler</li>
-<li>If not found, attempt <tt>execve("/bin/&lt;command&gt;")</tt> via the save/restore mechanism</li>
-<li>On return, loop back to prompt</li>
-</ol>
-
-<h3>Built-in Commands</h3>
-
-<p>20 commands: help, echo, pwd, uname, whoami, clear, ls, cat, run, cd, date, settime, timezone, uptime, reboot, shutdown, suspend, mkdir, rm, exit. Many have English aliases: <tt>help me please</tt>, <tt>clear the screen</tt>, <tt>go to</tt>, <tt>show files</tt>, <tt>say</tt>.</p>
-
-<h3>execve Save/Restore Integration</h3>
-
-<p>When the shell runs an external command via <tt>execve()</tt>, the kernel saves the shell's address space, loads the utility binary, runs it to completion, and restores the shell. This allows external commands to run without the shell needing to fork.</p>
+<p>Reference MOSIX shell with English-like syntax. 20 built-in commands. Uses execve save/restore to run external commands without forking.</p>
 
 <hr>
 
 <h2 id="porting">20. Porting Guide</h2>
 
-<h3>Porting the kernel to a new architecture</h3>
+<h3>Porting to a new architecture</h3>
 <ol>
 <li>Create <tt>arch/&lt;arch&gt;/</tt> with boot code, context switch, interrupt dispatch, MMU, timer</li>
 <li>Implement <tt>cpu.h</tt>, <tt>gdt.h</tt>, <tt>idt.h</tt></li>
 <li>Update Makefile and linker script</li>
 </ol>
 
-<h3>Implementing a MOSIX-compliant kernel from scratch</h3>
-<p>To build your own kernel that runs MOSIX userspace:</p>
+<h3>Building a MOSIX-compliant kernel from scratch</h3>
 <ol>
-<li>Implement the <a href="standard.html">MOSIX syscall ABI</a> (24 syscalls, numbers 0-101)</li>
-<li>Create the MOSIX filesystem hierarchy (/bin, /lib, /user, /boot, /config, /zirv, /mounts, /tmp)</li>
-<li>Implement the /zirv device namespace with bus subdirectories</li>
-<li>Add at minimum the console device at /zirv/tty/virtual0 (read from keyboard, write to display)</li>
-<li>Implement ELF64 binary loading for static no-pie executables</li>
-<li>Link against or implement the syscall wrappers from <a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></li>
-</ol>
-
-<h3>Adding a syscall</h3>
-<ol>
-<li>Add <tt>SYS_*</tt> in both kernel/syscall/syscall.h and libc include/zirv/syscall.h</li>
-<li>Implement handler in kernel/syscall/syscall.c</li>
-<li>Add dispatch case</li>
-<li>Add libc wrapper and prototype</li>
+<li>Implement the <a href="standard.html">MOSIX syscall ABI</a></li>
+<li>Create the MOSIX filesystem hierarchy</li>
+<li>Implement /zirv device namespace</li>
+<li>Add console device at /zirv/tty/virtual0</li>
+<li>Implement ELF64 loading</li>
+<li>Link against <a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a></li>
 </ol>
 
 <hr>
 
-<h2 id="audio">21. Audio Subsystem</h2>
+<h2 id="audio">23. Audio Subsystem</h2>
 
 <p><b>Location:</b> <tt>kernel/audio/</tt> (core), <tt>drivers/zirv/audio/</tt> (drivers)</p>
 
-<p>Zirvium provides a PCM audio subsystem with driver registration, ring-buffer management, and syscall-based userspace access. The subsystem supports multiple output drivers and automatically selects the first available one.</p>
-
-<h3>Drivers</h3>
-
-<table>
-<tr><th>Driver</th><th>Hardware</th><th>Source</th></tr>
-<tr><td><b>Intel HDA</b></td><td>Intel HD Audio (Kaby Lake through Meteor Lake PCH)</td><td><tt>drivers/zirv/audio/hda/</tt></td></tr>
-<tr><td><b>Intel AC97</b></td><td>Intel ICH AC97 (widely emulated by QEMU/VirtualBox)</td><td><tt>drivers/zirv/audio/ac97/</tt></td></tr>
-</table>
-
-<h3>Syscalls</h3>
-<table>
-<tr><th>#</th><th>Name</th><th>Description</th></tr>
-<tr><td>126</td><td><tt>SYS_AUDIO_PLAY</tt></td><td>Submit 16-bit stereo PCM frames at 48 kHz</td></tr>
-<tr><td>127</td><td><tt>SYS_AUDIO_VOLUME</tt></td><td>Set output volume (0&ndash;255)</td></tr>
-</table>
-
-<p>The <tt>audio_play()</tt> libc wrapper submits PCM data to the kernel's ring buffer. The hardware driver feeds from this buffer via DMA, playing silence when the buffer is empty.</p>
-
-<h3>Nokia Composer</h3>
-<p><b>Location:</b> <tt>zirvutils/src/nokia.c</tt></p>
-<p>Command-line tool that generates music from note strings. Format: <tt>[duration][pitch][octave][.]</tt>. Examples:</p>
-<pre>nokia "4C4 4D4 4E4 4F4 4G4 4A4 4B4 4C5"
-nokia 180 "8E5 8D5 8C5 8D5 8E5 8E5 8E5"
-nokia "4C5 4C5 4G5 4G5 4A5 4A5 4G5"</pre>
-<p>Defaults to 120 BPM tempo. Uses a classic square-wave synthesis for the Nokia ringtone feel. Output plays through the first available audio driver at 48 kHz / 16-bit stereo.</p>
+<p>PCM audio with Intel HDA and AC97 drivers. Syscalls: 126 (AUDIO_PLAY, 16-bit stereo 48 kHz), 127 (AUDIO_VOLUME, 0&ndash;255). Nokia composer tool in zirvutils generates square-wave ringtone-style music.</p>
 
 <hr>
 
-<h2 id="zirvflux">23. ZirvFlux Library</h2>
+<h2 id="zirvflux">24. ZirvFlux Library</h2>
 
-<p><a href="zirvflux.html">ZirvFlux</a> is the reference MOSIX display framework library. It provides a Mesa-like API for compositors, abstracting the DisplayJet kernel driver behind a clean C interface. Compositors call <tt>zf_connect()</tt>, <tt>zf_create_buffer()</tt>, <tt>zf_write_buffer()</tt>, and <tt>zf_present()</tt> instead of invoking DisplayJet syscalls directly.</p>
-
-<p>The library handles buffer management (up to 32 GPU surfaces), display enumeration, and region-based presentation. All data written through ZirvFlux is encrypted at rest by the underlying DisplayJet driver using ChaCha20 with per-surface HKDF-SHA256 keys.</p>
-
-<p>Full documentation on the <a href="zirvflux.html">ZirvFlux page</a>.</p>
+<p><a href="zirvflux.html">ZirvFlux</a> is the reference MOSIX display framework. Provides a Mesa-like C API (<tt>zf_connect</tt>, <tt>zf_create_buffer</tt>, <tt>zf_write_buffer</tt>, <tt>zf_present</tt>) abstracting the DisplayJet kernel driver. All data encrypted at rest via ChaCha20.</p>
 
 <hr>
 
-<h2 id="displayjet-api">24. DisplayJet API</h2>
+<h2 id="displayjet-api">25. DisplayJet API</h2>
 
-<p>11 custom syscalls (110-120) for a compositor-based display protocol. Drives Bochs VBE at 1024x768x32bpp. All surfaces encrypted with ChaCha20 (MAEM). Full documentation on the <a href="displayjet.html">DisplayJet page</a>.</p>
-
-<hr>
-
-<h2 id="zirvtk">25. ZirvTK GUI Toolkit</h2>
-
-<p><a href="zirvtk.html">ZirvTK</a> is a Rust GUI toolkit with C FFI for building MOSIX graphical applications. Provides a complete widget tree (Button, Label, Panel, Window, TileScroller, MediaTile), software Canvas renderer with 5x7 bitmap font, and platform abstraction over ZirvFlux.</p>
-
-<p>Written in <tt>no_std</tt> Rust with a custom arena allocator for freestanding environments. Builds as staticlib, cdylib, and rlib. The C FFI layer (<tt>include/zirvtk.h</tt>) allows C/C++ compositors to create and manage widgets through a stable ABI.</p>
-
-<p>Full documentation on the <a href="zirvtk.html">ZirvTK page</a>.</p>
+<p>11 syscalls (110&ndash;120) for compositor protocol. Drives Bochs VBE at 1024x768x32bpp. Full MAEM encryption. See the <a href="displayjet.html">DisplayJet page</a>.</p>
 
 <hr>
 
-<h2 id="zirvui">26. ZirvUI Compositor</h2>
+<h2 id="zirvtk">26. ZirvTK GUI Toolkit</h2>
 
-<p>User-space graphical compositor connecting to DisplayJet via ZirvFlux. Freestanding ELF64 binary. Renders procedural background gradient, 28-pixel top panel with hamburger menu and "ZirvUI" branding, system tray (WiFi, Bluetooth, speaker, battery, user, power icons), and live uptime clock in 5x7 bitmap font.</p>
+<p><a href="zirvtk.html">ZirvTK</a> is a Rust GUI toolkit with C FFI providing a complete desktop compositor for MOSIX. Written in <tt>no_std</tt> Rust with a custom arena allocator. Key features:</p>
+
+<ul>
+<li><b>Desktop compositor</b>: Full render loop with taskbar, app launcher, clock, particles, glass panels</li>
+<li><b>Scanline-optimised rendering</b>: <tt>fill_round_rect</tt>/<tt>stroke_round_rect</tt> use O(h) scanline spans instead of O(w&times;h) per-pixel hit-testing</li>
+<li><b>Anti-aliased text</b>: Bilinear-interpolated scaled bitmap font</li>
+<li><b>SVG vector path icons</b>: Compact MoveTo/LineTo path definitions with anti-aliased polygon fill</li>
+<li><b>Particle system</b>: 80 ambient particles with per-particle colour cycling</li>
+<li><b>Animated hover</b>: Sinusoidal glow pulse on launcher icons</li>
+<li><b>VBE page flipping</b>: Tear-free display via Y_OFFSET flip</li>
+<li><b>Widget set</b>: AppLauncher, TaskBar, FuturisticClock, GlassPanel, NeonButton, GlowSlider, AnimatedToggle</li>
+<li><b>C FFI</b>: <tt>ztk_desktop_run()</tt>, <tt>ztk_fb_*</tt> raw framebuffer functions, <tt>ztk_draw_icon_path</tt></li>
+</ul>
+
+<p>Build: <tt>ZIRVFLUX_DIR=../zirvflux cargo build --release --no-default-features --features alloc</tt></p>
+
+<hr>
+
+<h2 id="zirvui">27. ZirvUI Compositor</h2>
+
+<p>Thin C stub that initialises ZirvFlux and calls <tt>ztk_desktop_run()</tt> to enter the ZirvTK desktop compositor loop. All rendering, widgets, and input handling are delegated to ZirvTK. This means UI updates only require toolkit changes &mdash; ZirvUI itself is unchanged.</p>
 
 <p>Full documentation on the <a href="zirvui.html">ZirvUI page</a>.</p>
 
 <hr>
 
-<h2 id="distribution">27. Creating a MOSIX Distribution</h2>
+<h2 id="distribution">28. Creating a MOSIX Distribution</h2>
 
-<p>A MOSIX distribution is any operating system that implements the <a href="standard.html">MOSIX standard</a>. To create one:</p>
-<ol>
-<li><b>Choose or build a kernel</b>: Use Zirvium as-is, fork it, or write your own from scratch implementing the MOSIX syscall ABI</li>
-<li><b>Provide a C library</b>: Use <a href="https://github.com/gauthamnair2005/zirvlibc">zirvlibc</a> or implement the MOSIX syscall wrappers yourself</li>
-<li><b>Implement the filesystem</b>: Create the MOSIX hierarchy (/bin, /lib, /user, /boot, /config, /zirv, /mounts, /tmp)</li>
-<li><b>Provide a console</b>: At minimum, a <tt>/zirv/tty/virtual0</tt> device for shell I/O</li>
-<li><b>Add userspace</b>: Use zirvinit, zirvshell, and zirvutils, or write your own</li>
-<li><b>Add drivers</b>: Port existing Zirvium drivers or write new ones following the <a href="architecture.html">driver framework</a></li>
-</ol>
-
-<p>See the <a href="distributions.html">Distributions</a> page for a full guide.</p>
+<p>A MOSIX distribution is any OS that implements the <a href="standard.html">MOSIX standard</a>. See the <a href="distributions.html">Distributions</a> page for a full guide.</p>
 
 <hr>
 
