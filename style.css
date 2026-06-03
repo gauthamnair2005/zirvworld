@@ -1,26 +1,30 @@
-body { background: #fff; color: #000; font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
-a { color: #00f; } a:visited { color: #609; } a:active { color: #f00; }
+:root { --bg: #fff; --fg: #000; --link: #00f; --link-visited: #609; --link-active: #f00; --h1-color: #000; --h1-span: #00f; --h2-color: #000; --h2-border: #ccc; --pre-bg: #f4f4f4; --pre-border: #ccc; --hr-border: #ccc; --footer-border: #ccc; --footer-fg: #666; }
+.dark-mode { --bg: #0d1117; --fg: #c9d1d9; --link: #58a6ff; --link-visited: #8b5cf6; --link-active: #f85149; --h1-color: #c9d1d9; --h1-span: #58a6ff; --h2-color: #c9d1d9; --h2-border: #30363d; --pre-bg: #161b22; --pre-border: #30363d; --hr-border: #30363d; --footer-border: #30363d; --footer-fg: #8b949e; }
+body { background: var(--bg); color: var(--fg); font-family: Times, "Times New Roman", serif; margin: 0; padding: 0; font-size: 14px; line-height: 1.4; }
+a { color: var(--link); } a:visited { color: var(--link-visited); } a:active { color: var(--link-active); }
 .container { margin: 0; padding: 8px 24px; }
 .logo-row { display: flex; align-items: center; gap: 16px; margin: 12px 0 4px; }
-.logo-row img { width: 48px; height: 48px; }
-h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: #000; margin: 0; }
-h1 span { color: #00f; }
-h2 { font-family: Times, "Times New Roman", serif; font-size: 20px; font-weight: normal; color: #000; margin: 20px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+.logo-row img { width: 48px; height: 48px; filter: var(--logo-filter, none); }
+h1 { font-family: Times, "Times New Roman", serif; font-size: 28px; font-weight: normal; color: var(--h1-color); margin: 0; }
+h1 span { color: var(--h1-span); }
+h2 { font-family: Times, "Times New Roman", serif; font-size: 20px; font-weight: normal; color: var(--h2-color); margin: 20px 0 8px; border-bottom: 1px solid var(--h2-border); padding-bottom: 2px; }
 h3 { font-family: Times, "Times New Roman", serif; font-size: 16px; font-weight: bold; margin: 12px 0 2px; }
 h4 { font-family: Times, "Times New Roman", serif; font-size: 14px; font-weight: bold; margin: 8px 0 2px; }
-p { margin: 6px 0; color: #000; }
+p { margin: 6px 0; color: var(--fg); }
 tt, code, pre { font-family: "Courier New", Courier, monospace; font-size: 13px; }
-pre { background: #f4f4f4; border: 1px solid #ccc; padding: 8px; overflow-x: auto; line-height: 1.3; }
-hr { border: none; border-top: 1px solid #ccc; margin: 16px 0; }
+pre { background: var(--pre-bg); border: 1px solid var(--pre-border); padding: 8px; overflow-x: auto; line-height: 1.3; }
+hr { border: none; border-top: 1px solid var(--hr-border); margin: 16px 0; }
 .header-links { margin: 4px 0 8px; }
-.header-links a { color: #00f; text-decoration: underline; margin-right: 16px; font-size: 14px; }
+.header-links a { color: var(--link); text-decoration: underline; margin-right: 16px; font-size: 14px; }
+#dark-toggle { cursor: pointer; color: var(--link); text-decoration: underline; font-size: 14px; background: none; border: none; padding: 0; font-family: inherit; margin-right: 16px; }
+#dark-toggle:hover { text-decoration: underline; }
 td { vertical-align: top; padding: 4px 12px 4px 0; }
 ul, ol { margin: 4px 0; padding-left: 20px; }
 li { margin: 2px 0; }
-.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid #ccc; font-size: 12px; color: #666; }
-.footer a { color: #666; } .footer a:visited { color: #666; }
+.footer { margin-top: 20px; padding: 8px 0; border-top: 1px solid var(--footer-border); font-size: 12px; color: var(--footer-fg); }
+.footer a { color: var(--footer-fg); } .footer a:visited { color: var(--footer-fg); }
 .toc ul { list-style: none; padding-left: 0; }
 .toc li { margin: 3px 0; }
 .toc a { text-decoration: none; }
 .toc a:hover { text-decoration: underline; }
-code.block { display: block; white-space: pre; background: #f4f4f4; border: 1px solid #ccc; padding: 8px; margin: 6px 0; font-size: 12px; }
+code.block { display: block; white-space: pre; background: var(--pre-bg); border: 1px solid var(--pre-border); padding: 8px; margin: 6px 0; font-size: 12px; }
