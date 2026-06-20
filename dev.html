@@ -72,6 +72,7 @@
 <li><a href="#zirvtk">26. ZirvTK GUI Toolkit</a></li>
 <li><a href="#zirvui">27. ZirvUI Compositor</a></li>
 <li><a href="#distribution">28. Creating a MOSIX Distribution</a></li>
+<li><a href="#zirvfs">29. ZirvFS &mdash; Native CoW+Git Filesystem</a></li>
 </ul>
 </div>
 
@@ -140,7 +141,7 @@ make run</pre>
     proc/              Process management + usermode entry
     syscall/           Syscall dispatch table (36 entries)
     time/              CMOS RTC + TSC uptime + timezone
-  fs/                  MOSIX VFS tree implementation
+  fs/                  MOSIX VFS tree + ZirvFS (CoW content-addressed filesystem)
   drivers/             Device drivers (storage, net, display, input, USB, bus, audio)
   libs/zirvlibc/       Freestanding C library (submodule)
   zirv*                Userspace submodules (init, shell, utils, ui, flux, displayjet, tk)
@@ -282,7 +283,7 @@ make run</pre>
 
 <p><b>Location:</b> <tt>kernel/syscall/syscall.c</tt></p>
 
-<p>36 syscalls (numbers 0&ndash;150) dispatched via the SYSCALL/SYSRETQ mechanism. Entry is handled in <tt>arch/x64/syscall_entry.asm</tt>, which saves registers, switches to the kernel stack, and calls the C dispatch table.</p>
+<p>39 syscalls (numbers 0&ndash;154) dispatched via the SYSCALL/SYSRETQ mechanism. Entry is handled in <tt>arch/x64/syscall_entry.asm</tt>, which saves registers, switches to the kernel stack, and calls the C dispatch table.</p>
 
 <table>
 <tr><th>#</th><th>Name</th><th>Description</th></tr>
@@ -325,6 +326,9 @@ make run</pre>
 <tr><td>148</td><td>SYS_HPC_RECV</td><td>Receive message from rank</td></tr>
 <tr><td>149</td><td>SYS_HPC_BCAST</td><td>Broadcast message</td></tr>
 <tr><td>150</td><td>SYS_HPC_REDUCE</td><td>Reduce values (SUM/MAX/MIN)</td></tr>
+<tr><td>152</td><td>SYS_ZIRVFS_SNAP_CREATE</td><td>Create ZirvFS snapshot</td></tr>
+<tr><td>153</td><td>SYS_ZIRVFS_SNAP_LIST</td><td>List ZirvFS snapshots</td></tr>
+<tr><td>154</td><td>SYS_ZIRVFS_SNAP_RESTORE</td><td>Restore ZirvFS snapshot</td></tr>
 </table>
 
 <p>Syscall convention: <tt>RAX</tt> = syscall number, <tt>RDI</tt>, <tt>RSI</tt>, <tt>RDX</tt>, <tt>R10</tt>, <tt>R8</tt>, <tt>R9</tt> = arguments. Return value in <tt>RAX</tt> (negative errno on error).</p>
@@ -352,7 +356,7 @@ make run</pre>
 
 <p><b>Location:</b> <tt>fs/</tt></p>
 
-<p>The MOSIX VFS implements a hierarchical filesystem tree rooted at <tt>/</tt>. All files are in-memory (no external filesystem mounting yet).</p>
+<p>The MOSIX VFS implements a hierarchical filesystem tree rooted at <tt>/</tt>. The root tree, <tt>/tmp</tt>, <tt>/home</tt>, and <tt>/var</tt> are served by <b>tmpfs</b> (in-memory). External storage devices are auto-mounted as <b>ZirvFS</b> volumes under <tt>/mounts/zirvfs&lt;N&gt;</tt> &mdash; see <a href="#zirvfs">Section&nbsp;29</a>.</p>
 
 <pre>/             Root
 /bin/         Embedded binaries (init, shell, utilities)
@@ -364,8 +368,8 @@ make run</pre>
   tty/        Terminal devices (virtual0 = console)
   bus/        Bus subdirectories (pci, usb, etc.)
   misc/       Miscellaneous devices
-/mounts/      Mount points (reserved)
-/tmp/         Temporary files</pre>
+/mounts/      Mount points (ZirvFS volumes: zirvfs0, zirvfs1, ...)
+/tmp/         Temporary files (tmpfs)</pre>
 
 <table>
 <tr><th>Function</th><th>Description</th></tr>
@@ -523,6 +527,96 @@ make run</pre>
 <h2 id="distribution">28. Creating a MOSIX Distribution</h2>
 
 <p>A MOSIX distribution is any OS that implements the <a href="standard.html">MOSIX standard</a>. See the <a href="distributions.html">Distributions</a> page for a full guide.</p>
+
+<hr>
+
+<h2 id="zirvfs">29. ZirvFS &mdash; Native CoW+Git Filesystem</h2>
+
+<p><b>Location:</b> <tt>fs/zirvfs.h</tt>, <tt>fs/zirvfs.c</tt>, <tt>fs/zirvfs_block.c</tt>, <tt>fs/zirvfs_snap.c</tt>, <tt>fs/sha256.c</tt></p>
+
+<p><b>ZirvFS</b> is a native Copy-on-Write, content-addressed filesystem inspired by Git. It is the default filesystem for all block storage devices (SATA, NVMe, USB, VirtIO) in Zirvium. Every device is automatically formatted and mounted at boot under <tt>/mounts/zirvfs&lt;N&gt;</tt>.</p>
+
+<h3>Architecture</h3>
+
+<p>ZirvFS uses SHA-256 content hashing for all objects. There are three object types:</p>
+
+<ul>
+<li><b>BLOB</b> &mdash; raw file data, identified by its SHA-256 hash</li>
+<li><b>TREE</b> &mdash; directory entries mapping names to hashes (sorted for binary search)</li>
+<li><b>COMMIT</b> &mdash; snapshot metadata: timestamp, author, message, parent hash, tree hash</li>
+</ul>
+
+<p>The superblock at block 0 stores the root tree hash, root commit hash, block size, free block bitmap location, and volume label (magic <tt>"ZIRVFS00"</tt>).</p>
+
+<h3>Adaptive Block Size</h3>
+
+<table>
+<tr><th>Media Class</th><th>Block Size</th><th>Storage Types</th></tr>
+<tr><td>DEV_CLASS_PENDRIVE</td><td>4&nbsp;KiB</td><td>USB flash drives, SD cards</td></tr>
+<tr><td>DEV_CLASS_SSD</td><td>16&nbsp;KiB</td><td>SATA/NVMe SSDs, flash storage</td></tr>
+<tr><td>DEV_CLASS_HDD</td><td>64&nbsp;KiB</td><td>Mechanical hard drives, large block devices</td></tr>
+</table>
+
+<p>Block size is auto-detected at mount time from <tt>dev_class_t</tt> via <tt>zirvfs_detect_block_size()</tt>.</p>
+
+<h3>Copy-on-Write</h3>
+
+<p>Every write allocates new blocks from the bitmap allocator (<tt>zirvfs_alloc_block</tt>). The old blocks remain referenced by their hash and can be restored via snapshot rollback. Metadata updates are atomic &mdash; the superblock root pointers are only updated after a successful commit.</p>
+
+<p>Multi-block objects chain via a 64-bit next-block pointer stored in the last 8 bytes of each block (big-endian for SHA-256 compatibility).</p>
+
+<h3>Snapshots (Git-like)</h3>
+
+<table>
+<tr><th>Function</th><th>Description</th></tr>
+<tr><td><tt>zirvfs_snapshot_create(fs, message, &amp;snap_id)</tt></td><td>Create a commit of the current root tree with a message</td></tr>
+<tr><td><tt>zirvfs_snapshot_list(fs, snaps, &amp;count)</tt></td><td>List all snapshots (id, timestamp, message)</td></tr>
+<tr><td><tt>zirvfs_snapshot_restore(fs, snap_id)</tt></td><td>Restore root tree to a previous snapshot state</td></tr>
+</table>
+
+<p>Syscall wrappers (152&ndash;154) expose snapshots to userspace. Shell commands <tt>snapcreate</tt>, <tt>snaplist</tt>, <tt>snaprestore</tt> and the <tt>/bin/snapshot</tt> utility provide interactive access.</p>
+
+<h3>VFS Integration</h3>
+
+<p>ZirvFS implements the MOSIX <tt>vnode_ops_t</tt> interface:</p>
+
+<table>
+<tr><th>Operation</th><th>Implementation</th></tr>
+<tr><td><tt>read(vnode, buf, count, offset)</tt></td><td>Reads file data from BLOB object, seeks at tree_entry offset</td></tr>
+<tr><td><tt>readdir(vnode, idx, name, namelen)</tt></td><td>Lists directory entries from TREE object</td></tr>
+<tr><td><tt>lookup(dir, name)</tt></td><td>Lookup name in TREE, return child vnode</td></tr>
+<tr><td><tt>create(dir, name, mode)</tt></td><td>Insert new TREE entry (writable)</td></tr>
+<tr><td><tt>unlink(dir, name)</tt></td><td>Remove TREE entry</td></tr>
+</table>
+
+<p>The <tt>private_data</tt> pointer on each vnode stores the <tt>zirvfs_t</tt> instance for the filesystem. The root vnode is created in <tt>zirvfs_mount()</tt> and inserted into the VFS tree at <tt>/mounts/zirvfs&lt;N&gt;</tt>.</p>
+
+<h3>Boot Initialisation</h3>
+
+<p>Called from <tt>kernel_main()</tt> step 6g, after tmpfs is mounted:</p>
+
+<pre>static void zirvfs_init(void)
+{
+    for each registered storage device:
+        if device has working read_sectors/write_sectors:
+            create zirvfs_t instance
+            detect block size from dev_class_t
+            try to mount existing ZirvFS volume
+            if no valid superblock: format device
+            create root vnode, insert into VFS tree
+            log success ("ZirvFS volume N mounted")
+}</pre>
+
+<p>Each volume is accessible at <tt>/mounts/zirvfs0</tt>, <tt>/mounts/zirvfs1</tt>, etc.</p>
+
+<h3>Dependencies</h3>
+
+<ul>
+<li><tt>drivers/zirv/device.h</tt> &mdash; <tt>registered_device_t</tt>, <tt>dev_ops_t</tt>, <tt>dev_class_t</tt></li>
+<li><tt>kernel/mm/heap.c</tt> &mdash; All heap allocations via <tt>kmalloc</tt>/<tt>kfree</tt></li>
+<li><tt>kernel/console.h</tt> &mdash; <tt>klog()</tt> for boot messages</li>
+<li><tt>kernel/time/time.h</tt> &mdash; <tt>time_now()</tt> for commit timestamps</li>
+</ul>
 
 <hr>
 

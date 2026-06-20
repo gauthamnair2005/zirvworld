@@ -39,6 +39,8 @@
 
 <h3>June 2026</h3>
 
+<p><b>ZirvFS — Native Copy-on-Write Filesystem</b> &mdash; New native filesystem implementation (<tt>fs/zirvfs.c</tt>, <tt>fs/zirvfs_block.c</tt>, <tt>fs/zirvfs_snap.c</tt>, <tt>fs/sha256.c</tt>) providing a Git-inspired content-addressed filesystem for all storage devices. Uses SHA-256 hashing for object addressing (blobs, trees, commits). Block size adapts to storage media &mdash; 4&nbsp;KiB for USB pendrives, 16&nbsp;KiB for SSDs, 64&nbsp;KiB for HDDs &mdash; auto-detected via <tt>dev_class_t</tt>. Every write allocates new blocks (Copy-on-Write); metadata updates are atomic. Devices are auto-formatted and mounted at <tt>/mounts/zirvfs&lt;N&gt;</tt> on boot. Snapshot subsystem creates Git-like versioned commits with parent-linked chain: <tt>snapcreate</tt>, <tt>snaplist</tt>, <tt>snaprestore</tt> shell commands and <tt>/bin/snapshot</tt> utility. Three new syscalls (152&ndash;154) exposed via <tt>zirvlibc</tt>. All 7 ecosystem repos updated and pushed.</p>
+
 <p><b>ZirvTK Desktop Compositor Overhaul</b> &mdash; The desktop compositor has been moved entirely into the <a href="zirvtk.html">ZirvTK</a> Rust toolkit. ZirvUI is now a thin C stub (~30 lines) that initialises ZirvFlux and calls <tt>ztk_desktop_run()</tt>. All rendering, widgets, input handling, and the compositor loop are in ZirvTK, allowing UI updates to land with only toolkit changes.</p>
 
 <p><b>Scanline-Optimised Rendering</b> &mdash; <tt>fill_round_rect</tt> and <tt>stroke_round_rect</tt> now use scanline span fills (O(h) per call) instead of per-pixel hit-testing (O(w&times;h)), dramatically improving glass panel performance. The <tt>glass_panel</tt> widget was rewritten to use the scanline API.</p>
