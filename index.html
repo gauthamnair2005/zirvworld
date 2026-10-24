@@ -32,7 +32,7 @@
     <section class="hero">
       <div class="hero-inner">
         <div class="hero-content">
-          <div class="eyebrow">x86-64 UEFI • Rust • Assembly</div>
+          <div class="eyebrow">UEFI desktop • virtual hardware • Rust</div>
           <h1>Zirvium OS</h1>
           <p class="lead">A from-scratch 64-bit operating system with a Rust kernel, a custom desktop, and a focused QEMU/UEFI development workflow.</p>
           <div class="hero-actions">
@@ -40,10 +40,10 @@
             <a class="btn" href="architecture.html">Learn more</a>
           </div>
           <div class="hero-meta">
-            <span>64-bit only</span>
+            <span>64-bit desktop</span>
             <span>UEFI boot</span>
-            <span>CPU-rasterized UI</span>
-            <span>No C/libc dependency</span>
+            <span>Virtio display</span>
+            <span>Virtual audio and networking</span>
           </div>
         </div>
         <div class="hero-visual">
@@ -75,11 +75,11 @@
         <div class="grid">
           <article class="card">
             <h3>Modern Kernel</h3>
-            <p>Written in Rust and x86-64 assembly with memory management, interrupts, and a clean syscall interface.</p>
+            <p>Written in Rust with memory management, interrupts, and a clean syscall interface.</p>
           </article>
           <article class="card">
             <h3>DisplayJet Compositor</h3>
-            <p>CPU-rasterized ARGB rendering with damage tracking, font rendering, gradients, and window surfaces.</p>
+            <p>ARGB rendering with damage tracking, gamma-correct text, gradients, and smooth window surfaces.</p>
           </article>
           <article class="card">
             <h3>Clean Desktop UI</h3>
@@ -87,11 +87,11 @@
           </article>
           <article class="card">
             <h3>Hardware Support</h3>
-            <p>UEFI GOP, PS/2 input, PCI enumeration, RTC, and a virtio display path for QEMU.</p>
+            <p>UEFI GOP, PS/2 input, PCI enumeration, RTC, virtio display, E1000 networking, and virtual audio discovery.</p>
           </article>
           <article class="card">
             <h3>System Apps</h3>
-            <p>Terminal, Files, Monitor, Nodes, Settings, Calculator, Notes, and Network applications.</p>
+            <p>Terminal, Files, Monitor, Settings, Calculator, Notes, and Network applications.</p>
           </article>
           <article class="card">
             <h3>Performance First</h3>
@@ -108,7 +108,7 @@
         <img src="logo.svg" alt="Zirvium">
         <span>Zirvium OS</span>
       </div>
-      <p>© 2026 Zirvium Project. Built with Rust and Assembly.</p>
+      <p>© 2026 Zirvium Project. Built with Rust.</p>
     </div>
   </footer>
 </body>
