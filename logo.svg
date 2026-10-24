@@ -1,14 +1,18 @@
-<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
       <stop stop-color="#00aaff"/>
       <stop offset="1" stop-color="#66ccff"/>
     </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0 0 0 0 0 0.67 0 0 0 0.95 0 0 0 0.42 0"/>
+    </filter>
   </defs>
-  <rect width="128" height="128" rx="28" fill="#000000"/>
-  <g stroke="url(#g)" stroke-width="8" stroke-linejoin="miter" fill="none">
-    <polygon points="64,20 104,54 84,54 64,38 44,54 24,54"/>
-    <polygon points="64,38 84,54 84,90 64,106 44,90 44,54"/>
-    <line x1="64" y1="38" x2="64" y2="106"/>
+  <g stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".7" filter="url(#glow)">
+    <path d="M64 20L104 54H84L64 38L44 54H24L64 20ZM64 38L84 54V90L64 106L44 90V54L64 38ZM64 38V106"/>
+  </g>
+  <g stroke="url(#g)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M64 20L104 54H84L64 38L44 54H24L64 20ZM64 38L84 54V90L64 106L44 90V54L64 38ZM64 38V106"/>
   </g>
 </svg>
