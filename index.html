@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zirvium OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">
+        <img src="logo.svg" alt="Zirvium">
+        <span>Zirvium</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html" class="active">Home</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="features.html">Features</a>
+        <a href="download.html">Download</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/gauthamnair2005/zirvium" target="_blank">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="hero-content">
+          <div class="eyebrow">x86-64 UEFI • Rust • Assembly</div>
+          <h1>Zirvium OS</h1>
+          <p class="lead">A modern, from-scratch operating system built with performance, simplicity, and a clean desktop experience in mind.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="download.html">Download</a>
+            <a class="btn" href="architecture.html">Learn more</a>
+          </div>
+          <div class="hero-meta">
+            <span>64-bit only</span>
+            <span>UEFI boot</span>
+            <span>CPU/iGPU accelerated</span>
+            <span>No C legacy deps</span>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="desktop-mock">
+            <div class="mock-bar">
+              <div class="mock-dots"><span></span><span></span><span></span></div>
+              <span class="mock-title">Zirvium Desktop</span>
+            </div>
+            <div class="mock-screen">
+              <div class="mock-start">
+                <div class="mock-tile"></div>
+                <div class="mock-tile accent"></div>
+                <div class="mock-tile"></div>
+                <div class="mock-tile"></div>
+              </div>
+              <div class="mock-taskbar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Built from the ground up</h2>
+          <p>Zirvium is a complete OS with its own kernel, drivers, UI, and system services.</p>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <h3>Modern Kernel</h3>
+            <p>Written in Rust and x86-64 assembly with memory management, interrupts, and a clean syscall interface.</p>
+          </article>
+          <article class="card">
+            <h3>DisplayJet Compositor</h3>
+            <p>Hardware-accelerated 2D rendering with damage tracking, font rendering, and smooth desktop experience.</p>
+          </article>
+          <article class="card">
+            <h3>Clean Desktop UI</h3>
+            <p>Metro-inspired Start menu, intuitive taskbar, window management, and a cohesive design language.</p>
+          </article>
+          <article class="card">
+            <h3>Hardware Support</h3>
+            <p>UEFI GOP, PS/2 input, PCI enumeration, with focus on modern x86-64 hardware.</p>
+          </article>
+          <article class="card">
+            <h3>System Apps</h3>
+            <p>Terminal, Files, Settings, Calculator, Notes, Network, and more built-in applications.</p>
+          </article>
+          <article class="card">
+            <h3>Performance First</h3>
+            <p>Optimized with SSE2, efficient rendering paths, and designed to run smoothly in QEMU/KVM.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="logo.svg" alt="Zirvium">
+        <span>Zirvium OS</span>
+      </div>
+      <p>© 2026 Zirvium Project. Built with Rust and Assembly.</p>
+    </div>
+  </footer>
+</body>
+</html>

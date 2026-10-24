@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture — Zirvium OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">
+        <img src="logo.svg" alt="Zirvium">
+        <span>Zirvium</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="architecture.html" class="active">Architecture</a>
+        <a href="features.html">Features</a>
+        <a href="download.html">Download</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/gauthamnair2005/zirvium" target="_blank">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Architecture</h2>
+          <p>A clean, layered design built for x86-64 UEFI systems.</p>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <h3>Boot</h3>
+            <p>UEFI bootloader loads the kernel, initializes GOP framebuffer, and exits boot services.</p>
+          </article>
+          <article class="card">
+            <h3>Memory</h3>
+            <p>Physical frame allocator, paging, and kernel heap for dynamic allocations.</p>
+          </article>
+          <article class="card">
+            <h3>Interrupts</h3>
+            <p>IDT, PIC/APIC handling, and CPU exception management.</p>
+          </article>
+          <article class="card">
+            <h3>Drivers</h3>
+            <p>PS/2 keyboard/mouse, PCI enumeration, RTC, and display output.</p>
+          </article>
+          <article class="card">
+            <h3>DisplayJet</h3>
+            <p>Software compositor with dirty tracking, blitting, and font rendering.</p>
+          </article>
+          <article class="card">
+            <h3>Desktop & UI</h3>
+            <p>Window manager, applications, and event routing for a responsive desktop.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="logo.svg" alt="Zirvium">
+        <span>Zirvium OS</span>
+      </div>
+      <p>© 2026 Zirvium Project. Built with Rust and Assembly.</p>
+    </div>
+  </footer>
+</body>
+</html>

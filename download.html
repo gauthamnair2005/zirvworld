@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download — Zirvium OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/svg+xml" href="logo.svg">
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html">
+        <img src="logo.svg" alt="Zirvium">
+        <span>Zirvium</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="features.html">Features</a>
+        <a href="download.html" class="active">Download</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/gauthamnair2005/zirvium" target="_blank">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="section">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Download</h2>
+          <p>Get Zirvium OS source code or run it in QEMU.</p>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <h3>Source Code</h3>
+            <p>Clone the repository from GitHub and build from source.</p>
+            <div class="hero-actions" style="margin-top:12px">
+              <a class="btn primary" href="https://github.com/gauthamnair2005/zirvium">View on GitHub</a>
+            </div>
+          </article>
+          <article class="card">
+            <h3>Build Requirements</h3>
+            <p>Rust nightly, cargo, x86_64-unknown-uefi target, QEMU for testing.</p>
+          </article>
+          <article class="card">
+            <h3>Quick Start</h3>
+            <p><code>cargo build --release --target x86_64-unknown-uefi</code><br><code>make esp && make run</code></p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="logo.svg" alt="Zirvium">
+        <span>Zirvium OS</span>
+      </div>
+      <p>© 2026 Zirvium Project. Built with Rust and Assembly.</p>
+    </div>
+  </footer>
+</body>
+</html>
