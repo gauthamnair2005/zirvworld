@@ -34,7 +34,7 @@
         <div class="hero-content">
           <div class="eyebrow">x86-64 UEFI • Rust • Assembly</div>
           <h1>Zirvium OS</h1>
-          <p class="lead">A modern, from-scratch operating system built with performance, simplicity, and a clean desktop experience in mind.</p>
+          <p class="lead">A from-scratch 64-bit operating system with a Rust kernel, a custom desktop, and a focused QEMU/UEFI development workflow.</p>
           <div class="hero-actions">
             <a class="btn primary" href="download.html">Download</a>
             <a class="btn" href="architecture.html">Learn more</a>
@@ -42,8 +42,8 @@
           <div class="hero-meta">
             <span>64-bit only</span>
             <span>UEFI boot</span>
-            <span>CPU/iGPU accelerated</span>
-            <span>No C legacy deps</span>
+            <span>CPU-rasterized UI</span>
+            <span>No C/libc dependency</span>
           </div>
         </div>
         <div class="hero-visual">
@@ -70,7 +70,7 @@
       <div class="section-inner">
         <div class="section-header">
           <h2>Built from the ground up</h2>
-          <p>Zirvium is a complete OS with its own kernel, drivers, UI, and system services.</p>
+          <p>Zirvium is an active operating-system milestone with its own kernel, drivers, UI, and system services.</p>
         </div>
         <div class="grid">
           <article class="card">
@@ -79,23 +79,23 @@
           </article>
           <article class="card">
             <h3>DisplayJet Compositor</h3>
-            <p>Hardware-accelerated 2D rendering with damage tracking, font rendering, and smooth desktop experience.</p>
+            <p>CPU-rasterized ARGB rendering with damage tracking, font rendering, gradients, and window surfaces.</p>
           </article>
           <article class="card">
             <h3>Clean Desktop UI</h3>
-            <p>Metro-inspired Start menu, intuitive taskbar, window management, and a cohesive design language.</p>
+            <p>Start screen, taskbar, login flow, window management, notifications, and a cohesive design language.</p>
           </article>
           <article class="card">
             <h3>Hardware Support</h3>
-            <p>UEFI GOP, PS/2 input, PCI enumeration, with focus on modern x86-64 hardware.</p>
+            <p>UEFI GOP, PS/2 input, PCI enumeration, RTC, and a virtio display path for QEMU.</p>
           </article>
           <article class="card">
             <h3>System Apps</h3>
-            <p>Terminal, Files, Settings, Calculator, Notes, Network, and more built-in applications.</p>
+            <p>Terminal, Files, Monitor, Nodes, Settings, Calculator, Notes, and Network applications.</p>
           </article>
           <article class="card">
             <h3>Performance First</h3>
-            <p>Optimized with SSE2, efficient rendering paths, and designed to run smoothly in QEMU/KVM.</p>
+            <p>Efficient redraw paths and a small, explicit kernel UI designed to run in QEMU/KVM.</p>
           </article>
         </div>
       </div>

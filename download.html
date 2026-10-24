@@ -33,7 +33,7 @@
       <div class="section-inner">
         <div class="section-header">
           <h2>Download</h2>
-          <p>Get Zirvium OS source code or run it in QEMU.</p>
+          <p>Build Zirvium from source and run the current development image in QEMU.</p>
         </div>
         <div class="grid">
           <article class="card">
@@ -45,11 +45,11 @@
           </article>
           <article class="card">
             <h3>Build Requirements</h3>
-            <p>Rust nightly, cargo, x86_64-unknown-uefi target, QEMU for testing.</p>
+            <p>Rust stable, cargo, the x86_64-unknown-uefi target, OVMF, QEMU, mtools, and xorriso.</p>
           </article>
           <article class="card">
             <h3>Quick Start</h3>
-            <p><code>cargo build --release --target x86_64-unknown-uefi</code><br><code>make esp && make run</code></p>
+            <p><code>make</code><br><code>make run</code><br><code>make run-headless</code></p>
           </article>
         </div>
       </div>

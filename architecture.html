@@ -38,7 +38,7 @@
         <div class="grid">
           <article class="card">
             <h3>Boot</h3>
-            <p>UEFI bootloader loads the kernel, initializes GOP framebuffer, and exits boot services.</p>
+            <p>UEFI loads the PE32+ kernel, initializes the GOP framebuffer, exits boot services, then shows the Zirvium splash before login.</p>
           </article>
           <article class="card">
             <h3>Memory</h3>
@@ -54,11 +54,11 @@
           </article>
           <article class="card">
             <h3>DisplayJet</h3>
-            <p>Software compositor with dirty tracking, blitting, and font rendering.</p>
+            <p>CPU-rasterized compositor with ARGB surfaces, dirty tracking, clipping, gradients, shadows, and font rendering.</p>
           </article>
           <article class="card">
             <h3>Desktop & UI</h3>
-            <p>Window manager, applications, and event routing for a responsive desktop.</p>
+            <p>Login/session state, window manager, applications, settings, Start transitions, and event routing for the desktop.</p>
           </article>
         </div>
       </div>
